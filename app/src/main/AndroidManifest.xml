@@ -31,7 +31,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.example.kairn" android:host="auth" />
-                <data android:scheme="com.example.kairn" android:host="auth" />
             </intent-filter>
         </activity>
     </application>
