@@ -5,5 +5,5 @@ enum class Screen {
     CATALOG,
     EDITOR,
     SOCIAL,
-    ACCOUNT
+    ACCOUNT,
 }
