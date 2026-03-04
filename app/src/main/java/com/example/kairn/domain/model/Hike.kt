@@ -46,6 +46,7 @@ data class Hike(
             durationLabel = "10-12h",
             description = "Experience one of the most breathtaking adventures in the French Alps as you hike toward the iconic Aiguille du Midi. Located in Chamonix, France, this trail offers unparalleled views of the surrounding peaks, glaciers, and the majestic Mont Blanc — the highest point in Western Europe.",
             reviewCount = 124,
+            imageUrl = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
         )
 
         val previewList = listOf(
@@ -62,6 +63,7 @@ data class Hike(
                 durationLabel = "5-6h",
                 description = "A classic Chamonix hike with stunning views of the Mont Blanc massif reflected in the crystal-clear alpine lake. The trail winds through alpine meadows and offers exceptional panoramas.",
                 reviewCount = 89,
+                imageUrl = "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80",
             ),
             Hike(
                 id = "3",
@@ -75,6 +77,7 @@ data class Hike(
                 durationLabel = "3h",
                 description = "An accessible hike leading to France's largest glacier. A magical journey through ancient ice formations carved over thousands of years.",
                 reviewCount = 203,
+                imageUrl = "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
             ),
             Hike(
                 id = "4",
@@ -88,6 +91,7 @@ data class Hike(
                 durationLabel = "6-7h",
                 description = "A spectacular ridge trail running along the north side of the Chamonix valley with breathtaking views of Mont Blanc and the Aiguilles Rouges.",
                 reviewCount = 67,
+                imageUrl = "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80",
             ),
             Hike(
                 id = "5",
@@ -101,6 +105,7 @@ data class Hike(
                 durationLabel = "2-3h",
                 description = "A peaceful forest walk through ancient pine and fir trees. Perfect for beginners and families, with natural wildlife and serene atmosphere.",
                 reviewCount = 41,
+                imageUrl = "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80",
             ),
             Hike(
                 id = "6",
@@ -114,6 +119,7 @@ data class Hike(
                 durationLabel = "4-5h",
                 description = "A hidden gem tucked between granite peaks, Lac Cornu rewards hikers with turquoise waters and complete solitude far from the crowds.",
                 reviewCount = 28,
+                imageUrl = "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80",
             ),
         )
     }

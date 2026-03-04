@@ -38,11 +38,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.theme.Background
@@ -180,20 +182,29 @@ fun CatalogueHikeCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // Background gradient simulating mountain photo
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Primary.copy(alpha = 0.55f),
-                            0.5f to Primary.copy(alpha = 0.30f),
-                            1.0f to Color(0xFF1a2520),
+        // Hike photo (or gradient fallback if no URL)
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.55f),
+                                0.5f to Primary.copy(alpha = 0.30f),
+                                1.0f to Color(0xFF1a2520),
+                            ),
                         ),
                     ),
-                ),
-        )
+            )
+        }
 
         // Dark overlay at bottom for readability
         Box(

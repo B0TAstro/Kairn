@@ -39,10 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
@@ -107,22 +109,37 @@ private fun HeroImageArea(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(340.dp)
-            .background(
-                Brush.verticalGradient(
-                    colorStops = arrayOf(
-                        0.0f to Primary.copy(alpha = 0.45f),
-                        0.4f to Primary.copy(alpha = 0.25f),
-                        1.0f to Color(0xFF111a16),
-                    ),
-                ),
-            ),
+            .height(340.dp),
     ) {
-        // Subtle bottom fade into the dark panel
+        // Hike photo (or gradient fallback if no URL)
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.45f),
+                                0.4f to Primary.copy(alpha = 0.25f),
+                                1.0f to Color(0xFF111a16),
+                            ),
+                        ),
+                    ),
+            )
+        }
+
+        // Bottom fade into the dark panel (always on top of the photo)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
+                .height(120.dp)
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
