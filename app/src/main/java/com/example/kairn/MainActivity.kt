@@ -61,10 +61,9 @@ fun KairnApp() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
+    ) { _ ->
         Box(
             modifier = Modifier
-            .padding(innerPadding)
             .fillMaxSize()
         ) {
             NavHost(
