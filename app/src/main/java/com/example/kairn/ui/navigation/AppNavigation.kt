@@ -1,9 +1,21 @@
 package com.example.kairn.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,11 +24,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.kairn.ui.auth.AuthViewModel
 import com.example.kairn.ui.auth.LoginScreen
 import com.example.kairn.ui.auth.SignUpScreen
+import com.example.kairn.ui.components.KairnBottomNavBar
+import com.example.kairn.ui.components.NavBarItem
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
-sealed class Screen(val route: String) {
-    data object Login : Screen("login")
-    data object SignUp : Screen("signup")
-    data object Main : Screen("main")
+sealed class Route(val route: String) {
+    data object Login : Route("login")
+    data object SignUp : Route("signup")
+    data object Main : Route("main")
 }
 
 @Composable
@@ -26,25 +42,69 @@ fun AppNavigation() {
     
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Route.Login.route
     ) {
         authGraph(navController)
-        // mainGraph(navController) // To be implemented
+        composable(Route.Main.route) {
+            MainScreen()
+        }
+    }
+}
+
+@Composable
+fun MainScreen() {
+    val navController = rememberNavController()
+    var selectedItem by remember { mutableStateOf(Screen.HOME.name) }
+    val hazeState = remember { HazeState() }
+
+    val navBarItems = listOf(
+        NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
+        NavBarItem(Screen.EXPLORE.name, "Explore", Icons.Outlined.Explore),
+        NavBarItem(Screen.CHAT.name, "Chat", Icons.AutoMirrored.Outlined.Chat),
+        NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
+    )
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        KairnNavHost(
+            navController = navController,
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(hazeState)
+        )
+
+        KairnBottomNavBar(
+            items = navBarItems,
+            selectedItem = selectedItem,
+            onItemSelected = { itemId ->
+                selectedItem = itemId
+                navController.navigate(itemId) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            hazeState = hazeState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
-    composable(Screen.Login.route) {
+    composable(Route.Login.route) {
         LoginScreen(
-            onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-            onLoginSuccess = { navController.navigate(Screen.Main.route) }
+            onNavigateToSignUp = { navController.navigate(Route.SignUp.route) },
+            onLoginSuccess = { navController.navigate(Route.Main.route) }
         )
     }
     
-    composable(Screen.SignUp.route) {
+    composable(Route.SignUp.route) {
         SignUpScreen(
             onNavigateToLogin = { navController.navigateUp() },
-            onSignUpSuccess = { navController.navigate(Screen.Login.route) }
+            onSignUpSuccess = { navController.navigate(Route.Login.route) }
         )
     }
 }

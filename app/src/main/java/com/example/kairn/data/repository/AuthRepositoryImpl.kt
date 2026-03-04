@@ -2,9 +2,9 @@ package com.example.kairn.data.repository
 
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
-import io.github.jan-tennert.supabase.gotrue.Auth
-import io.github.jan-tennert.supabase.gotrue.gotrue
-import io.github.jan-tennert.supabase.gotrue.user.UserInfo
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val auth: Auth
+    private val auth: Auth,
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -29,29 +29,32 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signIn(email: String, password: String): Result<Unit> = runCatching {
-        auth.signInWith(email = email, password = password)
+        auth.signInWith(Email) {
+            this.email = email
+            this.password = password
+        }
         val session = auth.currentSessionOrNull()
         _currentUser.value = session?.user?.toDomain()
     }
 
     override suspend fun signUp(email: String, password: String): Result<Unit> = runCatching {
-        auth.signUpWith(email = email, password = password)
+        auth.signUpWith(Email) {
+            this.email = email
+            this.password = password
+        }
         // After signup, user needs to verify email before signing in automatically
-        // For immediate login, call signIn after successful signUp
     }
 
     override suspend fun signOut(): Result<Unit> = runCatching {
-        auth.logout()
+        auth.signOut()
         _currentUser.update { null }
     }
-
-    override fun getCurrentUser(): StateFlow<User?> = currentUser
 
     override fun isAuthenticated(): Boolean = _currentUser.value != null
 
     private fun UserInfo.toDomain(): User = User(
         id = id,
         email = email ?: "",
-        username = email?.substringBefore("@")
+        username = email?.substringBefore("@") ?: "",
     )
 }
