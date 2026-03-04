@@ -1,14 +1,22 @@
 package com.example.kairn.data.repository
 
+import com.example.kairn.domain.model.SessionState
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,14 +25,29 @@ class AuthRepositoryImpl @Inject constructor(
     private val auth: Auth,
 ) : AuthRepository {
 
-    private val _currentUser = MutableStateFlow<User?>(null)
-    override val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+    /**
+     * Long-lived scope that survives ViewModel clears. Tied to the singleton lifetime.
+     * Uses [SupervisorJob] so a single collection failure doesn't cancel the scope.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    private val _sessionState = MutableStateFlow<SessionState>(SessionState.Loading)
+    override val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
+
+    override val currentUser: StateFlow<User?> = _sessionState
+        .map { state ->
+            when (state) {
+                is SessionState.Authenticated -> state.user
+                else -> null
+            }
+        }
+        .stateIn(scope, SharingStarted.Eagerly, null)
 
     init {
-        // Initialize current user from existing session
-        val session = auth.currentSessionOrNull()
-        if (session != null) {
-            _currentUser.value = session.user?.toDomain()
+        scope.launch {
+            auth.sessionStatus.collect { status ->
+                _sessionState.value = status.toDomain()
+            }
         }
     }
 
@@ -33,8 +56,7 @@ class AuthRepositoryImpl @Inject constructor(
             this.email = email
             this.password = password
         }
-        val session = auth.currentSessionOrNull()
-        _currentUser.value = session?.user?.toDomain()
+        // Session state will be updated automatically via the sessionStatus flow
     }
 
     override suspend fun signUp(email: String, password: String): Result<Unit> = runCatching {
@@ -42,15 +64,33 @@ class AuthRepositoryImpl @Inject constructor(
             this.email = email
             this.password = password
         }
-        // After signup, user needs to verify email before signing in automatically
+        // If auto-confirm is disabled, user needs to verify email first.
+        // The sessionStatus flow will remain NotAuthenticated until they do.
     }
 
     override suspend fun signOut(): Result<Unit> = runCatching {
         auth.signOut()
-        _currentUser.update { null }
+        // Session state will be updated automatically via the sessionStatus flow
     }
 
-    override fun isAuthenticated(): Boolean = _currentUser.value != null
+    // ---------------------------------------------------------------------------
+    // Mapping helpers
+    // ---------------------------------------------------------------------------
+
+    private fun SessionStatus.toDomain(): SessionState = when (this) {
+        is SessionStatus.Authenticated -> {
+            val user = session.user?.toDomain()
+            if (user != null) {
+                SessionState.Authenticated(user)
+            } else {
+                // Edge case: session exists but no user info attached
+                SessionState.NotAuthenticated()
+            }
+        }
+        is SessionStatus.NotAuthenticated -> SessionState.NotAuthenticated(isSignOut = isSignOut)
+        is SessionStatus.RefreshFailure -> SessionState.NotAuthenticated()
+        SessionStatus.Initializing -> SessionState.Loading
+    }
 
     private fun UserInfo.toDomain(): User = User(
         id = id,

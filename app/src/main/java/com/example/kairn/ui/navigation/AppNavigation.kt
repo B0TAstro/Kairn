@@ -1,20 +1,26 @@
 package com.example.kairn.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -23,7 +29,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 import com.example.kairn.R
+import com.example.kairn.domain.model.SessionState
 import com.example.kairn.ui.account.AccountScreen
+import com.example.kairn.ui.auth.AuthUiState
 import com.example.kairn.ui.auth.AuthViewModel
 import com.example.kairn.ui.auth.LoginScreen
 import com.example.kairn.ui.auth.SignUpScreen
@@ -40,7 +48,7 @@ sealed class Screen(val route: String) {
 }
 
 // ---------------------------------------------------------------------------
-// Root navigation (auth-first)
+// Root navigation (auth-first, reactive)
 // ---------------------------------------------------------------------------
 
 @Composable
@@ -48,43 +56,87 @@ fun AppNavigation(
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
-    val navController = rememberNavController()
-    val startDestination = if (authViewModel.isAuthenticated) {
-        Screen.Main.route
-    } else {
-        Screen.SignIn.route
-    }
+    val sessionState by authViewModel.sessionState.collectAsStateWithLifecycle()
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-    ) {
-        authGraph(navController)
-        composable(Screen.Main.route) {
-            MainScaffold(
-                onSignOut = {
-                    navController.navigate(Screen.SignIn.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
+    when (sessionState) {
+        is SessionState.Loading -> {
+            // SDK is restoring the persisted session — show a splash / loading indicator
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is SessionState.Authenticated -> {
+            AuthenticatedNavigation(
+                authViewModel = authViewModel,
+                modifier = modifier,
+            )
+        }
+
+        is SessionState.NotAuthenticated -> {
+            UnauthenticatedNavigation(
+                authViewModel = authViewModel,
+                modifier = modifier,
             )
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Auth sub-graph
+// Authenticated flow — main scaffold with bottom navigation
 // ---------------------------------------------------------------------------
+
+@Composable
+private fun AuthenticatedNavigation(
+    authViewModel: AuthViewModel,
+    modifier: Modifier = Modifier,
+) {
+    MainScaffold(
+        onSignOut = { authViewModel.signOut() },
+        modifier = modifier,
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Unauthenticated flow — sign in / sign up
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun UnauthenticatedNavigation(
+    authViewModel: AuthViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val navController = rememberNavController()
+    val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
+
+    // When sign-in succeeds the sessionState will flip to Authenticated,
+    // which causes AppNavigation to recompose into AuthenticatedNavigation.
+    // We just need to reset the UI state so it's clean for next time.
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
+            authViewModel.clearError()
+        }
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.SignIn.route,
+        modifier = modifier,
+    ) {
+        authGraph(navController)
+    }
+}
 
 private fun NavGraphBuilder.authGraph(navController: NavHostController) {
     composable(Screen.SignIn.route) {
         LoginScreen(
             onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
             onSignInSuccess = {
-                navController.navigate(Screen.Main.route) {
-                    popUpTo(0) { inclusive = true }
-                }
+                // No manual navigation needed — the sessionState flow will
+                // automatically recompose AppNavigation to show MainScaffold.
             },
         )
     }
@@ -110,6 +162,7 @@ private data class TabItem(
 @Composable
 private fun MainScaffold(
     onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tabNavController = rememberNavController()
     var selectedIndex by remember { mutableIntStateOf(0) }
@@ -123,6 +176,7 @@ private fun MainScaffold(
     )
 
     Scaffold(
+        modifier = modifier,
         bottomBar = {
             BottomAppBar {
                 NavigationBar {
