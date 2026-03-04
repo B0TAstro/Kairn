@@ -100,7 +100,7 @@ fun LoginScreen(
                 CircularProgressIndicator()
             } else {
                 Button(
-                    onClick = { viewModel.signIn(email, password) },
+                    onClick = { viewModel.signIn(email.trim(), password) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = email.isNotBlank() && password.isNotBlank(),
                 ) {

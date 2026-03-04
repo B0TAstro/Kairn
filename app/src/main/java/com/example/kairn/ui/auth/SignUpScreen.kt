@@ -116,7 +116,7 @@ fun SignUpScreen(
                 CircularProgressIndicator()
             } else {
                 Button(
-                    onClick = { viewModel.signUp(email, password) },
+                    onClick = { viewModel.signUp(email.trim(), password) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = canSignUp,
                 ) {
