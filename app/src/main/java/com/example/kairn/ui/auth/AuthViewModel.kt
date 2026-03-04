@@ -2,6 +2,7 @@ package com.example.kairn.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,19 +13,27 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    val currentUser: StateFlow<User?> = authRepository.currentUser
+
+    val isAuthenticated: Boolean
+        get() = authRepository.isAuthenticated()
+
     fun signIn(email: String, password: String) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             val result = authRepository.signIn(email, password)
-            _uiState.value = when {
-                result.isSuccess -> AuthUiState.Success
-                else -> AuthUiState.Error(result.exceptionOrNull()?.message ?: "Authentication failed")
+            _uiState.value = if (result.isSuccess) {
+                AuthUiState.Success
+            } else {
+                AuthUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Authentication failed",
+                )
             }
         }
     }
@@ -33,9 +42,12 @@ class AuthViewModel @Inject constructor(
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             val result = authRepository.signUp(email, password)
-            _uiState.value = when {
-                result.isSuccess -> AuthUiState.Success
-                else -> AuthUiState.Error(result.exceptionOrNull()?.message ?: "Registration failed")
+            _uiState.value = if (result.isSuccess) {
+                AuthUiState.Success
+            } else {
+                AuthUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Registration failed",
+                )
             }
         }
     }

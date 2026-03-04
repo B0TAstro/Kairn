@@ -25,14 +25,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+import com.example.kairn.ui.theme.KairnTheme
+
 @Composable
 fun SignUpScreen(
-    onNavigateToLogin: () -> Unit,
+    onNavigateToSignIn: () -> Unit,
     onSignUpSuccess: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    modifier: Modifier = Modifier,
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -40,36 +44,33 @@ fun SignUpScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState) {
-        when (uiState) {
-            is AuthUiState.Success -> {
-                onSignUpSuccess()
-            }
-            else -> Unit
+        if (uiState is AuthUiState.Success) {
+            onSignUpSuccess()
         }
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "Create Account",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 24.dp),
             )
 
             if (uiState is AuthUiState.Error) {
                 Text(
                     text = (uiState as AuthUiState.Error).message,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
                 )
             }
 
@@ -79,7 +80,7 @@ fun SignUpScreen(
                 label = { Text("Email") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState != AuthUiState.Loading
+                enabled = uiState !is AuthUiState.Loading,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -91,7 +92,7 @@ fun SignUpScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState != AuthUiState.Loading
+                enabled = uiState !is AuthUiState.Loading,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -103,7 +104,7 @@ fun SignUpScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState != AuthUiState.Loading
+                enabled = uiState !is AuthUiState.Loading,
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -111,12 +112,13 @@ fun SignUpScreen(
             val passwordsMatch = password == confirmPassword
             val canSignUp = email.isNotBlank() && password.isNotBlank() && passwordsMatch
 
-            when (uiState) {
-                is AuthUiState.Loading -> CircularProgressIndicator()
-                else -> Button(
+            if (uiState is AuthUiState.Loading) {
+                CircularProgressIndicator()
+            } else {
+                Button(
                     onClick = { viewModel.signUp(email, password) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = canSignUp && uiState != AuthUiState.Loading
+                    enabled = canSignUp,
                 ) {
                     Text("Sign Up")
                 }
@@ -125,12 +127,23 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onNavigateToLogin,
+                onClick = onNavigateToSignIn,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState != AuthUiState.Loading
+                enabled = uiState !is AuthUiState.Loading,
             ) {
                 Text("Already have an account? Sign In")
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SignUpScreenPreview() {
+    KairnTheme {
+        SignUpScreen(
+            onNavigateToSignIn = {},
+            onSignUpSuccess = {},
+        )
     }
 }
