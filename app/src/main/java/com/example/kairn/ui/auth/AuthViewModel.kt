@@ -1,0 +1,60 @@
+package com.example.kairn.ui.auth
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.kairn.domain.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    fun signIn(email: String, password: String) {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            val result = authRepository.signIn(email, password)
+            _uiState.value = when {
+                result.isSuccess -> AuthUiState.Success
+                else -> AuthUiState.Error(result.exceptionOrNull()?.message ?: "Authentication failed")
+            }
+        }
+    }
+
+    fun signUp(email: String, password: String) {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            val result = authRepository.signUp(email, password)
+            _uiState.value = when {
+                result.isSuccess -> AuthUiState.Success
+                else -> AuthUiState.Error(result.exceptionOrNull()?.message ?: "Registration failed")
+            }
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            authRepository.signOut()
+            _uiState.value = AuthUiState.Idle
+        }
+    }
+
+    fun clearError() {
+        _uiState.value = AuthUiState.Idle
+    }
+}
+
+sealed interface AuthUiState {
+    data object Idle : AuthUiState
+    data object Loading : AuthUiState
+    data object Success : AuthUiState
+    data class Error(val message: String) : AuthUiState
+}
