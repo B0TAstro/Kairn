@@ -1,5 +1,9 @@
 package com.example.kairn.ui.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,28 +32,24 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
-import com.example.kairn.ui.components.DifficultyBadge
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
@@ -60,9 +59,13 @@ import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
-import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.MapView
-import com.mapbox.maps.Style
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,16 +75,56 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val context = LocalContext.current
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // ── Top panel (Background color, rounded bottom corners) ──────────
+    // Location permission
+    var locationPermissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED,
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> locationPermissionGranted = granted }
+
+    LaunchedEffect(Unit) {
+        if (!locationPermissionGranted) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    // Camera centred on Chamonix by default
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(45.9237, 6.8694), 12f)
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+
+        // ── Google Map fills entire screen ────────────────────────────────
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            properties = MapProperties(
+                isMyLocationEnabled = locationPermissionGranted,
+                mapType = MapType.NORMAL,
+            ),
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                myLocationButtonEnabled = false,
+                compassEnabled = false,
+            ),
+        )
+
+        // ── Top panel overlaid, rounded bottom border ─────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = Background,
-                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
-                )
+                .align(Alignment.TopCenter)
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+                .background(Background)
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 20.dp),
@@ -93,7 +136,7 @@ fun HomeScreen(
                 initials = uiState.initials,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.size(14.dp))
 
             // Search bar
             HomeSearchBar(
@@ -101,28 +144,13 @@ fun HomeScreen(
                 onQueryChange = viewModel::onSearchQueryChange,
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.size(12.dp))
 
             // Category chips
             CategoryChipsRow(
                 selectedCategory = uiState.selectedCategory,
                 onCategorySelected = viewModel::onCategorySelected,
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Featured hike card
-            uiState.nearbyHikes.firstOrNull()?.let { hike ->
-                FeaturedHikeCard(
-                    hike = hike,
-                    onClick = { viewModel.onHikeSelected(hike) },
-                )
-            }
-        }
-
-        // ── MapBox fills remaining space ───────────────────────────────────
-        Box(modifier = Modifier.weight(1f)) {
-            MapBoxView(modifier = Modifier.fillMaxSize())
         }
     }
 
@@ -163,13 +191,24 @@ private fun HomeHeader(
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 28.sp,
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "Where would you like to go?",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 13.sp,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(13.dp),
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                    text = location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                )
+            }
         }
         UserAvatar(initials = initials, size = 44.dp)
     }
@@ -192,8 +231,8 @@ private fun HomeSearchBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Filled.LocationOn,
-            contentDescription = null,
+            imageVector = Icons.Filled.Search,
+            contentDescription = "Search",
             tint = TextSecondary,
             modifier = Modifier.size(18.dp),
         )
@@ -211,7 +250,7 @@ private fun HomeSearchBar(
             decorationBox = { inner ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Chamonix, France",
+                        text = "Search a hike, location...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         fontSize = 14.sp,
@@ -219,12 +258,6 @@ private fun HomeSearchBar(
                 }
                 inner()
             },
-        )
-        Icon(
-            imageVector = Icons.Filled.Search,
-            contentDescription = "Search",
-            tint = TextSecondary,
-            modifier = Modifier.size(18.dp),
         )
     }
 }
@@ -240,7 +273,7 @@ private fun CategoryChipsRow(
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         items(HikeCategory.entries) { category ->
             val isSelected = category == selectedCategory
@@ -249,9 +282,7 @@ private fun CategoryChipsRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (isSelected) ChipSelectedBackground else ChipBackground)
-                    .clickable {
-                        onCategorySelected(if (isSelected) null else category)
-                    }
+                    .clickable { onCategorySelected(if (isSelected) null else category) }
                     .padding(horizontal = 18.dp, vertical = 8.dp),
             ) {
                 Text(
@@ -264,140 +295,4 @@ private fun CategoryChipsRow(
             }
         }
     }
-}
-
-// ─── Featured hike card ───────────────────────────────────────────────────────
-
-@Composable
-private fun FeaturedHikeCard(
-    hike: Hike,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Primary.copy(alpha = 0.25f),
-                        Primary.copy(alpha = 0.7f),
-                    ),
-                ),
-            )
-            .clickable(onClick = onClick),
-    ) {
-        // Top-right arrow icon
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(12.dp)
-                .size(28.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.White.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = "↗", color = Color.White, fontSize = 14.sp)
-        }
-
-        // Bottom info
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(14.dp),
-        ) {
-            Text(
-                text = hike.name,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp,
-            )
-            Text(
-                text = "${hike.formattedElevation} meters",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.75f),
-                fontSize = 12.sp,
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                HikeStatChip(icon = "⏱", value = hike.formattedDuration, label = "Duration")
-                HikeStatChip(icon = "↔", value = hike.formattedDistance, label = "Distance")
-                HikeStatChip(icon = "⭐", value = hike.difficulty.label, label = "Level")
-            }
-        }
-    }
-}
-
-@Composable
-private fun HikeStatChip(
-    icon: String,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier,
-    ) {
-        Text(text = icon, fontSize = 13.sp)
-        Spacer(modifier = Modifier.width(4.dp))
-        Column {
-            Text(
-                text = value,
-                color = Color.White,
-                fontWeight = FontWeight.Medium,
-                fontSize = 12.sp,
-            )
-            Text(
-                text = label,
-                color = Color.White.copy(alpha = 0.65f),
-                fontSize = 10.sp,
-            )
-        }
-    }
-}
-
-// ─── MapBox ───────────────────────────────────────────────────────────────────
-
-@Composable
-private fun MapBoxView(
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-
-    val mapView = remember {
-        MapView(context).apply {
-            mapboxMap.loadStyle(Style.MAPBOX_STREETS)
-            mapboxMap.setCamera(
-                CameraOptions.Builder()
-                    .center(com.mapbox.geojson.Point.fromLngLat(6.8694, 45.9237)) // Chamonix
-                    .zoom(10.0)
-                    .build(),
-            )
-        }
-    }
-
-    DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_STOP -> mapView.onStop()
-                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-                else -> Unit
-            }
-        }
-        lifecycle.addObserver(observer)
-        onDispose {
-            lifecycle.removeObserver(observer)
-        }
-    }
-
-    AndroidView(
-        factory = { mapView },
-        modifier = modifier,
-    )
 }
