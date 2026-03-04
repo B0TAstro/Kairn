@@ -1,8 +1,11 @@
 package com.example.kairn.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -30,6 +35,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -41,18 +49,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kairn.domain.model.Hike
+import com.example.kairn.domain.model.HikeCategory
+import com.example.kairn.ui.components.DifficultyBadge
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
+import com.example.kairn.ui.theme.ChipBackground
+import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
-import org.maplibre.android.MapLibre
-import org.maplibre.android.camera.CameraPosition
-import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.Style
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
+import com.mapbox.maps.Style
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,53 +73,76 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    Box(modifier = modifier.fillMaxSize()) {
-        // Map fills entire screen
-        MapLibreView(modifier = Modifier.fillMaxSize())
-
-        // Header overlay fixed at the top
+    Column(modifier = modifier.fillMaxSize()) {
+        // ── Top panel (Background color, rounded bottom corners) ──────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter),
+                .background(
+                    color = Background,
+                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+                )
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp, bottom = 20.dp),
         ) {
+            // Hello + avatar
             HomeHeader(
                 username = uiState.username,
                 location = uiState.location,
                 initials = uiState.initials,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Background)
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
             )
-            SearchBar(
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Search bar
+            HomeSearchBar(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Background)
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 20.dp),
             )
-        }
 
-        // Bottom sheet when a hike marker is tapped
-        if (uiState.isBottomSheetExpanded && uiState.selectedHike != null) {
-            ModalBottomSheet(
-                onDismissRequest = { viewModel.onBottomSheetDismissed() },
-                sheetState = bottomSheetState,
-                containerColor = CardBackground,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            ) {
-                HikeBottomSheetContent(
-                    hike = uiState.selectedHike!!,
-                    onStartTrip = { viewModel.onBottomSheetDismissed() },
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Category chips
+            CategoryChipsRow(
+                selectedCategory = uiState.selectedCategory,
+                onCategorySelected = viewModel::onCategorySelected,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Featured hike card
+            uiState.nearbyHikes.firstOrNull()?.let { hike ->
+                FeaturedHikeCard(
+                    hike = hike,
+                    onClick = { viewModel.onHikeSelected(hike) },
                 )
             }
         }
+
+        // ── MapBox fills remaining space ───────────────────────────────────
+        Box(modifier = Modifier.weight(1f)) {
+            MapBoxView(modifier = Modifier.fillMaxSize())
+        }
+    }
+
+    // Bottom sheet when a hike is selected
+    if (uiState.isBottomSheetExpanded && uiState.selectedHike != null) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.onBottomSheetDismissed() },
+            sheetState = bottomSheetState,
+            containerColor = CardBackground,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
+            HikeBottomSheetContent(
+                hike = uiState.selectedHike!!,
+                onStartTrip = { viewModel.onBottomSheetDismissed() },
+            )
+        }
     }
 }
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun HomeHeader(
@@ -119,7 +152,7 @@ private fun HomeHeader(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -128,96 +161,223 @@ private fun HomeHeader(
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 26.sp,
+                fontSize = 28.sp,
             )
             Spacer(modifier = Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(14.dp),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = location,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                )
-            }
+            Text(
+                text = "Where would you like to go?",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 13.sp,
+            )
         }
-        UserAvatar(
-            initials = initials,
-            size = 44.dp,
-        )
+        UserAvatar(initials = initials, size = 44.dp)
     }
 }
 
+// ─── Search bar ───────────────────────────────────────────────────────────────
+
 @Composable
-private fun SearchBar(
+private fun HomeSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
-            .background(
-                color = CardBackground,
-                shape = RoundedCornerShape(16.dp),
-            )
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(CardBackground)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Filled.Search,
-            contentDescription = "Search",
+            imageVector = Icons.Filled.LocationOn,
+            contentDescription = null,
             tint = TextSecondary,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(18.dp),
         )
         Spacer(modifier = Modifier.width(10.dp))
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.weight(1f),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
                 color = TextPrimary,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
             ),
             cursorBrush = SolidColor(Primary),
             singleLine = true,
-            decorationBox = { innerTextField ->
+            decorationBox = { inner ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search a hike, location...",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Chamonix, France",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                     )
                 }
-                innerTextField()
+                inner()
             },
+        )
+        Icon(
+            imageVector = Icons.Filled.Search,
+            contentDescription = "Search",
+            tint = TextSecondary,
+            modifier = Modifier.size(18.dp),
         )
     }
 }
 
+// ─── Category chips ───────────────────────────────────────────────────────────
+
 @Composable
-private fun MapLibreView(
+private fun CategoryChipsRow(
+    selectedCategory: HikeCategory?,
+    onCategorySelected: (HikeCategory?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp),
+    ) {
+        items(HikeCategory.entries) { category ->
+            val isSelected = category == selectedCategory
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isSelected) ChipSelectedBackground else ChipBackground)
+                    .clickable {
+                        onCategorySelected(if (isSelected) null else category)
+                    }
+                    .padding(horizontal = 18.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = category.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isSelected) Color.White else TextSecondary,
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                    fontSize = 13.sp,
+                )
+            }
+        }
+    }
+}
+
+// ─── Featured hike card ───────────────────────────────────────────────────────
+
+@Composable
+private fun FeaturedHikeCard(
+    hike: Hike,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Primary.copy(alpha = 0.25f),
+                        Primary.copy(alpha = 0.7f),
+                    ),
+                ),
+            )
+            .clickable(onClick = onClick),
+    ) {
+        // Top-right arrow icon
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.White.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "↗", color = Color.White, fontSize = 14.sp)
+        }
+
+        // Bottom info
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(14.dp),
+        ) {
+            Text(
+                text = hike.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp,
+            )
+            Text(
+                text = "${hike.formattedElevation} meters",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.75f),
+                fontSize = 12.sp,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                HikeStatChip(icon = "⏱", value = hike.formattedDuration, label = "Duration")
+                HikeStatChip(icon = "↔", value = hike.formattedDistance, label = "Distance")
+                HikeStatChip(icon = "⭐", value = hike.difficulty.label, label = "Level")
+            }
+        }
+    }
+}
+
+@Composable
+private fun HikeStatChip(
+    icon: String,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Text(text = icon, fontSize = 13.sp)
+        Spacer(modifier = Modifier.width(4.dp))
+        Column {
+            Text(
+                text = value,
+                color = Color.White,
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+            )
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 10.sp,
+            )
+        }
+    }
+}
+
+// ─── MapBox ───────────────────────────────────────────────────────────────────
+
+@Composable
+private fun MapBoxView(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     val mapView = remember {
-        MapLibre.getInstance(context)
         MapView(context).apply {
-            getMapAsync { map ->
-                map.setStyle(Style.Builder().fromUri("https://demotiles.maplibre.org/style.json"))
-                map.cameraPosition = CameraPosition.Builder()
-                    .target(LatLng(45.9237, 6.8694)) // Chamonix, France
+            mapboxMap.loadStyle(Style.MAPBOX_STREETS)
+            mapboxMap.setCamera(
+                CameraOptions.Builder()
+                    .center(com.mapbox.geojson.Point.fromLngLat(6.8694, 45.9237)) // Chamonix
                     .zoom(10.0)
-                    .build()
-            }
+                    .build(),
+            )
         }
     }
 
@@ -225,8 +385,6 @@ private fun MapLibreView(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 Lifecycle.Event.ON_STOP -> mapView.onStop()
                 Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
                 else -> Unit
@@ -235,7 +393,6 @@ private fun MapLibreView(
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
-            mapView.onDestroy()
         }
     }
 
