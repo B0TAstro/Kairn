@@ -25,7 +25,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filte>
+            </intent-filter>
             <!-- Deep link for Supabase auth callbacks -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
