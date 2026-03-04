@@ -1,15 +1,40 @@
+# IDE / OS
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+.idea/
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# Gradle / Android
+.gradle/
+build/
+*/build/
+captures/
+.externalNativeBuild/
+.cxx/
 local.properties
+
+# Kotlin
+*.kotlin_module
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+.env
+.env.*
+secrets.properties
+
+# Logs
+*.log
+
+# React / PWA (future)
+node_modules/
+dist/
+coverage/
+.npm/
+.pnpm-store/
+
+# iOS / Swift (future)
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
