@@ -28,4 +28,14 @@ class HomeViewModel : ViewModel() {
     fun onBottomSheetDismissed() {
         _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
     }
+
+    fun onUserLocationUpdated(lat: Double, lon: Double, cityName: String) {
+        _uiState.update {
+            it.copy(
+                userLatitude = lat,
+                userLongitude = lon,
+                location = cityName,
+            )
+        }
+    }
 }
