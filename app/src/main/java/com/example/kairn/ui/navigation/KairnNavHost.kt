@@ -19,10 +19,10 @@ fun KairnNavHost(
         composable(Screen.HOME.name) {
             HomeScreen()
         }
-        composable(Screen.DETAILS.name) {
+        composable(Screen.EXPLORE.name) {
             HomeScreen() // TODO: Replace with DetailsScreen
         }
-        composable(Screen.SAVED.name) {
+        composable(Screen.CHAT.name) {
             HomeScreen() // TODO: Replace with SavedScreen
         }
         composable(Screen.PROFILE.name) {
