@@ -27,7 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kairn.ui.account.AccountScreen
 import com.example.kairn.ui.home.HomeScreen
-import com.example.kairn.ui.navigation.Screen
+import com.example.kairn.ui.navigation.Tab
 import com.example.kairn.ui.theme.KairnTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,11 +47,11 @@ fun KairnApp() {
     val navController = rememberNavController()
     var selectedItem by remember { mutableIntStateOf(0) }
     val items = listOf(
-        NavigationItem(Screen.HOME, "Home", R.drawable.ic_home),
-        NavigationItem(Screen.CATALOG, "Catalog", R.drawable.ic_catalog),
-        NavigationItem(Screen.EDITOR, "Editor", R.drawable.ic_editor),
-        NavigationItem(Screen.SOCIAL, "Social", R.drawable.ic_social),
-        NavigationItem(Screen.ACCOUNT, "Account", R.drawable.ic_account),
+        NavigationItem(Tab.HOME, "Home", R.drawable.ic_home),
+        NavigationItem(Tab.CATALOG, "Catalog", R.drawable.ic_catalog),
+        NavigationItem(Tab.EDITOR, "Editor", R.drawable.ic_editor),
+        NavigationItem(Tab.SOCIAL, "Social", R.drawable.ic_social),
+        NavigationItem(Tab.ACCOUNT, "Account", R.drawable.ic_account),
     )
 
     Scaffold(
@@ -86,22 +86,22 @@ fun KairnApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.HOME.name,
+            startDestination = Tab.HOME.name,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.HOME.name) {
+            composable(Tab.HOME.name) {
                 HomeScreen()
             }
-            composable(Screen.CATALOG.name) {
+            composable(Tab.CATALOG.name) {
                 HomeScreen()
             }
-            composable(Screen.EDITOR.name) {
+            composable(Tab.EDITOR.name) {
                 HomeScreen()
             }
-            composable(Screen.SOCIAL.name) {
+            composable(Tab.SOCIAL.name) {
                 HomeScreen()
             }
-            composable(Screen.ACCOUNT.name) {
+            composable(Tab.ACCOUNT.name) {
                 AccountScreen()
             }
         }
@@ -109,7 +109,7 @@ fun KairnApp() {
 }
 
 data class NavigationItem(
-    val screen: Screen,
+    val screen: Tab,
     val label: String,
     val icon: Int,
 )

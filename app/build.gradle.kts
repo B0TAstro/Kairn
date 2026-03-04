@@ -1,8 +1,11 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -74,7 +77,7 @@ dependencies {
 
     // Dependency Injection
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
+    ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
 
     testImplementation(libs.junit)
