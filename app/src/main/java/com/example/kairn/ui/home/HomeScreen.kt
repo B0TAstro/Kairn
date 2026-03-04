@@ -1,10 +1,12 @@
 package com.example.kairn.ui.home
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +34,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,31 +44,39 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.BlurMaskFilter
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.ChipBackground
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.rememberCameraPositionState
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +88,6 @@ fun HomeScreen(
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val context = LocalContext.current
 
-    // Location permission
     var locationPermissionGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -96,57 +106,41 @@ fun HomeScreen(
         }
     }
 
-    // Camera centred on Chamonix by default
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(45.9237, 6.8694), 12f)
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
 
-        // ── Google Map fills entire screen ────────────────────────────────
-        GoogleMap(
+        // ── OSM Map fills entire screen ───────────────────────────────────
+        OsmMapView(
             modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = locationPermissionGranted,
-                mapType = MapType.NORMAL,
-            ),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = false,
-                myLocationButtonEnabled = false,
-                compassEnabled = false,
-            ),
+            locationPermissionGranted = locationPermissionGranted,
         )
 
-        // ── Top panel overlaid, rounded bottom border ─────────────────────
+        // ── Liquid glass panel overlay ────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
-                .background(Background)
+                .liquidGlass(
+                    cornerRadius = 28.dp,
+                    backgroundColor = Background.copy(alpha = 0.88f),
+                    borderColor = Color.White.copy(alpha = 0.35f),
+                    shadowColor = Primary.copy(alpha = 0.08f),
+                    shadowRadius = 20.dp,
+                )
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 20.dp),
         ) {
-            // Hello + avatar
             HomeHeader(
                 username = uiState.username,
                 location = uiState.location,
                 initials = uiState.initials,
             )
-
             Spacer(modifier = Modifier.size(14.dp))
-
-            // Search bar
             HomeSearchBar(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
             )
-
             Spacer(modifier = Modifier.size(12.dp))
-
-            // Category chips
             CategoryChipsRow(
                 selectedCategory = uiState.selectedCategory,
                 onCategorySelected = viewModel::onCategorySelected,
@@ -154,7 +148,6 @@ fun HomeScreen(
         }
     }
 
-    // Bottom sheet when a hike is selected
     if (uiState.isBottomSheetExpanded && uiState.selectedHike != null) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.onBottomSheetDismissed() },
@@ -169,6 +162,50 @@ fun HomeScreen(
         }
     }
 }
+
+// ─── Liquid glass modifier ────────────────────────────────────────────────────
+
+fun Modifier.liquidGlass(
+    cornerRadius: Dp = 24.dp,
+    backgroundColor: Color = Color.White.copy(alpha = 0.75f),
+    borderColor: Color = Color.White.copy(alpha = 0.4f),
+    shadowColor: Color = Color.Black.copy(alpha = 0.08f),
+    shadowRadius: Dp = 16.dp,
+): Modifier = this
+    .drawBehind {
+        // Soft drop shadow beneath the panel
+        drawIntoCanvas { canvas ->
+            val paint = Paint().apply {
+                asFrameworkPaint().apply {
+                    isAntiAlias = true
+                    color = android.graphics.Color.TRANSPARENT
+                    setShadowLayer(
+                        shadowRadius.toPx(),
+                        0f,
+                        shadowRadius.toPx() / 2f,
+                        shadowColor.copy(alpha = 0.18f).toArgb(),
+                    )
+                }
+            }
+            val r = cornerRadius.toPx()
+            canvas.drawRoundRect(
+                left = 0f,
+                top = 0f,
+                right = size.width,
+                bottom = size.height,
+                radiusX = r,
+                radiusY = r,
+                paint = paint,
+            )
+        }
+    }
+    .clip(RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius))
+    .background(backgroundColor)
+    .border(
+        width = 1.dp,
+        color = borderColor,
+        shape = RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius),
+    )
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -226,7 +263,8 @@ private fun HomeSearchBar(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(CardBackground)
+            .background(Color.White.copy(alpha = 0.45f))
+            .border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -281,18 +319,75 @@ private fun CategoryChipsRow(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(if (isSelected) ChipSelectedBackground else ChipBackground)
+                    .background(
+                        if (isSelected) ChipSelectedBackground
+                        else Color.White.copy(alpha = 0.40f),
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.55f),
+                        shape = RoundedCornerShape(20.dp),
+                    )
                     .clickable { onCategorySelected(if (isSelected) null else category) }
                     .padding(horizontal = 18.dp, vertical = 8.dp),
             ) {
                 Text(
                     text = category.label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected) Color.White else TextSecondary,
+                    color = if (isSelected) Color.White else TextPrimary,
                     fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                     fontSize = 13.sp,
                 )
             }
+        }
+    }
+}
+
+// ─── OSMDroid Map ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun OsmMapView(
+    modifier: Modifier = Modifier,
+    locationPermissionGranted: Boolean = false,
+) {
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+
+    val mapView = remember { buildOsmMapView(context, locationPermissionGranted) }
+
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+
+    AndroidView(
+        factory = { mapView },
+        modifier = modifier,
+    )
+}
+
+private fun buildOsmMapView(
+    context: Context,
+    locationPermissionGranted: Boolean,
+): MapView {
+    Configuration.getInstance().userAgentValue = context.packageName
+    return MapView(context).apply {
+        setTileSource(TileSourceFactory.MAPNIK)
+        setMultiTouchControls(true)
+        controller.setZoom(14.0)
+        controller.setCenter(GeoPoint(45.9237, 6.8694)) // Chamonix
+
+        if (locationPermissionGranted) {
+            val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), this)
+            locationOverlay.enableMyLocation()
+            overlays.add(locationOverlay)
         }
     }
 }
