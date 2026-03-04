@@ -144,7 +144,12 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
     composable(Screen.SignUp.route) {
         SignUpScreen(
             onNavigateToSignIn = { navController.navigateUp() },
-            onSignUpSuccess = { navController.navigate(Screen.SignIn.route) },
+            onSignUpSuccess = {
+                // With "Confirm email" disabled, Supabase creates a session
+                // automatically after sign-up. The sessionState flow will flip
+                // to Authenticated, causing AppNavigation to recompose into
+                // MainScaffold — no manual navigation needed.
+            },
         )
     }
 }
