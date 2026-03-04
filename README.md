@@ -1,4 +1,4 @@
-# Kairn 🥾
+# Kairn 🏔️
 
 Kairn is a community mobile app to create, share, and follow hiking and walking paths.
 
