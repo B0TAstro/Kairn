@@ -4,11 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -20,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -60,10 +57,10 @@ fun KairnApp() {
                 NavigationBar {
                     items.forEachIndexed { index, item ->
                         NavigationBarItem(
-                            icon = { 
+                            icon = {
                                 Icon(
                                     painter = painterResource(id = item.icon),
-                                    contentDescription = item.label
+                                    contentDescription = item.label,
                                 )
                             },
                             label = { Text(item.label) },
@@ -77,33 +74,23 @@ fun KairnApp() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }
+                            },
                         )
                     }
                 }
             }
-        }
+        },
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.HOME.name,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.HOME.name) {
-                HomeScreen()
-            }
-            composable(Screen.CATALOG.name) {
-                HomeScreen()
-            }
-            composable(Screen.EDITOR.name) {
-                HomeScreen()
-            }
-            composable(Screen.SOCIAL.name) {
-                HomeScreen()
-            }
-            composable(Screen.ACCOUNT.name) {
-                AccountScreen()
-            }
+            composable(Screen.HOME.name) { HomeScreen() }
+            composable(Screen.CATALOG.name) { HomeScreen() }
+            composable(Screen.EDITOR.name) { HomeScreen() }
+            composable(Screen.SOCIAL.name) { HomeScreen() }
+            composable(Screen.ACCOUNT.name) { AccountScreen() }
         }
     }
 }
@@ -113,11 +100,3 @@ data class NavigationItem(
     val label: String,
     val icon: Int,
 )
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    KairnTheme {
-        KairnApp()
-    }
-}
