@@ -1,56 +1,65 @@
-# Kairn
+# Kairn 🥾
 
 Kairn is a community mobile app to create, share, and follow hiking and walking paths.
 
-## Product Vision
+## Product Vision 🌍
 
-- Discover local routes on a regional 3D map.
+- Discover local hikes on a 3D map.
+- Browse a dedicated hike catalog with list and detailed route pages.
 - Start a route and track progress in real time with GPS.
+- Create and edit routes directly in the app.
+- Create groups, add friends, chat, and organize meetup hikes.
 - Earn XP based on route difficulty, progress, and completion time.
 - Climb leaderboards at city, region, country, and global levels.
-- Create groups, add friends, chat, and organize meetup hikes.
-- Create and edit routes directly in the app.
 
-## Target Platforms
+## Target Platforms 📱
 
 - `v1`: Native Android (Kotlin + Jetpack Compose).
-- `v2`: Native iOS (Swift/SwiftUI) if product validation is strong.
-- `v3`: React web app as a PWA with 3D rendering via Three.js.
+- `v2`: Native iOS (Swift/SwiftUI).
+- `v3`: React web app (PWA) with 3D rendering via Three.js.
 
-## MVP Feature Architecture
+## MVP Feature Architecture 🧭
 
-- `Home` tab
-  - Regional 3D map with visible routes.
-  - Route details + `Start` action.
+- `Home` tab 🗺️
+  - Regional 3D map with visible hikes.
+  - Quick route cards with: hike name, estimated time, difficulty, distance (km), elevation gain, and recommended level.
+  - Quick route details + `Start` action.
   - Live GPS route tracking.
-- `Account` tab
-  - Username, level, XP, activity history.
-  - Local and global rankings.
-- `Social` tab
-  - Friends, groups, chat.
-  - Route sharing and meetup planning.
-- `Editor` tab
-  - Route creation/editing.
+- `Catalog` tab 📚
+  - Scrollable hike list with filter/sort (near me, difficulty, distance, duration, elevation, level).
+  - Card-based browsing for all available hikes.
+  - Detailed hike page with full description, route breakdown, points of interest, creator profile, creator photos, community photos, and comments.
+- `Editor` tab ✍️
+  - Hike creation and editing.
   - GPS points and metadata editing (distance, elevation, difficulty).
+- `Social` tab 👥
+  - Friends, groups, and chat.
+  - Hike sharing and meetup planning.
+- `Account` tab 👤
+  - Profile (username, avatar, level, XP).
+  - Activity history and progression summary.
 
-## Database (Supabase)
+## Database (Supabase) 🗄️
 
 Minimum tables:
 
-- `accounts`: user profile, level, total XP, city/region/country.
-- `paths`: routes, author, geometry, difficulty, metadata.
+- `accounts`: user profile, first name, last name, username, avatar, age, level, total XP, city/region/country.
+- `paths`: hikes/routes, author, geometry, difficulty, metadata.
 - `groups`: community groups, description, visibility.
 
 Recommended product tables:
 
 - `path_points`: ordered GPS points for each route.
+- `path_pois`: points of interest linked to a route.
 - `group_members`: group membership and roles.
 - `friendships`: friend relationships.
 - `messages`: chat messages.
+- `path_comments`: user comments and feedback for routes.
+- `path_media`: route photos (creator and community uploads).
 - `path_runs`: route sessions, progress, duration, earned XP.
 - `leaderboard_snapshots`: precomputed ranking snapshots by area.
 
-## Offline + GPS
+## Offline + GPS 📡
 
 - Local cache for routes and profile with deferred sync.
 - Offline action queue (likes, edits, messages).
@@ -58,7 +67,7 @@ Recommended product tables:
 - GPS tracking with `FusedLocationProviderClient` (Android).
 - Signal loss tolerance with interpolation and recovery.
 
-## 3D Map + XP Progression
+## 3D Map + XP Progression 🧠
 
 - 3D route visualization with terrain/perspective.
 - During an active route, progress is computed from GPS position along the route polyline.
@@ -68,7 +77,7 @@ Recommended product tables:
   - `xp_time = bonus when time objective is met`
   - `xp_total = xp_difficulty + xp_time`
 
-## Recommended Stack and Libraries
+## Recommended Stack and Libraries 🛠️
 
 Android:
 
@@ -99,62 +108,54 @@ iOS (future phase):
 - MapLibre iOS (or equivalent based on product constraints).
 - CoreLocation + local offline mode.
 
-## Roadmap Checklist
+## Roadmap Checklist ✅
 
-### Phase 0 - Foundations (Week 1-2)
+### Phase 0 - Foundations 🧱
 
 - [ ] Define Supabase data model (`accounts`, `paths`, `groups`).
 - [ ] Implement Auth and RLS security rules.
 - [ ] Set up Android architecture (`ui`, `data`, `domain`).
-- [ ] Add offline-first base (`Room` + `WorkManager`).
 - [ ] Deliver login/sign-up flow.
-- [ ] Persist user profile locally and remotely.
 - [ ] Validate baseline sync behavior.
 
-### Phase 1 - Navigation MVP (Week 3-6)
+### Phase 1 - Navigation (Home tab) 🗺️
 
-- [ ] Display a regional 3D map with routes.
-- [ ] Show route details (distance, difficulty, elevation, duration).
+- [ ] Display a regional 3D map with hikes.
+- [ ] Show route quick details on map cards (name, time, difficulty, distance, elevation, level).
 - [ ] Start a route and track GPS progression.
-- [ ] Compute and assign XP at route completion.
 - [ ] Ensure core flow works offline and syncs later.
 
-### Phase 2 - Social and Engagement (Week 7-10)
+### Phase 2 - Hikes Editor (Editor tab) ✍️
 
-- [ ] Add friend system and group creation.
-- [ ] Add group chat and route sharing.
-- [ ] Launch leaderboards (city/region/country/global).
-- [ ] Add route history and level progression.
-
-### Phase 3 - Route Editor (Week 11-13)
-
-- [ ] Build route create/edit tab.
+- [ ] Build hike create/edit flow.
 - [ ] Edit GPS points and route metadata.
-- [ ] Add basic moderation flow (report/review).
 - [ ] Enable user route publishing.
 
-### Phase 4 - Production Readiness (Week 14-16)
+### Phase 3 - Social (Social tab) 👥
 
-- [ ] Add monitoring, crash reporting, product analytics.
+- [ ] Add friend system and group creation.
+- [ ] Add group chat and hike sharing.
+- [ ] Add comments and creator/community photos on hike detail pages.
+
+### Phase 4 - XP + Leaderboards 🏆
+
+- [ ] Finalize XP formula by hike difficulty, completion, and time.
+- [ ] Add level progression rules and thresholds.
+- [ ] Launch leaderboards (city/region/country/global).
+- [ ] Add anti-cheat validation for route run consistency.
+
+### Phase 5 - Production Readiness 🚀
+
+- [ ] Add monitoring, crash reporting, and product analytics.
 - [ ] Add instrumentation tests and CI/CD pipeline.
 - [ ] Optimize battery and GPS performance.
-- [ ] Add anti-cheat server validation for XP consistency.
 - [ ] Release a stable private beta build.
 
-### Phase 5 - Platform Expansion (Post-MVP)
+### Phase 6 - Platform Expansion (Post-MVP) 🌐
 
 - [ ] Start native iOS app (SwiftUI).
 - [ ] Build React PWA with Three.js.
-- [ ] Align progression model across Android/iOS/Web.
 
-## License
+## License 📄
 
-This project is licensed under the MIT License. See [LICENSE](./LICENSE).
-
-## Immediate Next Steps
-
-1. Stabilize the Android app foundation (navigation, auth, local data model).
-2. Integrate Supabase (Auth + base tables + RLS policies).
-3. Deliver a playable MVP (`Home + Start route + XP`).
-4. Add social features and rankings.
-5. Evaluate iOS extension, then React/Three.js PWA.
+This project is licensed under the [MIT License](./LICENSE).
