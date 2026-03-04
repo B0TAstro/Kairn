@@ -19,16 +19,13 @@ fun KairnNavHost(
         composable(Screen.HOME.name) {
             HomeScreen()
         }
-        composable(Screen.CATALOG.name) {
-            HomeScreen() // TODO: Replace with CatalogScreen
+        composable(Screen.DETAILS.name) {
+            HomeScreen() // TODO: Replace with DetailsScreen
         }
-        composable(Screen.EDITOR.name) {
-            HomeScreen() // TODO: Replace with EditorScreen
+        composable(Screen.SAVED.name) {
+            HomeScreen() // TODO: Replace with SavedScreen
         }
-        composable(Screen.SOCIAL.name) {
-            HomeScreen() // TODO: Replace with SocialScreen
-        }
-        composable(Screen.ACCOUNT.name) {
+        composable(Screen.PROFILE.name) {
             AccountScreen()
         }
     }
