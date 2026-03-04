@@ -1,4 +1,4 @@
-# AGENTS.md — Kairn
+  # AGENTS.md — Kairn
 
 Kairn is an Android hiking/walking community app built with Kotlin and Jetpack Compose.
 This file provides guidance for agentic coding tools operating in this repository.
