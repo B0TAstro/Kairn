@@ -2,6 +2,7 @@ package com.example.kairn.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.domain.model.SessionState
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,10 +20,10 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    val currentUser: StateFlow<User?> = authRepository.currentUser
+    /** Reactive session state driven by the SDK's sessionStatus flow. */
+    val sessionState: StateFlow<SessionState> = authRepository.sessionState
 
-    val isAuthenticated: Boolean
-        get() = authRepository.isAuthenticated()
+    val currentUser: StateFlow<User?> = authRepository.currentUser
 
     fun signIn(email: String, password: String) {
         _uiState.value = AuthUiState.Loading
