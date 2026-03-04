@@ -121,6 +121,136 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 
 ---
 
+## Design System
+
+### Color Palette
+
+The app uses a nature-inspired color scheme. **Always use token names via MaterialTheme, never hard-code hex values.**
+
+| Token | Name | Hex Value | Usage |
+|---|---|---|---|
+| `primary` | Primary | `#587b6c` | Primary brand color, main UI elements |
+| `secondary` | Secondary | `#b5c696` | Secondary accents, highlights |
+| `accent` | Accent | `#ba8c5e` | Call-to-action, emphasis |
+| `background` | Background | `#ece7df` | App background, surfaces |
+| `text` | Text | `#1d2622` | Primary text color |
+| `textAccent` | Text Accent | `#7ca16a` | Secondary/accent text |
+
+**Correct usage in Compose:**
+```kotlin
+// ✅ CORRECT - Use semantic tokens
+Surface(color = MaterialTheme.colorScheme.primary) { }
+Text(color = MaterialTheme.colorScheme.text)
+
+// ❌ WRONG - Never hard-code colors
+Surface(color = Color(0xFF587b6c)) { }
+Text(color = Color(0xFF1d2622))
+```
+
+Define colors in `ui/theme/Color.kt`:
+```kotlin
+val Primary = Color(0xFF587b6c)
+val Secondary = Color(0xFFb5c696)
+// ... etc
+```
+
+Map to Material3 ColorScheme in `ui/theme/Theme.kt`:
+```kotlin
+private val LightColorScheme = lightColorScheme(
+    primary = Primary,
+    secondary = Secondary,
+    background = Background,
+    onBackground = Text,
+    // ... etc
+)
+```
+
+### Typography
+
+The app uses two custom font families. **Always reference typography styles via MaterialTheme, never hard-code font properties.**
+
+#### Typography Styles
+
+| Token | Font Family | Weight | Size | Usage |
+|---|---|---|---|---|
+| `title` | Clash Display Variable | 600 | 44sp | Screen titles, major headings |
+| `heading` | Clash Display Variable | 500 | 28sp | Section headers, card titles |
+| `text` | Satoshi | 400 | 16sp | Body text, labels, descriptions |
+
+**Correct usage in Compose:**
+```kotlin
+// ✅ CORRECT - Use semantic tokens
+Text(
+    text = "Welcome",
+    style = MaterialTheme.typography.displayLarge // title token
+)
+Text(
+    text = "Section",
+    style = MaterialTheme.typography.headlineMedium // heading token
+)
+Text(
+    text = "Body content",
+    style = MaterialTheme.typography.bodyLarge // text token
+)
+
+// ❌ WRONG - Never hard-code typography
+Text(
+    text = "Welcome",
+    fontSize = 44.sp,
+    fontWeight = FontWeight.SemiBold,
+    fontFamily = FontFamily(/* ... */)
+)
+```
+
+**Setup instructions:**
+1. Place custom font files in `app/src/main/res/font/`:
+   - `clash_display_variable.ttf`
+   - `satoshi_regular.ttf` (and other weights as needed)
+
+2. Define typography in `ui/theme/Type.kt`:
+```kotlin
+private val ClashDisplay = FontFamily(
+    Font(R.font.clash_display_variable, FontWeight.Medium),
+    Font(R.font.clash_display_variable, FontWeight.SemiBold)
+)
+
+private val Satoshi = FontFamily(
+    Font(R.font.satoshi_regular, FontWeight.Normal)
+)
+
+val Typography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = ClashDisplay,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 44.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = ClashDisplay,
+        fontWeight = FontWeight.Medium,
+        fontSize = 28.sp,
+        letterSpacing = 0.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = Satoshi,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        letterSpacing = 0.sp
+    ),
+)
+```
+
+3. Apply in `ui/theme/Theme.kt`:
+```kotlin
+MaterialTheme(
+    colorScheme = colorScheme,
+    typography = Typography,
+    content = content
+)
+```
+
+---
+
 ## Code Style
 
 `kotlin.code.style=official` is set in `gradle.properties`. Follow the
