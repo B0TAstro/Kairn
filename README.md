@@ -122,8 +122,8 @@ Backend:
 
 ## Roadmap️ 🗺️
 ### Phase 0 - Foundations
-- [ ] Define Supabase data model (`accounts`, `paths`, `groups`)
-- [ ] Implement Auth and RLS security rules
+- [X] Define Supabase data model (`accounts`, `paths`, `groups`)
+- [X] Implement Auth and RLS security rules
 - [ ] Set up Android architecture (`ui`, `data`, `domain`)
 - [ ] Deliver login/sign-up flow
 - [ ] Validate baseline sync behavior
