@@ -73,14 +73,22 @@ class FriendshipRepositoryImpl @Inject constructor(
         fetchFriends()
 
         // Subscribe to realtime changes
+        // IMPORTANT: Create channel and setup flow BEFORE subscribing
         val channel = realtime.channel("friendships-${currentUserId}")
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+        
+        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "friendships"
-        }.onEach { action ->
-            Log.d(TAG, "getFriends: Realtime change detected: ${action.javaClass.simpleName}")
-            fetchFriends()
-        }.launchIn(this)
+        }
+        
+        // Launch collection in coroutine
+        launch {
+            changeFlow.collect { action ->
+                Log.d(TAG, "getFriends: Realtime change detected: ${action.javaClass.simpleName}")
+                fetchFriends()
+            }
+        }
 
+        // Now subscribe to the channel
         channel.subscribe()
 
         awaitClose {
@@ -124,15 +132,23 @@ class FriendshipRepositoryImpl @Inject constructor(
         // Initial fetch
         fetchPendingRequests()
 
-        // Subscribe to realtime changes (reuse same channel as getFriends)
+        // Subscribe to realtime changes
+        // IMPORTANT: Create channel and setup flow BEFORE subscribing
         val channel = realtime.channel("friendships-pending-${currentUserId}")
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+        
+        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "friendships"
-        }.onEach { action ->
-            Log.d(TAG, "getPendingRequests: Realtime change detected: ${action.javaClass.simpleName}")
-            fetchPendingRequests()
-        }.launchIn(this)
+        }
+        
+        // Launch collection in coroutine
+        launch {
+            changeFlow.collect { action ->
+                Log.d(TAG, "getPendingRequests: Realtime change detected: ${action.javaClass.simpleName}")
+                fetchPendingRequests()
+            }
+        }
 
+        // Now subscribe to the channel
         channel.subscribe()
 
         awaitClose {

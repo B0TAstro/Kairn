@@ -208,13 +208,14 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun subscribeToConversation(conversationId: String) {
+        Log.d(TAG, "subscribeToConversation: conversationId=$conversationId")
         val currentUserId = auth.currentUserOrNull()?.id ?: return
 
         // Unsubscribe from previous channel if exists
         messageChannel?.unsubscribe()
 
         // Subscribe to new messages in this conversation
-        // Using unique channel name per conversation
+        // IMPORTANT: Create channel and setup flow BEFORE subscribing
         messageChannel = realtime.channel("messages_$conversationId")
         
         val changeFlow = messageChannel!!.postgresChangeFlow<PostgresAction>("public") {
@@ -222,18 +223,25 @@ class ChatRepositoryImpl @Inject constructor(
             // Filter is not used in Supabase v3 - we'll filter on the client side
         }
         
+        // Launch collection in coroutine
         scope.launch {
             changeFlow.collect { action ->
+                Log.d(TAG, "subscribeToConversation: Realtime change detected: ${action.javaClass.simpleName}")
                 when (action) {
                     is PostgresAction.Insert -> {
                         // Reload messages to get the latest
+                        Log.d(TAG, "subscribeToConversation: New message inserted, reloading messages")
                         loadMessages(conversationId)
                     }
-                    else -> {}
+                    else -> {
+                        Log.d(TAG, "subscribeToConversation: Other action: ${action.javaClass.simpleName}")
+                    }
                 }
             }
         }
 
+        // Now subscribe to the channel
+        Log.d(TAG, "subscribeToConversation: Calling subscribe() on channel")
         messageChannel?.subscribe()
     }
 
@@ -295,41 +303,59 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private suspend fun loadMessages(conversationId: String) {
-        val currentUserId = auth.currentUserOrNull()?.id ?: return
+        Log.d(TAG, "loadMessages: conversationId=$conversationId")
+        val currentUserId = auth.currentUserOrNull()?.id ?: run {
+            Log.e(TAG, "loadMessages: User not authenticated")
+            return
+        }
 
-        val dtos = postgrest.from("messages")
-            .select(
-                Columns.raw("""
-                    *,
-                    profiles:sender_id(username)
-                """.trimIndent())
-            ) {
-                filter {
-                    eq("conversation_id", conversationId)
+        try {
+            val dtos = postgrest.from("messages")
+                .select(
+                    Columns.raw("""
+                        *,
+                        profiles:sender_id(id, username)
+                    """.trimIndent())
+                ) {
+                    filter {
+                        eq("conversation_id", conversationId)
+                    }
+                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.ASCENDING)
                 }
-                order("created_at", order = io.github.jan.supabase.postgrest.query.Order.ASCENDING)
-            }
-            .decodeList<MessageDto>()
+                .decodeList<MessageDto>()
 
-        _messages.value = _messages.value + (conversationId to dtos.map { it.toDomain(currentUserId) })
+            Log.d(TAG, "loadMessages: Loaded ${dtos.size} messages from database")
+            val messages = dtos.map { it.toDomain(currentUserId) }
+            _messages.value = _messages.value + (conversationId to messages)
+            Log.d(TAG, "loadMessages: Updated _messages flow with ${messages.size} messages")
+        } catch (e: Exception) {
+            Log.e(TAG, "loadMessages: Error loading messages", e)
+            throw e
+        }
     }
 
     private suspend fun subscribeToConversationsUpdates() {
+        Log.d(TAG, "subscribeToConversationsUpdates: Starting subscription")
         conversationChannel?.unsubscribe()
 
+        // IMPORTANT: Create channel and setup flow BEFORE subscribing
         conversationChannel = realtime.channel("conversations")
         
         val changeFlow = conversationChannel!!.postgresChangeFlow<PostgresAction>("public") {
             table = "conversations"
         }
         
+        // Launch collection in coroutine
         scope.launch {
-            changeFlow.collect {
+            changeFlow.collect { action ->
+                Log.d(TAG, "subscribeToConversationsUpdates: Realtime change detected: ${action.javaClass.simpleName}")
                 // Reload conversations when any changes
                 loadConversations()
             }
         }
 
+        // Now subscribe to the channel
+        Log.d(TAG, "subscribeToConversationsUpdates: Calling subscribe() on channel")
         conversationChannel?.subscribe()
     }
 }
