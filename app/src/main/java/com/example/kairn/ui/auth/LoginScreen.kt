@@ -37,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -46,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun LoginScreen(
+    imageAssetPath: String?,
     onNavigateToSignUp: () -> Unit,
     onSignInSuccess: () -> Unit,
     onBack: () -> Unit,
@@ -56,9 +56,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
-    val imageAssetPath = remember { pickRandomAuthImage(context) }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -109,17 +106,9 @@ fun LoginScreen(
                     ),
                     color = Color.White,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Continuez votre aventure",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.75f),
-                )
             }
 
-            // Push form + button + separator to the bottom
             Spacer(modifier = Modifier.weight(1f))
-
             // Form + button + separator block — all bottom-aligned
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp),
@@ -133,7 +122,6 @@ fun LoginScreen(
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
-
                 // Fields
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -153,7 +141,6 @@ fun LoginScreen(
                         enabled = uiState !is AuthUiState.Loading,
                     )
                 }
-
                 // Remember me + Forgot password
                 Row(
                     modifier = Modifier

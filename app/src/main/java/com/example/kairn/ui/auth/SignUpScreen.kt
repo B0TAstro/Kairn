@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -44,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun SignUpScreen(
+    imageAssetPath: String?,
     onNavigateToSignIn: () -> Unit,
     onSignUpSuccess: () -> Unit,
     onBack: () -> Unit,
@@ -57,9 +57,6 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
-    val imageAssetPath = remember { pickRandomAuthImage(context) }
 
     val passwordsMatch = password == confirmPassword
     val canSignUp = firstName.isNotBlank() &&

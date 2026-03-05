@@ -25,23 +25,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
-private const val AUTH_ASSET_DIRECTORY = "onboarding"
-
-internal fun pickRandomAuthImage(context: Context): String? {
-    val files = runCatching {
-        context.assets.list(AUTH_ASSET_DIRECTORY).orEmpty().toList()
-    }.getOrDefault(emptyList())
-        .filter { file ->
-            file.endsWith(".jpg", ignoreCase = true) ||
-                file.endsWith(".jpeg", ignoreCase = true) ||
-                file.endsWith(".png", ignoreCase = true) ||
-                file.endsWith(".webp", ignoreCase = true)
-        }
-
-    if (files.isEmpty()) return null
-    return "$AUTH_ASSET_DIRECTORY/${files.random()}"
-}
-
 private fun loadAssetBitmap(
     context: Context,
     path: String?,
@@ -126,9 +109,9 @@ internal fun AuthTextField(
             color = Color.White,
         ),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-            unfocusedContainerColor = Color.White.copy(alpha = 0.04f),
-            disabledContainerColor = Color.White.copy(alpha = 0.03f),
+            focusedContainerColor = Color.White.copy(alpha = 0.18f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.14f),
+            disabledContainerColor = Color.White.copy(alpha = 0.08f),
             cursorColor = Color.White,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
