@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -72,6 +74,8 @@ import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
+import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
@@ -204,7 +208,11 @@ fun HomeScreen(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
             )
-
+            Spacer(modifier = Modifier.size(12.dp))
+            DifficultyChipsRow(
+                selectedDifficulty = uiState.selectedDifficulty,
+                onDifficultySelected = viewModel::onDifficultySelected,
+            )
         }
     }
 
@@ -357,6 +365,49 @@ private fun HomeSearchBar(
                 inner()
             },
         )
+    }
+}
+
+// ─── Difficulty chips ─────────────────────────────────────────────────────────
+
+@Composable
+private fun DifficultyChipsRow(
+    selectedDifficulty: HikeDifficulty?,
+    onDifficultySelected: (HikeDifficulty?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(0.dp),
+    ) {
+        items(HikeDifficulty.entries) { difficulty ->
+            val isSelected = difficulty == selectedDifficulty
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isSelected) ChipSelectedBackground
+                        else Color.White.copy(alpha = 0.40f),
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.55f),
+                        shape = RoundedCornerShape(20.dp),
+                    )
+                    .clickable { onDifficultySelected(if (isSelected) null else difficulty) }
+                    .padding(horizontal = 18.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = difficulty.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isSelected) Color.White else TextPrimary,
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                    fontSize = 13.sp,
+                )
+            }
+        }
     }
 }
 
