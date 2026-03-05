@@ -38,8 +38,8 @@ import com.example.kairn.ui.account.AccountScreen
 import com.example.kairn.ui.auth.AuthUiState
 import com.example.kairn.ui.auth.AuthViewModel
 import com.example.kairn.ui.auth.LoginScreen
-import com.example.kairn.ui.auth.OnboardingScreen
 import com.example.kairn.ui.auth.SignUpScreen
+import com.example.kairn.ui.auth.onboarding.OnboardingScreen
 import com.example.kairn.ui.home.HomeScreen
 
 private sealed class AuthRoute(val route: String) {
