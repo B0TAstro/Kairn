@@ -2,18 +2,20 @@ package com.example.kairn.ui.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kairn.data.repository.HikeRepositoryImpl
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.domain.repository.HikeRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ExploreViewModel(
-    private val hikeRepository: HikeRepository = HikeRepositoryImpl(),
+@HiltViewModel
+class ExploreViewModel @Inject constructor(
+    private val hikeRepository: HikeRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())

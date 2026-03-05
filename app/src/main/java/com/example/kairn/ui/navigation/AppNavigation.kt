@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,45 +17,124 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.kairn.domain.model.SessionState
+import com.example.kairn.ui.auth.AuthUiState
 import com.example.kairn.ui.auth.AuthViewModel
 import com.example.kairn.ui.auth.LoginScreen
 import com.example.kairn.ui.auth.SignUpScreen
+import com.example.kairn.ui.auth.onboarding.OnboardingScreen
 import com.example.kairn.ui.components.KairnBottomNavBar
 import com.example.kairn.ui.components.NavBarItem
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 
-sealed class Route(val route: String) {
-    data object Login : Route("login")
-    data object SignUp : Route("signup")
-    data object Main : Route("main")
+private sealed class AuthRoute(val route: String) {
+    data object Onboarding : AuthRoute("onboarding")
+    data object Login : AuthRoute("login")
+    data object SignUp : AuthRoute("signup")
 }
 
 @Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-    val authViewModel: AuthViewModel = hiltViewModel()
-    
-    NavHost(
-        navController = navController,
-        startDestination = Route.Login.route
-    ) {
-        authGraph(navController)
-        composable(Route.Main.route) {
-            MainScreen()
+fun AppNavigation(
+    modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel = hiltViewModel(),
+) {
+    val sessionState by authViewModel.sessionState.collectAsStateWithLifecycle()
+
+    when (sessionState) {
+        SessionState.Loading -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is SessionState.Authenticated -> {
+            MainScreen(modifier = modifier)
+        }
+
+        is SessionState.NotAuthenticated -> {
+            UnauthenticatedNavigation(
+                authViewModel = authViewModel,
+                modifier = modifier,
+            )
         }
     }
 }
 
 @Composable
-fun MainScreen() {
+private fun UnauthenticatedNavigation(
+    authViewModel: AuthViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val navController = rememberNavController()
+    val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
+            authViewModel.clearError()
+        }
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = AuthRoute.Onboarding.route,
+        modifier = modifier,
+    ) {
+        authGraph(navController = navController)
+    }
+}
+
+private fun NavGraphBuilder.authGraph(navController: NavHostController) {
+    composable(AuthRoute.Onboarding.route) {
+        OnboardingScreen(
+            onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
+            onNavigateToSignIn = { navController.navigate(AuthRoute.Login.route) },
+        )
+    }
+
+    composable(AuthRoute.Login.route) {
+        LoginScreen(
+            onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
+            onSignInSuccess = {
+                // Session flow will switch AppNavigation to authenticated content.
+            },
+        )
+    }
+
+    composable(AuthRoute.SignUp.route) {
+        SignUpScreen(
+            onNavigateToSignIn = {
+                navController.navigate(AuthRoute.Login.route) {
+                    popUpTo(AuthRoute.Onboarding.route)
+                }
+            },
+            onSignUpSuccess = {
+                // If email confirmation is required, keep user on auth flow.
+                // If auto session is enabled, session flow will switch automatically.
+                navController.navigate(AuthRoute.Login.route) {
+                    popUpTo(AuthRoute.Onboarding.route)
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun MainScreen(
+    modifier: Modifier = Modifier,
+) {
     val navController = rememberNavController()
     var selectedItem by remember { mutableStateOf(Screen.HOME.name) }
     val hazeState = remember { HazeState() }
@@ -79,14 +159,12 @@ fun MainScreen() {
         NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
     )
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
         KairnNavHost(
             navController = navController,
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState)
+                .haze(hazeState),
         )
 
         if (showBottomNav) {
@@ -107,21 +185,5 @@ fun MainScreen() {
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
-    }
-}
-
-fun NavGraphBuilder.authGraph(navController: NavHostController) {
-    composable(Route.Login.route) {
-        LoginScreen(
-            onNavigateToSignUp = { navController.navigate(Route.SignUp.route) },
-            onSignInSuccess = { navController.navigate(Route.Main.route) }
-        )
-    }
-    
-    composable(Route.SignUp.route) {
-        SignUpScreen(
-            onNavigateToSignIn = { navController.navigateUp() },
-            onSignUpSuccess = { navController.navigate(Route.Login.route) }
-        )
     }
 }
