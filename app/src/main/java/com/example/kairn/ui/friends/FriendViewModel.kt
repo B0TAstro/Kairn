@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,7 +30,6 @@ class FriendViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
 ) : ViewModel() {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     val friendListUiState: StateFlow<FriendListUiState> = combine(
         friendshipRepository.getFriends(),
         friendshipRepository.getPendingRequests()
@@ -71,6 +69,14 @@ class FriendViewModel @Inject constructor(
         )
 
     init {
+        // Initial data load
+        viewModelScope.launch {
+            friendshipRepository.refreshFriends()
+        }
+        viewModelScope.launch {
+            friendshipRepository.refreshPendingRequests()
+        }
+
         viewModelScope.launch {
             searchQuery.collect { query ->
                 _searchUiState.update { it.copy(searchQuery = query) }

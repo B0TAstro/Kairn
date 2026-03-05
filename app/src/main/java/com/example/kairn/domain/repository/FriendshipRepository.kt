@@ -6,17 +6,29 @@ import kotlinx.coroutines.flow.Flow
 
 interface FriendshipRepository {
     /**
-     * Get all friends (accepted friendships)
+     * Get all friends (accepted friendships) as a reactive flow.
+     * Call [refreshFriends] to update the data.
      */
     fun getFriends(): Flow<List<Friendship>>
 
     /**
-     * Get pending friend requests (received)
+     * Get pending friend requests (received) as a reactive flow.
+     * Call [refreshPendingRequests] to update the data.
      */
     fun getPendingRequests(): Flow<List<Friendship>>
 
     /**
-     * Search users by username or email
+     * Refresh the friends list from the database.
+     */
+    suspend fun refreshFriends()
+
+    /**
+     * Refresh the pending requests list from the database.
+     */
+    suspend fun refreshPendingRequests()
+
+    /**
+     * Search users by username
      */
     suspend fun searchUsers(query: String): Result<List<User>>
 

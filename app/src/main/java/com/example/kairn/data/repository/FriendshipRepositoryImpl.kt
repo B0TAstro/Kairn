@@ -8,17 +8,8 @@ import com.example.kairn.domain.repository.FriendshipRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.postgresChangeFlow
-import io.github.jan.supabase.realtime.realtime
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,36 +18,50 @@ import javax.inject.Singleton
 
 private const val TAG = "FriendshipRepo"
 
+/**
+ * Friendship Repository - simplified architecture (no Realtime).
+ *
+ * Uses MutableStateFlow + explicit refresh, matching the pattern in ChatRepositoryImpl.
+ * This avoids crashes caused by Realtime channel reuse when re-entering screens.
+ */
 @Singleton
 class FriendshipRepositoryImpl @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
-    private val realtime: Realtime,
 ) : FriendshipRepository {
 
-    override fun getFriends(): Flow<List<Friendship>> = callbackFlow {
-        val currentUserId = auth.currentUserOrNull()?.id ?: run {
-            send(emptyList())
-            close()
-            return@callbackFlow
+    private val _friends = MutableStateFlow<List<Friendship>>(emptyList())
+    private val _pendingRequests = MutableStateFlow<List<Friendship>>(emptyList())
+
+    private val currentUserId: String?
+        get() = auth.currentUserOrNull()?.id
+
+    // ==================== FRIENDS ====================
+
+    override fun getFriends(): Flow<List<Friendship>> = _friends
+
+    override suspend fun refreshFriends() {
+        val userId = currentUserId ?: run {
+            Log.e(TAG, "refreshFriends: User not authenticated")
+            return
         }
 
-        Log.d(TAG, "getFriends: Starting realtime subscription for user $currentUserId")
-
-        suspend fun fetchFriends() {
-            Log.d(TAG, "getFriends: Fetching friends from database")
+        try {
+            Log.d(TAG, "refreshFriends: Fetching friends from database")
             val dtos = postgrest.from("friendships")
                 .select(
-                    Columns.raw("""
+                    Columns.raw(
+                        """
                         *,
                         requester:requester_id(id, username),
                         addressee:addressee_id(id, username)
-                    """.trimIndent())
+                        """.trimIndent()
+                    )
                 ) {
                     filter {
                         or {
-                            eq("requester_id", currentUserId)
-                            eq("addressee_id", currentUserId)
+                            eq("requester_id", userId)
+                            eq("addressee_id", userId)
                         }
                         eq("status", "ACCEPTED")
                     }
@@ -64,178 +69,139 @@ class FriendshipRepositoryImpl @Inject constructor(
                 }
                 .decodeList<FriendshipDto>()
 
-            val friends = dtos.map { it.toDomain(currentUserId) }
-            Log.d(TAG, "getFriends: Sending ${friends.size} friends to flow")
-            send(friends)
-        }
-
-        // Initial fetch
-        fetchFriends()
-
-        // Subscribe to realtime changes
-        // IMPORTANT: Create channel and setup flow BEFORE subscribing
-        val channel = realtime.channel("friendships-${currentUserId}")
-        
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "friendships"
-        }
-        
-        // Launch collection in coroutine
-        launch {
-            changeFlow.collect { action ->
-                Log.d(TAG, "getFriends: Realtime change detected: ${action.javaClass.simpleName}")
-                fetchFriends()
-            }
-        }
-
-        // Now subscribe to the channel
-        channel.subscribe()
-
-        awaitClose {
-            Log.d(TAG, "getFriends: Closing realtime subscription")
-            launch { channel.unsubscribe() }
+            _friends.value = dtos.map { it.toDomain(userId) }
+            Log.d(TAG, "refreshFriends: SUCCESS - ${_friends.value.size} friends loaded")
+        } catch (e: Exception) {
+            Log.e(TAG, "refreshFriends: Error", e)
         }
     }
 
-    override fun getPendingRequests(): Flow<List<Friendship>> = callbackFlow {
-        val currentUserId = auth.currentUserOrNull()?.id ?: run {
-            send(emptyList())
-            close()
-            return@callbackFlow
+    // ==================== PENDING REQUESTS ====================
+
+    override fun getPendingRequests(): Flow<List<Friendship>> = _pendingRequests
+
+    override suspend fun refreshPendingRequests() {
+        val userId = currentUserId ?: run {
+            Log.e(TAG, "refreshPendingRequests: User not authenticated")
+            return
         }
 
-        Log.d(TAG, "getPendingRequests: Starting realtime subscription for user $currentUserId")
-
-        suspend fun fetchPendingRequests() {
-            Log.d(TAG, "getPendingRequests: Fetching pending requests from database")
+        try {
+            Log.d(TAG, "refreshPendingRequests: Fetching pending requests from database")
             val dtos = postgrest.from("friendships")
                 .select(
-                    Columns.raw("""
+                    Columns.raw(
+                        """
                         *,
                         requester:requester_id(id, username),
                         addressee:addressee_id(id, username)
-                    """.trimIndent())
+                        """.trimIndent()
+                    )
                 ) {
                     filter {
-                        eq("addressee_id", currentUserId)
+                        eq("addressee_id", userId)
                         eq("status", "PENDING")
                     }
                     order("created_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
                 }
                 .decodeList<FriendshipDto>()
 
-            val pending = dtos.map { it.toDomain(currentUserId) }
-            Log.d(TAG, "getPendingRequests: Sending ${pending.size} pending requests to flow")
-            send(pending)
-        }
-
-        // Initial fetch
-        fetchPendingRequests()
-
-        // Subscribe to realtime changes
-        // IMPORTANT: Create channel and setup flow BEFORE subscribing
-        val channel = realtime.channel("friendships-pending-${currentUserId}")
-        
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "friendships"
-        }
-        
-        // Launch collection in coroutine
-        launch {
-            changeFlow.collect { action ->
-                Log.d(TAG, "getPendingRequests: Realtime change detected: ${action.javaClass.simpleName}")
-                fetchPendingRequests()
-            }
-        }
-
-        // Now subscribe to the channel
-        channel.subscribe()
-
-        awaitClose {
-            Log.d(TAG, "getPendingRequests: Closing realtime subscription")
-            launch { channel.unsubscribe() }
+            _pendingRequests.value = dtos.map { it.toDomain(userId) }
+            Log.d(TAG, "refreshPendingRequests: SUCCESS - ${_pendingRequests.value.size} pending requests loaded")
+        } catch (e: Exception) {
+            Log.e(TAG, "refreshPendingRequests: Error", e)
         }
     }
 
+    // ==================== SEARCH ====================
+
     override suspend fun searchUsers(query: String): Result<List<User>> = runCatching {
         Log.d(TAG, "searchUsers: query='$query'")
-        
-        val currentUserId = auth.currentUserOrNull()?.id 
+
+        val userId = currentUserId
             ?: throw IllegalStateException("User not authenticated")
-        
-        Log.d(TAG, "searchUsers: currentUserId=$currentUserId")
 
         val dtos = postgrest.from("profiles")
             .select() {
                 filter {
-                    neq("id", currentUserId)
+                    neq("id", userId)
                     ilike("username", "%$query%")
                 }
                 limit(20)
             }
             .decodeList<UserDto>()
 
-        Log.d(TAG, "searchUsers: received ${dtos.size} DTOs from Supabase")
-        dtos.forEachIndexed { index, dto ->
-            Log.d(TAG, "  [$index] DTO: id=${dto.id}, username=${dto.username}")
-        }
-
-        val users = dtos.map { it.toDomain() }
-        Log.d(TAG, "searchUsers: returning ${users.size} users")
-        users
+        Log.d(TAG, "searchUsers: SUCCESS - found ${dtos.size} users")
+        dtos.map { it.toDomain() }
     }
+
+    // ==================== MUTATIONS ====================
 
     override suspend fun sendFriendRequest(userId: String): Result<Unit> = runCatching {
         Log.d(TAG, "sendFriendRequest: userId=$userId")
-        
-        val currentUserId = auth.currentUserOrNull()?.id 
+
+        val myUserId = currentUserId
             ?: throw IllegalStateException("User not authenticated")
-        
-        Log.d(TAG, "sendFriendRequest: currentUserId=$currentUserId")
 
         val insertDto = FriendshipInsertDto(
-            requesterId = currentUserId,
+            requesterId = myUserId,
             addresseeId = userId,
-            status = "PENDING"
+            status = "PENDING",
         )
-        
-        Log.d(TAG, "sendFriendRequest: inserting friendship request")
 
-        postgrest.from("friendships")
-            .insert(insertDto)
-        
-        Log.d(TAG, "sendFriendRequest: SUCCESS - request sent")
+        postgrest.from("friendships").insert(insertDto)
+        Log.d(TAG, "sendFriendRequest: SUCCESS")
+
+        // Refresh both lists after mutation
+        refreshFriends()
+        refreshPendingRequests()
     }
 
     override suspend fun acceptFriendRequest(friendshipId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "acceptFriendRequest: friendshipId=$friendshipId")
+
         postgrest.from("friendships")
             .update({
                 set("status", "ACCEPTED")
             }) {
-                filter {
-                    eq("id", friendshipId)
-                }
+                filter { eq("id", friendshipId) }
             }
+
+        Log.d(TAG, "acceptFriendRequest: SUCCESS")
+
+        // Refresh both lists after mutation
+        refreshFriends()
+        refreshPendingRequests()
     }
 
     override suspend fun declineFriendRequest(friendshipId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "declineFriendRequest: friendshipId=$friendshipId")
+
         postgrest.from("friendships")
             .update({
                 set("status", "DECLINED")
             }) {
-                filter {
-                    eq("id", friendshipId)
-                }
+                filter { eq("id", friendshipId) }
             }
+
+        Log.d(TAG, "declineFriendRequest: SUCCESS")
+
+        // Refresh pending requests after mutation
+        refreshPendingRequests()
     }
 
     override suspend fun removeFriend(friendshipId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "removeFriend: friendshipId=$friendshipId")
+
         postgrest.from("friendships")
             .delete {
-                filter {
-                    eq("id", friendshipId)
-                }
+                filter { eq("id", friendshipId) }
             }
+
+        Log.d(TAG, "removeFriend: SUCCESS")
+
+        // Refresh friends list after mutation
+        refreshFriends()
     }
 }
 
