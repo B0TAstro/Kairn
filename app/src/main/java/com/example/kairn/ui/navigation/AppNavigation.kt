@@ -97,13 +97,13 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
     composable(Route.Login.route) {
         LoginScreen(
             onNavigateToSignUp = { navController.navigate(Route.SignUp.route) },
-            onLoginSuccess = { navController.navigate(Route.Main.route) }
+            onSignInSuccess = { navController.navigate(Route.Main.route) }
         )
     }
     
     composable(Route.SignUp.route) {
         SignUpScreen(
-            onNavigateToLogin = { navController.navigateUp() },
+            onNavigateToSignIn = { navController.navigateUp() },
             onSignUpSuccess = { navController.navigate(Route.Login.route) }
         )
     }
