@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
@@ -28,10 +29,12 @@ fun OnboardingScreen(
     var expanded by rememberSaveable { mutableStateOf(false) }
     val state = rememberOnboardingMotionState(expanded = expanded)
 
+    val bgColor = MaterialTheme.colorScheme.background
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(bgColor)
             .onboardingVerticalGestures(
                 expanded = expanded,
                 onExpand = { expanded = true },
@@ -43,15 +46,20 @@ fun OnboardingScreen(
             revealProgress = state.backgroundRevealProgress,
         )
 
+        // Gradient overlay: opaque beige at top fading to transparent,
+        // then transparent in middle, then dark tint at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+                        colorStops = arrayOf(
+                            0.0f to bgColor.copy(alpha = 0.92f),
+                            0.25f to bgColor.copy(alpha = 0.75f),
+                            0.42f to bgColor.copy(alpha = 0.25f),
+                            0.55f to Color.Transparent,
+                            0.75f to MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            1.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
                         ),
                     ),
                 ),
@@ -68,7 +76,7 @@ fun OnboardingScreen(
             onGo = { expanded = true },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 42.dp),
+                .padding(bottom = 32.dp),
         )
 
         CtaContent(
