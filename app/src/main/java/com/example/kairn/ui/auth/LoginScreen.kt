@@ -249,6 +249,28 @@ fun LoginScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Navigate to Sign Up
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "Don't have an account? ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = "Sign Up",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = Color.White,
+                        modifier = Modifier.clickable { onNavigateToSignUp() },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
