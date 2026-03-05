@@ -83,27 +83,27 @@ fun LoginScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    contentDescription = "Retour",
+                    tint = Color.White,
                     modifier = Modifier.size(28.dp),
                 )
             }
 
-            // Title section
+            // Title
             Column(
                 modifier = Modifier
                     .padding(horizontal = 28.dp)
                     .padding(top = 16.dp),
             ) {
                 Text(
-                    text = "Welcome",
+                    text = "Bon retour",
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Medium,
                     ),
                     color = Color.White,
                 )
                 Text(
-                    text = "BACK!",
+                    text = "PARMI NOUS !",
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Bold,
                     ),
@@ -111,21 +111,18 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Continue your adventure",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Normal,
-                    ),
+                    text = "Continuez votre aventure",
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.White.copy(alpha = 0.75f),
                 )
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            // Push form + button + separator to the bottom
+            Spacer(modifier = Modifier.weight(1f))
 
-            // Form fields
+            // Form + button + separator block — all bottom-aligned
             Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 // Error message
                 if (uiState is AuthUiState.Error) {
@@ -133,34 +130,39 @@ fun LoginScreen(
                         text = (uiState as AuthUiState.Error).message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
 
-                AuthTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    placeholder = "Email",
-                    enabled = uiState !is AuthUiState.Loading,
-                )
+                // Fields
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    AuthTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = "Email",
+                        enabled = uiState !is AuthUiState.Loading,
+                    )
 
-                AuthTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    placeholder = "Password",
-                    visualTransformation = PasswordVisualTransformation(),
-                    enabled = uiState !is AuthUiState.Loading,
-                )
+                    AuthTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = "Mot de passe",
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = uiState !is AuthUiState.Loading,
+                    )
+                }
 
                 // Remember me + Forgot password
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = rememberMe,
                             onCheckedChange = { rememberMe = it },
@@ -171,33 +173,34 @@ fun LoginScreen(
                             ),
                         )
                         Text(
-                            text = "Remember me",
+                            text = "Se souvenir de moi",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.8f),
                         )
                     }
                     Text(
-                        text = "Forgot Password?",
+                        text = "Mot de passe oublie ?",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.clickable { /* TODO */ },
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Log In button
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+                // Log In button
                 if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(48.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(48.dp),
+                        )
+                    }
                 } else {
                     Button(
                         onClick = { viewModel.signIn(email.trim(), password) },
@@ -212,14 +215,14 @@ fun LoginScreen(
                         ),
                     ) {
                         Text(
-                            text = "Log In",
+                            text = "Se connecter",
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
                 }
 
-                // Separator "or"
-                Spacer(modifier = Modifier.height(24.dp))
+                // Separator
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -230,11 +233,10 @@ fun LoginScreen(
                             .weight(1f)
                             .height(1.dp)
                             .padding(end = 16.dp)
-                            .fillMaxWidth()
                             .background(Color.White.copy(alpha = 0.3f)),
                     )
                     Text(
-                        text = "or",
+                        text = "ou",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.6f),
                     )
@@ -243,12 +245,11 @@ fun LoginScreen(
                             .weight(1f)
                             .height(1.dp)
                             .padding(start = 16.dp)
-                            .fillMaxWidth()
                             .background(Color.White.copy(alpha = 0.3f)),
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Navigate to Sign Up
                 Row(
@@ -256,12 +257,12 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "Don't have an account? ",
+                        text = "Pas encore de compte ? ",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f),
                     )
                     Text(
-                        text = "Sign Up",
+                        text = "S'inscrire",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                         ),
@@ -270,7 +271,7 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
             }
         }
     }

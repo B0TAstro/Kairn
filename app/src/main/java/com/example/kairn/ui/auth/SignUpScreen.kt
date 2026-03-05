@@ -92,34 +92,40 @@ fun SignUpScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    contentDescription = "Retour",
+                    tint = Color.White,
                     modifier = Modifier.size(28.dp),
                 )
             }
 
-            // Title section
+            // Title
             Column(
                 modifier = Modifier
                     .padding(horizontal = 28.dp)
                     .padding(top = 16.dp),
             ) {
                 Text(
-                    text = "Create account",
+                    text = "Creer un",
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Medium,
                     ),
                     color = Color.White,
                 )
+                Text(
+                    text = "COMPTE",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = Color.White,
+                )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            // Push form + button + separator to the bottom
+            Spacer(modifier = Modifier.weight(1f))
 
-            // Form fields
+            // Form + button + separator block — all bottom-aligned
             Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 // Error message
                 if (uiState is AuthUiState.Error) {
@@ -127,83 +133,89 @@ fun SignUpScreen(
                         text = (uiState as AuthUiState.Error).message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
 
-                // Name + Lastname side by side
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                // Fields
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    // Name + Lastname side by side
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        AuthTextField(
+                            value = firstName,
+                            onValueChange = { firstName = it },
+                            placeholder = "Prenom",
+                            enabled = uiState !is AuthUiState.Loading,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AuthTextField(
+                            value = lastName,
+                            onValueChange = { lastName = it },
+                            placeholder = "Nom",
+                            enabled = uiState !is AuthUiState.Loading,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
                     AuthTextField(
-                        value = firstName,
-                        onValueChange = { firstName = it },
-                        placeholder = "Name",
+                        value = pseudo,
+                        onValueChange = { pseudo = it },
+                        placeholder = "Pseudo",
                         enabled = uiState !is AuthUiState.Loading,
-                        modifier = Modifier.weight(1f),
                     )
+
                     AuthTextField(
-                        value = lastName,
-                        onValueChange = { lastName = it },
-                        placeholder = "Lastname",
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = "Email",
                         enabled = uiState !is AuthUiState.Loading,
-                        modifier = Modifier.weight(1f),
+                    )
+
+                    AuthTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = "Mot de passe",
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = uiState !is AuthUiState.Loading,
+                    )
+
+                    AuthTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        placeholder = "Confirmer le mot de passe",
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = uiState !is AuthUiState.Loading,
                     )
                 }
 
-                AuthTextField(
-                    value = pseudo,
-                    onValueChange = { pseudo = it },
-                    placeholder = "Pseudo",
-                    enabled = uiState !is AuthUiState.Loading,
-                )
-
-                AuthTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    placeholder = "Email",
-                    enabled = uiState !is AuthUiState.Loading,
-                )
-
-                AuthTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    placeholder = "Password",
-                    visualTransformation = PasswordVisualTransformation(),
-                    enabled = uiState !is AuthUiState.Loading,
-                )
-
-                AuthTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    placeholder = "Confirm Password",
-                    visualTransformation = PasswordVisualTransformation(),
-                    enabled = uiState !is AuthUiState.Loading,
-                )
-
-                // Terms of service text
+                // Terms of service
                 Text(
-                    text = "By continuing, I agree to Kairn's Terms of Service and acknowledge the Privacy Policy",
+                    text = "En continuant, j'accepte les Conditions d'utilisation et la Politique de confidentialite de Kairn",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                 )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Sign Up button
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+                // Sign Up button
                 if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(48.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(48.dp),
+                        )
+                    }
                 } else {
                     Button(
                         onClick = {
@@ -226,14 +238,14 @@ fun SignUpScreen(
                         ),
                     ) {
                         Text(
-                            text = "Sign Up",
+                            text = "S'inscrire",
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
                 }
 
-                // Separator "or"
-                Spacer(modifier = Modifier.height(24.dp))
+                // Separator
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -244,11 +256,10 @@ fun SignUpScreen(
                             .weight(1f)
                             .height(1.dp)
                             .padding(end = 16.dp)
-                            .fillMaxWidth()
                             .background(Color.White.copy(alpha = 0.3f)),
                     )
                     Text(
-                        text = "or",
+                        text = "ou",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.6f),
                     )
@@ -257,12 +268,11 @@ fun SignUpScreen(
                             .weight(1f)
                             .height(1.dp)
                             .padding(start = 16.dp)
-                            .fillMaxWidth()
                             .background(Color.White.copy(alpha = 0.3f)),
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Navigate to Log In
                 Row(
@@ -270,12 +280,12 @@ fun SignUpScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "Already have an account? ",
+                        text = "Deja un compte ? ",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f),
                     )
                     Text(
-                        text = "Log In",
+                        text = "Se connecter",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                         ),
@@ -284,7 +294,7 @@ fun SignUpScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
             }
         }
     }
