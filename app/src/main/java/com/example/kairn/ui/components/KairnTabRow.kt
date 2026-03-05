@@ -16,11 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.ChipBackground
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun KairnTabRow(
@@ -33,7 +28,7 @@ fun KairnTabRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(ChipBackground)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
@@ -59,16 +54,23 @@ private fun KairnTab(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) Primary else ChipBackground)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.secondaryContainer,
+            )
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp, horizontal = 16.dp),
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isSelected) TextPrimary else TextSecondary,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+            ),
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.onBackground
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
     }
 }

@@ -49,10 +49,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -62,12 +60,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
-import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.ChipSelectedBackground
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -119,9 +111,9 @@ fun HomeScreen(
                 .align(Alignment.TopCenter)
                 .liquidGlass(
                     cornerRadius = 40.dp,
-                    backgroundColor = Background.copy(alpha = 0.80f),
+                    backgroundColor = MaterialTheme.colorScheme.background.copy(alpha = 0.80f),
                     borderColor = Color.White.copy(alpha = 0.25f),
-                    shadowColor = TextPrimary.copy(alpha = 0.06f),
+                    shadowColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
                     shadowRadius = 24.dp,
                 )
                 .statusBarsPadding()
@@ -150,7 +142,7 @@ fun HomeScreen(
         ModalBottomSheet(
             onDismissRequest = { viewModel.onBottomSheetDismissed() },
             sheetState = bottomSheetState,
-            containerColor = CardBackground,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         ) {
             HikeBottomSheetContent(
@@ -221,10 +213,8 @@ private fun HomeHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Hello, $username",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 28.sp,
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -233,15 +223,14 @@ private fun HomeHeader(
                 Icon(
                     imageVector = Icons.Filled.LocationOn,
                     contentDescription = null,
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(13.dp),
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = location,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -269,7 +258,7 @@ private fun HomeSearchBar(
         Icon(
             imageVector = Icons.Filled.Search,
             contentDescription = "Search",
-            tint = TextSecondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
         )
         Spacer(modifier = Modifier.width(10.dp))
@@ -278,18 +267,16 @@ private fun HomeSearchBar(
             onValueChange = onQueryChange,
             modifier = Modifier.weight(1f),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = TextPrimary,
-                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onBackground,
             ),
-            cursorBrush = SolidColor(Primary),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             singleLine = true,
             decorationBox = { inner ->
                 if (query.isEmpty()) {
                     Text(
                         text = "Search a hike, location...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 inner()
@@ -318,7 +305,7 @@ private fun DifficultyChipsRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
                     .background(
-                        if (isSelected) ChipSelectedBackground
+                        if (isSelected) MaterialTheme.colorScheme.tertiaryContainer
                         else Color.White.copy(alpha = 0.35f),
                     )
                     .border(
@@ -332,9 +319,8 @@ private fun DifficultyChipsRow(
                 Text(
                     text = difficulty.label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected) Color.White else TextPrimary,
-                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                    fontSize = 13.sp,
+                    color = if (isSelected) MaterialTheme.colorScheme.onTertiaryContainer
+                    else MaterialTheme.colorScheme.onBackground,
                 )
             }
         }

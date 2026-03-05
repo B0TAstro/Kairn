@@ -16,12 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun UserProfileBanner(
@@ -35,7 +30,7 @@ fun UserProfileBanner(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground.copy(alpha = 0.85f))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -49,15 +44,12 @@ fun UserProfileBanner(
             Text(
                 text = username,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = location,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -78,17 +70,14 @@ fun HomeGreetingHeader(
         Column {
             Text(
                 text = "Hello, $username",
-                style = MaterialTheme.typography.displayLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 28.sp,
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Where would you like to go?",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         UserAvatar(

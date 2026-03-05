@@ -9,9 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
 
 @Composable
 fun SectionHeader(
@@ -27,18 +24,16 @@ fun SectionHeader(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 20.sp,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         if (actionText != null) {
             Text(
                 text = actionText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Primary,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                ),
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }

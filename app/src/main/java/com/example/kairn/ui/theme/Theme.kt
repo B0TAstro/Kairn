@@ -12,21 +12,28 @@ import androidx.core.view.WindowCompat
 
 private val KairnLightColorScheme = lightColorScheme(
     primary = Primary,
-    secondary = Secondary,
-    tertiary = Accent,
-    primaryContainer = TextAccent,
-    background = Background,
-    surface = Surface,
-    surfaceVariant = SurfaceVariant,
     onPrimary = Color.White,
-    onSecondary = TextPrimary,
-    onTertiary = Background,
+    primaryContainer = TextAccent,
     onPrimaryContainer = TextPrimary,
+    secondary = Secondary,
+    onSecondary = TextPrimary,
+    secondaryContainer = SurfaceVariant,       // chip background
+    onSecondaryContainer = TextPrimary,         // chip text
+    tertiary = Accent,
+    onTertiary = Background,
+    tertiaryContainer = Primary,               // chip selected background
+    onTertiaryContainer = Color.White,         // chip selected text
+    background = Background,
     onBackground = TextPrimary,
+    surface = Surface,                          // card background
     onSurface = TextPrimary,
+    surfaceVariant = SurfaceVariant,
     onSurfaceVariant = TextSecondary,
+    surfaceContainerHighest = Surface,          // extra surface for cards
     error = ErrorRed,
+    onError = Color.White,
     outline = DividerColor,
+    outlineVariant = DividerColor,
 )
 
 @Composable
@@ -38,6 +45,7 @@ fun KairnTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
