@@ -1,5 +1,6 @@
 package com.example.kairn.ui.friends
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +56,8 @@ import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.Secondary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
+
+private const val TAG = "FriendListScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,8 +149,10 @@ fun FriendListScreen(
                                 onAcceptRequest = viewModel::acceptFriendRequest,
                                 onDeclineRequest = viewModel::declineFriendRequest,
                                 onStartChat = { friend ->
+                                    Log.d(TAG, "onStartChat: friend.id=${friend.id}, username=${friend.username}")
                                     viewModel.startConversationWith(friend.id) { conversationId ->
-                                        onNavigateToChat(conversationId, friend.username ?: friend.email)
+                                        Log.d(TAG, "onStartChat: Navigating to chat - conversationId=$conversationId")
+                                        onNavigateToChat(conversationId, friend.username ?: "User")
                                     }
                                 },
                                 modifier = Modifier.fillMaxSize()

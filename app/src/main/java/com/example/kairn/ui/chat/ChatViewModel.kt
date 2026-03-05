@@ -1,5 +1,6 @@
 package com.example.kairn.ui.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.domain.repository.ChatRepository
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "ChatViewModel"
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -68,18 +71,26 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage() {
         val currentState = _chatUiState.value
-        if (currentState.messageInput.isBlank() || currentState.isSending) return
+        if (currentState.messageInput.isBlank() || currentState.isSending) {
+            Log.d(TAG, "sendMessage: Skipping - input blank or already sending")
+            return
+        }
 
         val message = currentState.messageInput
+        Log.d(TAG, "sendMessage: Sending message: '$message' to conversation ${currentState.conversationId}")
         _chatUiState.update { it.copy(messageInput = "", isSending = true) }
 
         viewModelScope.launch {
-            chatRepository.sendMessage(
+            val result = chatRepository.sendMessage(
                 conversationId = currentState.conversationId,
                 body = message
-            ).onSuccess {
+            )
+            result.onSuccess { sentMessage ->
+                Log.d(TAG, "sendMessage: SUCCESS - messageId=${sentMessage.id}")
                 _chatUiState.update { it.copy(isSending = false) }
-            }.onFailure { error ->
+            }
+            result.onFailure { error ->
+                Log.e(TAG, "sendMessage: FAILED - ${error.message}", error)
                 _chatUiState.update { 
                     it.copy(
                         isSending = false,

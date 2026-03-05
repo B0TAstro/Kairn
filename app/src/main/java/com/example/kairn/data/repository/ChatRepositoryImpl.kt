@@ -1,5 +1,6 @@
 package com.example.kairn.data.repository
 
+import android.util.Log
 import com.example.kairn.domain.model.Conversation
 import com.example.kairn.domain.model.ConversationType
 import com.example.kairn.domain.model.Message
@@ -29,6 +30,8 @@ import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val TAG = "ChatRepository"
+
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val auth: Auth,
@@ -48,7 +51,8 @@ class ChatRepositoryImpl @Inject constructor(
         scope.launch {
             try {
                 loadConversations()
-                subscribeToConversationsUpdates()
+                // Realtime disabled temporarily
+                // subscribeToConversationsUpdates()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -57,10 +61,15 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getOrCreateDirectConversation(userId: String): Result<Conversation> = runCatching {
+        Log.d(TAG, "getOrCreateDirectConversation: userId=$userId")
+        
         val currentUserId = auth.currentUserOrNull()?.id 
             ?: throw IllegalStateException("User not authenticated")
 
+        Log.d(TAG, "getOrCreateDirectConversation: currentUserId=$currentUserId")
+
         // Call Supabase function to get or create conversation
+        Log.d(TAG, "getOrCreateDirectConversation: Calling RPC function")
         val response = postgrest.rpc(
             function = "get_or_create_direct_conversation",
             parameters = buildJsonObject {
@@ -69,22 +78,29 @@ class ChatRepositoryImpl @Inject constructor(
             }
         ).decodeAs<String>()
 
+        Log.d(TAG, "getOrCreateDirectConversation: RPC returned conversationId=$response")
+
         // Fetch the conversation details
-        getConversation(response).getOrThrow()
+        Log.d(TAG, "getOrCreateDirectConversation: Fetching conversation details")
+        val conversation = getConversation(response).getOrThrow()
+        
+        Log.d(TAG, "getOrCreateDirectConversation: SUCCESS - conversation.id=${conversation.id}, displayName=${conversation.displayName}")
+        conversation
     }
 
     override suspend fun getConversation(conversationId: String): Result<Conversation> = runCatching {
+        Log.d(TAG, "getConversation: conversationId=$conversationId")
         val currentUserId = auth.currentUserOrNull()?.id 
             ?: throw IllegalStateException("User not authenticated")
 
+        // Fetch conversation basic info
         val dto = postgrest.from("conversations")
             .select(
                 Columns.raw("""
                     *,
                     conversation_members!inner(
                         user_id,
-                        last_read_message_id,
-                        profiles:user_id(id, username, email)
+                        last_read_message_id
                     ),
                     messages(*)
                 """.trimIndent())
@@ -95,7 +111,30 @@ class ChatRepositoryImpl @Inject constructor(
             }
             .decodeSingle<ConversationDto>()
 
-        dto.toDomain(currentUserId)
+        Log.d(TAG, "getConversation: Found ${dto.members.size} members")
+
+        // Fetch other user's profile separately
+        val otherUserId = dto.members.firstOrNull { it.userId != currentUserId }?.userId
+        Log.d(TAG, "getConversation: otherUserId=$otherUserId")
+        
+        val otherUserProfile = if (otherUserId != null) {
+            try {
+                postgrest.from("profiles")
+                    .select(Columns.raw("id, username")) {
+                        filter {
+                            eq("id", otherUserId)
+                        }
+                    }
+                    .decodeSingle<ProfileDto>()
+            } catch (e: Exception) {
+                Log.e(TAG, "getConversation: Failed to fetch other user profile", e)
+                null
+            }
+        } else null
+
+        Log.d(TAG, "getConversation: otherUserProfile=$otherUserProfile")
+
+        dto.toDomain(currentUserId, otherUserProfile)
     }
 
     override fun getMessages(conversationId: String): Flow<List<Message>> {
@@ -111,8 +150,12 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun sendMessage(conversationId: String, body: String): Result<Message> = runCatching {
+        Log.d(TAG, "sendMessage: conversationId=$conversationId, body='$body'")
+        
         val currentUserId = auth.currentUserOrNull()?.id 
             ?: throw IllegalStateException("User not authenticated")
+
+        Log.d(TAG, "sendMessage: currentUserId=$currentUserId")
 
         val messageDto = MessageInsertDto(
             conversationId = conversationId,
@@ -121,16 +164,20 @@ class ChatRepositoryImpl @Inject constructor(
             messageType = "TEXT"
         )
 
+        Log.d(TAG, "sendMessage: Inserting message into database")
         val inserted = postgrest.from("messages")
             .insert(messageDto) {
                 select(Columns.raw("""
                     *,
-                    profiles:sender_id(username, email)
+                    profiles:sender_id(id, username)
                 """.trimIndent()))
             }
             .decodeSingle<MessageDto>()
 
+        Log.d(TAG, "sendMessage: Message inserted, id=${inserted.id}")
+
         // Update conversation's updated_at
+        Log.d(TAG, "sendMessage: Updating conversation updated_at")
         postgrest.from("conversations")
             .update({
                 set("updated_at", kotlinx.datetime.Clock.System.now().toString())
@@ -140,7 +187,9 @@ class ChatRepositoryImpl @Inject constructor(
                 }
             }
 
-        inserted.toDomain(currentUserId)
+        val message = inserted.toDomain(currentUserId)
+        Log.d(TAG, "sendMessage: SUCCESS - returning message")
+        message
     }
 
     override suspend fun markAsRead(conversationId: String, messageId: String): Result<Unit> = runCatching {
@@ -202,16 +251,14 @@ class ChatRepositoryImpl @Inject constructor(
                     *,
                     conversation_members!inner(
                         user_id,
-                        last_read_message_id,
-                        profiles:user_id(id, username, email)
+                        last_read_message_id
                     ),
                     messages(
                         id,
                         sender_id,
                         body,
                         message_type,
-                        created_at,
-                        profiles:sender_id(username, email)
+                        created_at
                     )
                 """.trimIndent())
             ) {
@@ -223,7 +270,28 @@ class ChatRepositoryImpl @Inject constructor(
             }
             .decodeList<ConversationDto>()
 
-        _conversations.value = dtos.map { it.toDomain(currentUserId) }
+        // Fetch all other users' profiles in one query
+        val otherUserIds = dtos.flatMap { dto ->
+            dto.members.map { it.userId }
+        }.filter { it != currentUserId }.distinct()
+
+        val profiles = if (otherUserIds.isNotEmpty()) {
+            postgrest.from("profiles")
+                .select(Columns.raw("id, username")) {
+                    filter {
+                        isIn("id", otherUserIds)
+                    }
+                }
+                .decodeList<ProfileDto>()
+        } else emptyList()
+
+        val profilesMap = profiles.associateBy { it.id }
+
+        _conversations.value = dtos.map { dto ->
+            val otherUserId = dto.members.firstOrNull { it.userId != currentUserId }?.userId
+            val otherProfile = otherUserId?.let { profilesMap[it] }
+            dto.toDomain(currentUserId, otherProfile)
+        }
     }
 
     private suspend fun loadMessages(conversationId: String) {
@@ -233,7 +301,7 @@ class ChatRepositoryImpl @Inject constructor(
             .select(
                 Columns.raw("""
                     *,
-                    profiles:sender_id(username, email)
+                    profiles:sender_id(username)
                 """.trimIndent())
             ) {
                 filter {
@@ -278,8 +346,7 @@ private data class ConversationDto(
     @SerialName("conversation_members") val members: List<ConversationMemberDto> = emptyList(),
     val messages: List<MessageDto> = emptyList(),
 ) {
-    fun toDomain(currentUserId: String): Conversation {
-        val otherMember = members.firstOrNull { it.userId != currentUserId }
+    fun toDomain(currentUserId: String, otherUserProfile: ProfileDto? = null): Conversation {
         val lastMessage = messages.maxByOrNull { it.createdAt }
         
         // Calculate unread count
@@ -301,7 +368,7 @@ private data class ConversationDto(
             groupId = groupId,
             lastMessage = lastMessage?.toDomain(currentUserId),
             unreadCount = unreadCount,
-            otherUser = otherMember?.profile?.toDomain(),
+            otherUser = otherUserProfile?.toDomain(),
             groupName = null, // Will be populated for group chats
             createdAt = Instant.parse(createdAt),
             updatedAt = Instant.parse(updatedAt),
@@ -330,7 +397,7 @@ private data class MessageDto(
     val profiles: ProfileDto? = null,
 ) {
     fun toDomain(currentUserId: String): Message {
-        val senderName = profiles?.username ?: profiles?.email ?: "Unknown"
+        val senderName = profiles?.username ?: "Unknown"
         val initials = senderName.take(2).uppercase()
 
         return Message(
@@ -359,11 +426,10 @@ private data class MessageInsertDto(
 private data class ProfileDto(
     val id: String,
     val username: String? = null,
-    val email: String,
 ) {
     fun toDomain() = User(
         id = id,
-        email = email,
+        email = "", // Email not available from profiles table
         username = username,
         avatarUrl = null,
         level = 1,

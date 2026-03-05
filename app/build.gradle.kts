@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.supabase.realtime)
     implementation(libs.supabase.storage)
     implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.cio)
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.hilt.android)

@@ -1,5 +1,6 @@
 package com.example.kairn.ui.friends
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.domain.repository.ChatRepository
@@ -14,12 +15,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "FriendViewModel"
 
 @HiltViewModel
 class FriendViewModel @Inject constructor(
@@ -54,7 +58,10 @@ class FriendViewModel @Inject constructor(
             if (query.isBlank()) {
                 flowOf(emptyList())
             } else {
-                flowOf(performSearch(query))
+                flow {
+                    Log.d(TAG, "searchResults flow: executing search for '$query'")
+                    emit(performSearch(query))
+                }
             }
         }
         .stateIn(
@@ -78,17 +85,36 @@ class FriendViewModel @Inject constructor(
     }
 
     fun onSearchQueryChange(query: String) {
+        Log.d(TAG, "onSearchQueryChange: query='$query'")
         searchQuery.value = query
         _searchUiState.update { it.copy(isSearching = query.isNotBlank()) }
     }
 
     private suspend fun performSearch(query: String): List<com.example.kairn.domain.model.User> {
-        return friendshipRepository.searchUsers(query).getOrElse { emptyList() }
+        Log.d(TAG, "performSearch: query='$query'")
+        val result = friendshipRepository.searchUsers(query)
+        result.onSuccess { users ->
+            Log.d(TAG, "performSearch: SUCCESS - found ${users.size} users")
+            users.forEachIndexed { index, user ->
+                Log.d(TAG, "  [$index] id=${user.id}, username=${user.username}")
+            }
+        }
+        result.onFailure { error ->
+            Log.e(TAG, "performSearch: FAILED - ${error.message}", error)
+        }
+        return result.getOrElse { emptyList() }
     }
 
     fun sendFriendRequest(userId: String) {
+        Log.d(TAG, "sendFriendRequest: userId=$userId")
         viewModelScope.launch {
-            friendshipRepository.sendFriendRequest(userId)
+            val result = friendshipRepository.sendFriendRequest(userId)
+            result.onSuccess {
+                Log.d(TAG, "sendFriendRequest: SUCCESS")
+            }
+            result.onFailure { error ->
+                Log.e(TAG, "sendFriendRequest: FAILED - ${error.message}", error)
+            }
         }
     }
 
@@ -105,11 +131,16 @@ class FriendViewModel @Inject constructor(
     }
 
     fun startConversationWith(userId: String, onSuccess: (String) -> Unit) {
+        Log.d(TAG, "startConversationWith: userId=$userId")
         viewModelScope.launch {
-            chatRepository.getOrCreateDirectConversation(userId)
-                .onSuccess { conversation ->
-                    onSuccess(conversation.id)
-                }
+            val result = chatRepository.getOrCreateDirectConversation(userId)
+            result.onSuccess { conversation ->
+                Log.d(TAG, "startConversationWith: SUCCESS - conversationId=${conversation.id}, displayName=${conversation.displayName}")
+                onSuccess(conversation.id)
+            }
+            result.onFailure { error ->
+                Log.e(TAG, "startConversationWith: FAILED - ${error.message}", error)
+            }
         }
     }
 }

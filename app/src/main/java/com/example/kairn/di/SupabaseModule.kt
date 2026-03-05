@@ -18,6 +18,7 @@ import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
+import io.ktor.client.engine.cio.CIO
 import javax.inject.Singleton
 
 @Module
@@ -37,7 +38,7 @@ object SupabaseModule {
                 host = "auth"
             }
             install(Postgrest)
-            install(Realtime)
+            install(Realtime) // Keep installed but won't use subscriptions for now
             install(Storage)
         }
     }
