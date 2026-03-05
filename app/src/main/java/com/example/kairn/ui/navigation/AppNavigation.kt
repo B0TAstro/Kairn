@@ -109,6 +109,9 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
             onSignInSuccess = {
                 // Session flow will switch AppNavigation to authenticated content.
             },
+            onBack = {
+                navController.popBackStack(AuthRoute.Onboarding.route, inclusive = false)
+            },
         )
     }
 
@@ -126,6 +129,9 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
                     popUpTo(AuthRoute.Onboarding.route)
                     launchSingleTop = true
                 }
+            },
+            onBack = {
+                navController.popBackStack(AuthRoute.Onboarding.route, inclusive = false)
             },
         )
     }
