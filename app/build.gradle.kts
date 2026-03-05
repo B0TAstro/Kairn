@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -53,6 +54,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.osmdroid.android)
     implementation(libs.haze)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.supabase.kt)
+    implementation(libs.supabase.storage.kt)
+    implementation(libs.supabase.gotrue.kt)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

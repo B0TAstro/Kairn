@@ -2,6 +2,7 @@ package com.example.kairn.ui.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.data.repository.GpxStorageService
 import com.example.kairn.ui.editor.model.EditorPoint
 import com.example.kairn.ui.editor.routing.OsrmService
 import kotlinx.coroutines.CoroutineDispatcher
@@ -17,6 +18,7 @@ import java.util.UUID
 
 class EditorViewModel(
     private val osrmService: OsrmService = OsrmService(),
+    private val gpxStorageService: GpxStorageService = GpxStorageService(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<EditorUiState>(EditorUiState.Ready())
@@ -178,5 +180,66 @@ class EditorViewModel(
     fun getAllRoutePoints(): List<GeoPoint> {
         val currentState = _uiState.value as? EditorUiState.Ready ?: return emptyList()
         return currentState.routes.flatMap { it.points }
+    }
+    
+    fun saveToSupabase() {
+        val currentState = _uiState.value as? EditorUiState.Ready ?: return
+        val points = currentState.points
+        val routes = currentState.routes.map { it.points }
+        
+        if (points.isEmpty()) return
+        
+        _uiState.update { oldState ->
+            when (oldState) {
+                is EditorUiState.Ready -> oldState.copy(
+                    isSaving = true,
+                    saveError = null,
+                    saveSuccess = false,
+                )
+                else -> oldState
+            }
+        }
+        
+        viewModelScope.launch {
+            try {
+                val result = withContext(dispatcher) {
+                    gpxStorageService.uploadGpx(points, routes)
+                }
+                
+                _uiState.update { oldState ->
+                    when (oldState) {
+                        is EditorUiState.Ready -> oldState.copy(
+                            isSaving = false,
+                            saveSuccess = result.isSuccess,
+                            saveError = if (result.isFailure) result.exceptionOrNull()?.message else null,
+                        )
+                        else -> oldState
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update { oldState ->
+                    when (oldState) {
+                        is EditorUiState.Ready -> oldState.copy(
+                            isSaving = false,
+                            saveSuccess = false,
+                            saveError = e.message ?: "Unknown error",
+                        )
+                        else -> oldState
+                    }
+                }
+            }
+        }
+    }
+    
+    fun clearSaveStatus() {
+        _uiState.update { oldState ->
+            when (oldState) {
+                is EditorUiState.Ready -> oldState.copy(
+                    saveSuccess = false,
+                    saveError = null,
+                )
+                else -> oldState
+            }
+        }
     }
 }

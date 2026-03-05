@@ -11,6 +11,9 @@ sealed interface EditorUiState {
         val isLoadingRoute: Boolean = false,
         val error: String? = null,
         val selectedPointId: String? = null,
+        val isSaving: Boolean = false,
+        val saveSuccess: Boolean = false,
+        val saveError: String? = null,
     ) : EditorUiState
     
     data class Error(val message: String) : EditorUiState

@@ -1,39 +1,45 @@
-package com.example.kairn.ui.editor.gpx
+package com.example.kairn.data.repository
 
-import android.content.Context
-import android.net.Uri
-import androidx.core.content.FileProvider
+import com.example.kairn.data.supabase.SupabaseClient
 import com.example.kairn.ui.editor.model.EditorPoint
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
-import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-class GpxExporter(private val context: Context) {
+class GpxStorageService {
+    private val storage = SupabaseClient.getStorage()
+    private val bucketName = "GPX_FILES"
     
-    fun exportToFile(points: List<EditorPoint>, routes: List<List<GeoPoint>>): Uri? {
-        return try {
+    suspend fun uploadGpx(
+        points: List<EditorPoint>,
+        routes: List<List<GeoPoint>>,
+    ): Result<String> = withContext(Dispatchers.IO) {
+        return@withContext try {
             val gpxContent = generateGpxContent(points, routes)
-            val fileName = "kairn_route_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.gpx"
-            val cacheDir = context.cacheDir
-            val gpxFile = File(cacheDir, fileName)
+            val fileName = generateFileName()
             
-            FileOutputStream(gpxFile).use { outputStream ->
-                outputStream.write(gpxContent.toByteArray())
-            }
-            
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                gpxFile
+            storage.from(bucketName).upload(
+                path = fileName,
+                data = gpxContent.encodeToByteArray(),
+                upsert = true
             )
+            
+            val publicUrl = storage.from(bucketName).getPublicUrl(fileName)
+            Result.success(publicUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            Result.failure(e)
         }
+    }
+    
+    private fun generateFileName(): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val uuid = UUID.randomUUID().toString().take(8)
+        return "./${timestamp}_${uuid}.gpx"
     }
     
     private fun generateGpxContent(points: List<EditorPoint>, routes: List<List<GeoPoint>>): String {
@@ -43,7 +49,7 @@ class GpxExporter(private val context: Context) {
         builder.appendLine("<gpx version=\"1.1\" creator=\"Kairn Editor\" xmlns=\"http://www.topografix.com/GPX/1/1\">")
         builder.appendLine("  <metadata>")
         builder.appendLine("    <name>Kairn Route</name>")
-        builder.appendLine("    <desc>Route created with Kairn Editor</desc>")
+        builder.appendLine("    <desc>Route created with Kairn hiking app</desc>")
         builder.appendLine("    <time>${formatIsoDateTime(Date())}</time>")
         builder.appendLine("  </metadata>")
         
