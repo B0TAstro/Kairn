@@ -2,7 +2,6 @@ package com.example.kairn.ui.home
 
 import androidx.lifecycle.ViewModel
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.domain.model.HikeCategory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,10 +14,6 @@ class HomeViewModel : ViewModel() {
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-    }
-
-    fun onCategorySelected(category: HikeCategory?) {
-        _uiState.update { it.copy(selectedCategory = category) }
     }
 
     fun onHikeSelected(hike: Hike) {

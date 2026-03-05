@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -70,12 +68,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
@@ -208,11 +204,7 @@ fun HomeScreen(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
             )
-            Spacer(modifier = Modifier.size(12.dp))
-            CategoryChipsRow(
-                selectedCategory = uiState.selectedCategory,
-                onCategorySelected = viewModel::onCategorySelected,
-            )
+
         }
     }
 
@@ -365,49 +357,6 @@ private fun HomeSearchBar(
                 inner()
             },
         )
-    }
-}
-
-// ─── Category chips ───────────────────────────────────────────────────────────
-
-@Composable
-private fun CategoryChipsRow(
-    selectedCategory: HikeCategory?,
-    onCategorySelected: (HikeCategory?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(0.dp),
-    ) {
-        items(HikeCategory.entries) { category ->
-            val isSelected = category == selectedCategory
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        if (isSelected) ChipSelectedBackground
-                        else Color.White.copy(alpha = 0.40f),
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.55f),
-                        shape = RoundedCornerShape(20.dp),
-                    )
-                    .clickable { onCategorySelected(if (isSelected) null else category) }
-                    .padding(horizontal = 18.dp, vertical = 8.dp),
-            ) {
-                Text(
-                    text = category.label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected) Color.White else TextPrimary,
-                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                    fontSize = 13.sp,
-                )
-            }
-        }
     }
 }
 

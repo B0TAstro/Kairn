@@ -41,12 +41,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
@@ -56,7 +54,6 @@ import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
 
-// Valeur du chevauchement du panel sur l'image hero
 private val PANEL_OVERLAP = 48.dp
 
 @Composable
@@ -75,10 +72,8 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            // Hero image area
-            HeroImageArea(hike = hike)
+            HeroImageArea()
 
-            // Content panel — remonte de PANEL_OVERLAP sur la photo
             DetailPanel(
                 hike = hike,
                 modifier = Modifier.offset(y = -PANEL_OVERLAP),
@@ -107,41 +102,26 @@ fun HikeDetailScreen(
     }
 }
 
-// ─── Hero image ───────────────────────────────────────────────────────────────
+// ─── Hero image (gradient — à remplacer par AsyncImage quand image_url sera dans Supabase) ───
 
 @Composable
 private fun HeroImageArea(
-    hike: Hike,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(420.dp),
-    ) {
-        if (hike.imageUrl != null) {
-            AsyncImage(
-                model = hike.imageUrl,
-                contentDescription = hike.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Primary.copy(alpha = 0.45f),
-                                0.4f to Primary.copy(alpha = 0.25f),
-                                1.0f to Color(0xFF111a16),
-                            ),
-                        ),
+            .height(420.dp)
+            .background(
+                Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0.0f to Primary.copy(alpha = 0.45f),
+                        0.4f to Primary.copy(alpha = 0.25f),
+                        1.0f to Color(0xFF111a16),
                     ),
-            )
-        }
-    }
+                ),
+            ),
+    )
 }
 
 // ─── Detail content panel ─────────────────────────────────────────────────────
@@ -174,9 +154,9 @@ private fun DetailPanel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Name + elevation
+        // Title + elevation
         Text(
-            text = hike.name,
+            text = hike.title,
             style = MaterialTheme.typography.headlineMedium,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
@@ -184,7 +164,7 @@ private fun DetailPanel(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "${hike.elevationMeters} meters",
+            text = hike.formattedElevation,
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
             fontSize = 15.sp,
@@ -199,7 +179,7 @@ private fun DetailPanel(
         ) {
             DetailStatItem(
                 icon = Icons.Outlined.Schedule,
-                value = hike.displayDuration,
+                value = hike.formattedDuration,
                 label = "Duration",
                 modifier = Modifier.weight(1f),
             )
@@ -221,14 +201,13 @@ private fun DetailPanel(
 
         // Tabs
         KairnTabRow(
-            tabs = listOf("Details", "Rout List", "Reviews"),
+            tabs = listOf("Details", "Route List", "Reviews"),
             selectedIndex = selectedTab,
             onTabSelected = { selectedTab = it },
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tab content
         when (selectedTab) {
             0 -> DetailsTabContent(hike = hike)
             1 -> PlaceholderTabContent(text = "Route waypoints coming soon.")
@@ -246,22 +225,15 @@ private fun DetailsTabContent(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "Hiking to ${hike.name}",
+            text = "Hiking to ${hike.title}",
             style = MaterialTheme.typography.bodyLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp,
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Panoramic views of Mont Blanc and the Alps",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontSize = 13.sp,
-        )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = hike.description.ifEmpty {
+            text = hike.description.orEmpty().ifEmpty {
                 "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery that will leave you speechless."
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -323,7 +295,7 @@ private fun DetailStatItem(
     }
 }
 
-// ─── Round action button (back / bookmark) ────────────────────────────────────
+// ─── Round action button ──────────────────────────────────────────────────────
 
 @Composable
 private fun ActionButton(
@@ -354,7 +326,7 @@ private fun ActionButton(
     }
 }
 
-// ─── Floating CTA (overlaid at bottom) ───────────────────────────────────────
+// ─── Floating CTA ─────────────────────────────────────────────────────────────
 
 @Composable
 fun HikeDetailCta(

@@ -58,7 +58,6 @@ fun HikeCard(
                 ),
             contentAlignment = Alignment.BottomStart,
         ) {
-            // Gradient overlay at the bottom
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -66,10 +65,7 @@ fun HikeCard(
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                CardBackground,
-                            ),
+                            colors = listOf(Color.Transparent, CardBackground),
                         ),
                     ),
             )
@@ -79,14 +75,14 @@ fun HikeCard(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
             )
             Text(
-                text = "${hike.formattedElevation} meters",
+                text = hike.formattedElevation,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 fontSize = 13.sp,
@@ -133,15 +129,10 @@ fun HikeCardCompact(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = hike.location,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

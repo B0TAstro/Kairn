@@ -38,15 +38,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.domain.model.HikeCategory
+import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.KairnTheme
@@ -95,7 +93,7 @@ fun CatalogueScreen(
             )
         }
 
-        // ── Category filter chips ─────────────────────────────────────────
+        // ── Difficulty filter chips ───────────────────────────────────────
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -103,19 +101,18 @@ fun CatalogueScreen(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
         ) {
-            // "All" chip
             item {
                 CatalogueChip(
                     label = "All",
-                    isSelected = uiState.selectedCategory == null,
-                    onClick = { viewModel.onCategorySelected(null) },
+                    isSelected = uiState.selectedDifficulty == null,
+                    onClick = { viewModel.onDifficultySelected(null) },
                 )
             }
-            items(HikeCategory.entries) { category ->
+            items(HikeDifficulty.entries) { difficulty ->
                 CatalogueChip(
-                    label = category.label,
-                    isSelected = uiState.selectedCategory == category,
-                    onClick = { viewModel.onCategorySelected(category) },
+                    label = difficulty.label,
+                    isSelected = uiState.selectedDifficulty == difficulty,
+                    onClick = { viewModel.onDifficultySelected(difficulty) },
                 )
             }
         }
@@ -125,7 +122,7 @@ fun CatalogueScreen(
             contentPadding = PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
-                bottom = 100.dp, // space for bottom nav
+                bottom = 100.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
@@ -180,7 +177,6 @@ fun CatalogueHikeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // HazeState local à la carte pour le blur du panel stats
     val hazeState = remember { HazeState() }
 
     Box(
@@ -190,32 +186,21 @@ fun CatalogueHikeCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // ── Photo (source du blur) ────────────────────────────────────────
-        if (hike.imageUrl != null) {
-            AsyncImage(
-                model = hike.imageUrl,
-                contentDescription = hike.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(hazeState),
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(hazeState)
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Primary.copy(alpha = 0.55f),
-                                0.5f to Primary.copy(alpha = 0.30f),
-                                1.0f to Color(0xFF1a2520),
-                            ),
+        // ── Fond gradient (à remplacer par AsyncImage quand image_url sera dans Supabase)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(hazeState)
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Primary.copy(alpha = 0.55f),
+                            0.5f to Primary.copy(alpha = 0.30f),
+                            1.0f to Color(0xFF1a2520),
                         ),
                     ),
-            )
-        }
+                ),
+        )
 
         // ── Top-right arrow icon ──────────────────────────────────────────
         Icon(
@@ -235,21 +220,21 @@ fun CatalogueHikeCard(
                 .padding(start = 18.dp, top = 18.dp),
         ) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 26.sp,
             )
             Text(
-                text = "${hike.elevationMeters} meters",
+                text = hike.formattedElevation,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.80f),
                 fontSize = 14.sp,
             )
         }
 
-        // ── Liquid glass stats panel (bottom, largeur réduite) ───────────
+        // ── Liquid glass stats panel (bottom) ─────────────────────────────
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -283,7 +268,7 @@ fun CatalogueHikeCard(
         ) {
             CardStatItem(
                 icon = Icons.Outlined.Schedule,
-                value = hike.displayDuration,
+                value = hike.formattedDuration,
                 label = "Duration",
             )
             CardStatItem(
