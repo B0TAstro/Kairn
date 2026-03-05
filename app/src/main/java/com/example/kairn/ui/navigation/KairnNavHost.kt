@@ -20,6 +20,8 @@ import com.example.kairn.ui.home.HomeScreen
 import com.example.kairn.ui.chat.ChatListScreen
 import com.example.kairn.ui.chat.ChatScreen
 import com.example.kairn.ui.friends.FriendListScreen
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -102,7 +104,8 @@ fun KairnNavHost(
                 )
             ) { backStackEntry ->
                 val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
-                val conversationName = backStackEntry.arguments?.getString("conversationName") ?: return@composable
+                val conversationNameEncoded = backStackEntry.arguments?.getString("conversationName") ?: return@composable
+                val conversationName = URLDecoder.decode(conversationNameEncoded, StandardCharsets.UTF_8.toString())
                 
                 ChatScreen(
                     conversationId = conversationId,

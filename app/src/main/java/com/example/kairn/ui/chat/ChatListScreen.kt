@@ -62,15 +62,19 @@ fun ChatListScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = Background,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToNewChat,
-                containerColor = Accent,
-                contentColor = Background,
+            Box(
+                modifier = Modifier.padding(bottom = 80.dp) // Space for bottom nav
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "New conversation"
-                )
+                FloatingActionButton(
+                    onClick = onNavigateToNewChat,
+                    containerColor = Accent,
+                    contentColor = Background,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "New conversation"
+                    )
+                }
             }
         }
     ) { paddingValues ->

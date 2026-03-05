@@ -1,5 +1,8 @@
 package com.example.kairn.ui.navigation
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 enum class Screen {
     HOME,
     EXPLORE,
@@ -17,5 +20,5 @@ object NavRoutes {
     const val FRIEND_LIST = "friend_list"
     
     fun chat(conversationId: String, conversationName: String) = 
-        "chat/$conversationId/$conversationName"
+        "chat/$conversationId/${URLEncoder.encode(conversationName, StandardCharsets.UTF_8.toString())}"
 }
