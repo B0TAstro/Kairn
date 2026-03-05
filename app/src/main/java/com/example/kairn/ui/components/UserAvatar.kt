@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,10 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.OnlineGreen
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
 
 @Composable
 fun UserAvatar(
@@ -33,11 +31,12 @@ fun UserAvatar(
             modifier = Modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(Primary),
+                .background(MaterialTheme.colorScheme.primary),
         ) {
             Text(
                 text = initials.take(2).uppercase(),
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
+                // Dynamic font size based on avatar size — intentionally not a typography token
                 fontSize = (size.value / 2.5).sp,
                 fontWeight = FontWeight.Medium,
             )
@@ -50,7 +49,7 @@ fun UserAvatar(
                     .offset(x = (-1).dp, y = (-1).dp)
                     .clip(CircleShape)
                     .background(OnlineGreen)
-                    .border(2.dp, Background, CircleShape),
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
             )
         }
     }

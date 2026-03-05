@@ -15,10 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun ChatBubble(
@@ -28,6 +24,8 @@ fun ChatBubble(
     modifier: Modifier = Modifier,
     isCurrentUser: Boolean = false,
 ) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.Top,
@@ -49,23 +47,25 @@ fun ChatBubble(
                         bottomEnd = 16.dp,
                     ),
                 )
-                .background(if (isCurrentUser) CardBackground else CardBackground.copy(alpha = 0.7f))
+                .background(
+                    if (isCurrentUser) surfaceColor
+                    else surfaceColor.copy(alpha = 0.7f),
+                )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             if (!isCurrentUser) {
                 Text(
                     text = senderName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
-                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
         if (isCurrentUser) {

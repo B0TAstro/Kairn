@@ -21,13 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun HikeBottomSheetContent(
@@ -46,10 +41,8 @@ fun HikeBottomSheetContent(
         // Title
         Text(
             text = hike.title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 24.sp,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         if (hike.location != null) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -60,14 +53,13 @@ fun HikeBottomSheetContent(
                 Icon(
                     imageVector = Icons.Filled.LocationOn,
                     contentDescription = null,
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(13.dp),
                 )
                 Text(
                     text = hike.location,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -86,21 +78,18 @@ fun HikeBottomSheetContent(
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
-                    tint = Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = hike.difficulty.label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
                     text = "Level",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -122,9 +111,7 @@ fun HikeBottomSheetContent(
                 Text(
                     text = "Hiking to ${hike.title}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
@@ -132,20 +119,18 @@ fun HikeBottomSheetContent(
                         "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery."
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             1 -> Text(
                 text = "Route waypoints coming soon.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             2 -> Text(
                 text = "Reviews coming soon.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -172,15 +157,12 @@ private fun StatColumn(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

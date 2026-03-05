@@ -20,9 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
 
 @Composable
 fun KairnButton(
@@ -34,7 +31,7 @@ fun KairnButton(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
-            .background(Primary)
+            .background(MaterialTheme.colorScheme.primary)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -42,17 +39,17 @@ fun KairnButton(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium,
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
         )
         if (showArrow) {
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = TextPrimary,
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(18.dp),
             )
         }

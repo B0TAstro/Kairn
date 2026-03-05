@@ -18,13 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.Secondary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun HikeDetailStatCard(
@@ -38,36 +32,32 @@ fun HikeDetailStatCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = Secondary,
+            tint = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.size(24.dp),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 20.sp,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         if (subValue.isNotEmpty()) {
             Text(
                 text = subValue,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

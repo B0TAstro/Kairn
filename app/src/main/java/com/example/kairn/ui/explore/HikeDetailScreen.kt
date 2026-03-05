@@ -48,17 +48,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
-import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
+import com.example.kairn.ui.theme.OverlayAccent
+import com.example.kairn.ui.theme.OverlayDark
 
 private val PANEL_OVERLAP = 48.dp
 
@@ -77,7 +74,7 @@ fun HikeDetailScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Background)
+                .background(MaterialTheme.colorScheme.background)
                 // sharedBounds sur le conteneur entier — même clé que la carte
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "hike-card-${hike.id}"),
@@ -148,9 +145,9 @@ private fun HeroImageArea(
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
-                                0.0f to Color(0xFF111a16).copy(alpha = 0.15f),
-                                0.7f to Color(0xFF111a16).copy(alpha = 0.10f),
-                                1.0f to Color(0xFF111a16).copy(alpha = 0.55f),
+                                0.0f to OverlayDark.copy(alpha = 0.15f),
+                                0.7f to OverlayDark.copy(alpha = 0.10f),
+                                1.0f to OverlayDark.copy(alpha = 0.55f),
                             ),
                         ),
                     ),
@@ -162,9 +159,9 @@ private fun HeroImageArea(
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
-                                0.0f to Primary.copy(alpha = 0.45f),
-                                0.4f to Primary.copy(alpha = 0.25f),
-                                1.0f to Color(0xFF111a16),
+                                0.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                0.4f to MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                1.0f to OverlayDark,
                             ),
                         ),
                     ),
@@ -189,7 +186,7 @@ private fun DetailPanel(
         modifier = modifier
             .fillMaxWidth()
             .clip(panelShape)
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp)
             .padding(top = 16.dp, bottom = 120.dp)
             .then(
@@ -205,7 +202,7 @@ private fun DetailPanel(
                 .width(40.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(TextSecondary.copy(alpha = 0.25f))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
                 .align(Alignment.CenterHorizontally),
         )
 
@@ -213,17 +210,14 @@ private fun DetailPanel(
 
         Text(
             text = hike.title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 28.sp,
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = hike.formattedElevation,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -262,10 +256,8 @@ private fun DetailsTabContent(hike: Hike, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
             text = "Hiking to ${hike.title}",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -273,8 +265,7 @@ private fun DetailsTabContent(hike: Hike, modifier: Modifier = Modifier) {
                 "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery that will leave you speechless."
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary.copy(alpha = 0.75f),
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
             lineHeight = 22.sp,
         )
     }
@@ -282,7 +273,12 @@ private fun DetailsTabContent(hike: Hike, modifier: Modifier = Modifier) {
 
 @Composable
 private fun PlaceholderTabContent(text: String, modifier: Modifier = Modifier) {
-    Text(text = text, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = modifier)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier,
+    )
 }
 
 // ─── Stat item ────────────────────────────────────────────────────────────────
@@ -295,11 +291,24 @@ private fun DetailStatItem(
     modifier: Modifier = Modifier,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-        Icon(imageVector = icon, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
         Spacer(modifier = Modifier.width(8.dp))
         Column {
-            Text(text = value, style = MaterialTheme.typography.bodySmall, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text(text = label, style = MaterialTheme.typography.bodySmall, color = TextSecondary, fontSize = 11.sp)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -318,11 +327,16 @@ private fun ActionButton(
         modifier = modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(Color(0xFF1e2d27).copy(alpha = 0.75f))
+            .background(OverlayAccent.copy(alpha = 0.75f))
             .border(0.5.dp, Color.White.copy(alpha = 0.18f), CircleShape)
             .clickable(onClick = onClick),
     ) {
-        Icon(imageVector = icon, contentDescription = contentDescription, tint = Color.White, modifier = Modifier.size(20.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -336,7 +350,7 @@ fun HikeDetailCta(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .padding(bottom = 20.dp),

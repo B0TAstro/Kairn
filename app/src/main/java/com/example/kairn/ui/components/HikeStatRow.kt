@@ -20,11 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.kairn.domain.model.HikeDifficulty
-import com.example.kairn.ui.theme.ChipBackground
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
+import com.example.kairn.ui.theme.DifficultyEasy
+import com.example.kairn.ui.theme.DifficultyExpert
+import com.example.kairn.ui.theme.DifficultyHard
+import com.example.kairn.ui.theme.DifficultyModerate
 
 @Composable
 fun HikeStatItem(
@@ -32,7 +32,7 @@ fun HikeStatItem(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
-    iconTint: Color = TextSecondary,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -47,14 +47,12 @@ fun HikeStatItem(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary,
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -65,10 +63,10 @@ fun DifficultyBadge(
     modifier: Modifier = Modifier,
 ) {
     val color = when (difficulty) {
-        HikeDifficulty.EASY -> Color(0xFF66bb6a)
-        HikeDifficulty.MODERATE -> Color(0xFFffa726)
-        HikeDifficulty.HARD -> Color(0xFFef5350)
-        HikeDifficulty.EXPERT -> Color(0xFFab47bc)
+        HikeDifficulty.EASY -> DifficultyEasy
+        HikeDifficulty.MODERATE -> DifficultyModerate
+        HikeDifficulty.HARD -> DifficultyHard
+        HikeDifficulty.EXPERT -> DifficultyExpert
     }
 
     Box(
@@ -80,9 +78,8 @@ fun DifficultyBadge(
     ) {
         Text(
             text = difficulty.label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelMedium,
             color = color,
-            fontSize = 12.sp,
         )
     }
 }
@@ -98,7 +95,7 @@ fun HikeStatRow(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(ChipBackground.copy(alpha = 0.7f))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -122,14 +119,13 @@ private fun StatChip(
     ) {
         Text(
             text = icon,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextPrimary,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }
