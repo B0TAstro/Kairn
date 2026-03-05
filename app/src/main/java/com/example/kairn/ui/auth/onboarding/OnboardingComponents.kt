@@ -57,7 +57,7 @@ internal fun IntroContent(
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 32.dp, end = 32.dp, top = 80.dp)
+                .padding(start = 32.dp, end = 32.dp, top = 100.dp)
                 .fillMaxWidth(),
         ) {
             Text(
@@ -85,21 +85,21 @@ internal fun IntroContent(
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 48.dp)
+                .padding(horizontal = 28.dp)
                 .offset(y = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Echappez a votre routine,\ndecouvrez des sentiers\na couper le souffle.",
+                text = "Echappez a votre routine, decouvrez des sentiers a couper le souffle",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
                 ),
                 color = Color.White,
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Bougez, respirez,\net racontez votre aventure.",
+                text = "Bougez, respirez, et racontez votre aventure",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.85f),

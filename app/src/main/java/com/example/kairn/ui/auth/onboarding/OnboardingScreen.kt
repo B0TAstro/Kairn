@@ -3,6 +3,7 @@ package com.example.kairn.ui.auth.onboarding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -73,7 +74,8 @@ fun OnboardingScreen(
             onGo = { expanded = true },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 40.dp),
         )
 
         CtaContent(
