@@ -47,7 +47,7 @@ internal fun IntroContent(
     alpha: Float,
     modifier: Modifier = Modifier,
 ) {
-    val darkTextColor = MaterialTheme.colorScheme.onBackground
+    val titleTextColor = Color.White
 
     Box(
         modifier = modifier
@@ -69,7 +69,7 @@ internal fun IntroContent(
                     fontSize = 26.sp,
                     letterSpacing = 0.sp,
                 ),
-                color = darkTextColor,
+                color = titleTextColor,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -77,7 +77,7 @@ internal fun IntroContent(
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Bold,
                 ),
-                color = darkTextColor,
+                color = titleTextColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -127,16 +127,16 @@ internal fun GoPrompt(
         // Background pill with vertical fade
         Box(
             modifier = Modifier
-                .width(72.dp)
-                .height(110.dp)
-                .clip(RoundedCornerShape(36.dp))
+                .width(56.dp)
+                .height(90.dp)
+                .clip(RoundedCornerShape(28.dp))
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
                             0.0f to Color.Transparent,
-                            0.35f to Color.White.copy(alpha = 0.10f),
-                            0.6f to Color.White.copy(alpha = 0.18f),
-                            1.0f to Color.White.copy(alpha = 0.25f),
+                            0.35f to Color.White.copy(alpha = 0.08f),
+                            0.6f to Color.White.copy(alpha = 0.15f),
+                            1.0f to Color.White.copy(alpha = 0.22f),
                         ),
                     ),
                 ),
@@ -145,22 +145,22 @@ internal fun GoPrompt(
         // Chevrons + GO button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
         ) {
             // Small chevrons
             Icon(
                 imageVector = Icons.Default.KeyboardArrowUp,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.size(18.dp),
+                tint = Color.White.copy(alpha = 0.4f),
+                modifier = Modifier.size(14.dp),
             )
             Icon(
                 imageVector = Icons.Default.KeyboardArrowUp,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.7f),
+                tint = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier
-                    .size(18.dp)
-                    .offset(y = (-6).dp),
+                    .size(14.dp)
+                    .offset(y = (-4).dp),
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -169,8 +169,8 @@ internal fun GoPrompt(
             Surface(
                 shape = CircleShape,
                 color = Color.White,
-                shadowElevation = 8.dp,
-                modifier = Modifier.size(56.dp),
+                shadowElevation = 6.dp,
+                modifier = Modifier.size(44.dp),
             ) {
                 Box(
                     modifier = Modifier
@@ -180,7 +180,7 @@ internal fun GoPrompt(
                 ) {
                     Text(
                         text = "GO",
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
                         ),
                         color = MaterialTheme.colorScheme.onBackground,

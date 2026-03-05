@@ -46,19 +46,18 @@ fun OnboardingScreen(
             revealProgress = state.backgroundRevealProgress,
         )
 
-        // Gradient overlay: opaque beige at top fading to transparent,
-        // then transparent in middle, then dark tint at bottom
+        // Gradient overlay: subtle dark tint for white text readability,
+        // lighter in the middle, stronger tint at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
-                            0.0f to bgColor.copy(alpha = 0.92f),
-                            0.25f to bgColor.copy(alpha = 0.75f),
-                            0.42f to bgColor.copy(alpha = 0.25f),
-                            0.55f to Color.Transparent,
-                            0.75f to MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            0.0f to Color.Black.copy(alpha = 0.35f),
+                            0.30f to Color.Black.copy(alpha = 0.10f),
+                            0.50f to Color.Transparent,
+                            0.70f to MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                             1.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
                         ),
                     ),

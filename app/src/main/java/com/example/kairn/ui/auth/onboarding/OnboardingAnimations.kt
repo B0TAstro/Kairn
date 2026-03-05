@@ -46,9 +46,9 @@ internal fun rememberOnboardingMotionState(
     val bounceTransition = rememberInfiniteTransition(label = "go-bounce")
     val goBounceOffsetDp by bounceTransition.animateFloat(
         initialValue = 0f,
-        targetValue = -10f,
+        targetValue = -4f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 760, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "go-bounce-offset",
