@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Card
@@ -27,7 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairn.ui.editor.EditorViewModel
+import com.example.kairn.ui.editor.EditorUiState
 import com.example.kairn.ui.editor.model.EditorPoint
 import com.example.kairn.ui.theme.Accent
 import com.example.kairn.ui.theme.Background
@@ -54,12 +57,13 @@ import com.example.kairn.ui.theme.TextPrimary
 @Composable
 fun PointsListOverlay(
     viewModel: EditorViewModel,
+    onCollapse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val points by remember {
         derivedStateOf {
-            (uiState as? com.example.kairn.ui.editor.EditorUiState.Ready)?.points ?: emptyList()
+            (uiState as? EditorUiState.Ready)?.points ?: emptyList()
         }
     }
 
@@ -67,8 +71,8 @@ fun PointsListOverlay(
 
     Card(
         modifier = modifier
-            .width(280.dp)
-            .fillMaxHeight(0.7f)
+            .fillMaxWidth(0.72f)
+            .heightIn(max = 420.dp)
             .clip(RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(
             containerColor = Background.copy(alpha = 0.95f),
@@ -79,15 +83,27 @@ fun PointsListOverlay(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "Points (${points.size})",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-                color = TextPrimary,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Points (${points.size})",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = TextPrimary,
+                )
+                IconButton(onClick = onCollapse, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Collapse points panel",
+                        tint = TextPrimary.copy(alpha = 0.8f),
+                    )
+                }
+            }
 
             DragDropReorderList(
                 items = points,
@@ -95,10 +111,10 @@ fun PointsListOverlay(
                 onReorder = { newOrder ->
                     viewModel.reorderPoints(newOrder)
                 }
-            ) { point, isDragging, onDragStart ->
+                ) { point, isDragging, onDragStart ->
                 PointListItem(
                     point = point,
-                    isSelected = point.id == (uiState as? com.example.kairn.ui.editor.EditorUiState.Ready)?.selectedPointId,
+                    isSelected = point.id == (uiState as? EditorUiState.Ready)?.selectedPointId,
                     isDragging = isDragging,
                     onDragStart = onDragStart,
                     onRemove = { viewModel.removePoint(point.id) },
@@ -221,4 +237,3 @@ private fun PointListItem(
         }
     }
 }
-

@@ -2,7 +2,9 @@ package com.example.kairn.ui.editor.components
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun <T> DragDropReorderList(
@@ -29,34 +32,39 @@ fun <T> DragDropReorderList(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         items.forEachIndexed { index, item ->
             val isDragging = index == draggedItemIndex
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .pointerInput(key(item)) {
                         detectDragGesturesAfterLongPress(
-                            onDragStart = { offset ->
+                            onDragStart = {
                                 draggedItemIndex = index
-                                dragOffset = offset
+                                dragOffset = Offset.Zero
                             },
                             onDrag = { _, dragAmount ->
+                                val currentDraggedIndex = draggedItemIndex ?: return@detectDragGesturesAfterLongPress
                                 dragOffset += dragAmount
                                 val targetIndex = calculateTargetIndex(
                                     items = items,
-                                    draggedIndex = index,
+                                    draggedIndex = currentDraggedIndex,
                                     dragOffset = dragOffset,
                                     itemHeight = 80f,
                                 )
-                                if (targetIndex != null && targetIndex != index) {
+                                if (targetIndex != null && targetIndex != currentDraggedIndex) {
                                     val newList = items.toMutableList().apply {
-                                        val removed = removeAt(index)
+                                        val removed = removeAt(currentDraggedIndex)
                                         add(targetIndex, removed)
                                     }
                                     onReorder(newList)
                                     draggedItemIndex = targetIndex
+                                    dragOffset = Offset.Zero
                                 }
                             },
                             onDragEnd = {

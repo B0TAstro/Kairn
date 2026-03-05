@@ -22,7 +22,8 @@ class OsmMapProvider : MapProvider {
         mapView = MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
-            controller.setZoom(14.0)
+            controller.setZoom(11.0)
+            controller.setCenter(GeoPoint(46.603354, 1.888334))
 
             val eventsReceiver = object : MapEventsReceiver {
                 override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {

@@ -7,7 +7,6 @@ import com.example.kairn.ui.editor.model.EditorPoint
 import com.example.kairn.ui.editor.routing.OsrmService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -214,7 +213,11 @@ class EditorViewModel @Inject constructor(
                         is EditorUiState.Ready -> oldState.copy(
                             isSaving = false,
                             saveSuccess = result.isSuccess,
-                            saveError = if (result.isFailure) result.exceptionOrNull()?.message else null,
+                            saveError = if (result.isFailure) {
+                                mapUploadError(result.exceptionOrNull())
+                            } else {
+                                null
+                            },
                         )
                         else -> oldState
                     }
@@ -225,7 +228,7 @@ class EditorViewModel @Inject constructor(
                         is EditorUiState.Ready -> oldState.copy(
                             isSaving = false,
                             saveSuccess = false,
-                            saveError = e.message ?: "Unknown error",
+                            saveError = mapUploadError(e),
                         )
                         else -> oldState
                     }
@@ -243,6 +246,22 @@ class EditorViewModel @Inject constructor(
                 )
                 else -> oldState
             }
+        }
+    }
+
+    private fun mapUploadError(throwable: Throwable?): String {
+        val message = throwable?.message.orEmpty()
+        return when {
+            message.contains("row-level security", ignoreCase = true) -> {
+                "Upload blocked by Supabase policy. Check Storage RLS rules for GPX uploads."
+            }
+            message.contains("authorization", ignoreCase = true) ||
+                message.contains("jwt", ignoreCase = true) ||
+                message.contains("not authenticated", ignoreCase = true) -> {
+                "Authentication error while uploading GPX. Please sign in again."
+            }
+            message.isBlank() -> "Failed to save GPX"
+            else -> message.lineSequence().first().take(140)
         }
     }
 }
