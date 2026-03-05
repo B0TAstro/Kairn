@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.1"
+agp = "8.8.0"
 osmdroid = "6.1.20"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -12,9 +12,9 @@ composeBom = "2025.02.00"
 navigationCompose = "2.8.0"
 lifecycleViewModelCompose = "2.8.2"
 haze = "1.1.0"
-supabase = "3.4.1"
+supabase = "3.0.2"
 ktor = "3.0.2"
-hilt = "2.59.2"
+hilt = "2.54"
 ksp = "2.0.21-1.0.28"
 
 [libraries]

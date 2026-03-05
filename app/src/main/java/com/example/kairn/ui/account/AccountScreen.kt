@@ -72,7 +72,7 @@ fun AccountScreen(
 @Composable
 private fun ProfileContent(user: User) {
     Text(
-        text = user.username,
+        text = user.username ?: "Anonymous",
         style = MaterialTheme.typography.titleLarge,
     )
 

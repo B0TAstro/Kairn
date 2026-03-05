@@ -1,9 +1,8 @@
 package com.example.kairn.ui.navigation
 
-enum class Tab {
+enum class Screen {
     HOME,
-    CATALOG,
-    EDITOR,
-    SOCIAL,
-    ACCOUNT,
+    EXPLORE,
+    CHAT,
+    PROFILE
 }
