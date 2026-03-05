@@ -70,11 +70,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
+import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
@@ -209,9 +209,9 @@ fun HomeScreen(
                 onQueryChange = viewModel::onSearchQueryChange,
             )
             Spacer(modifier = Modifier.size(12.dp))
-            CategoryChipsRow(
-                selectedCategory = uiState.selectedCategory,
-                onCategorySelected = viewModel::onCategorySelected,
+            DifficultyChipsRow(
+                selectedDifficulty = uiState.selectedDifficulty,
+                onDifficultySelected = viewModel::onDifficultySelected,
             )
         }
     }
@@ -368,12 +368,12 @@ private fun HomeSearchBar(
     }
 }
 
-// ─── Category chips ───────────────────────────────────────────────────────────
+// ─── Difficulty chips ─────────────────────────────────────────────────────────
 
 @Composable
-private fun CategoryChipsRow(
-    selectedCategory: HikeCategory?,
-    onCategorySelected: (HikeCategory?) -> Unit,
+private fun DifficultyChipsRow(
+    selectedDifficulty: HikeDifficulty?,
+    onDifficultySelected: (HikeDifficulty?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
@@ -381,8 +381,8 @@ private fun CategoryChipsRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(0.dp),
     ) {
-        items(HikeCategory.entries) { category ->
-            val isSelected = category == selectedCategory
+        items(HikeDifficulty.entries) { difficulty ->
+            val isSelected = difficulty == selectedDifficulty
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -396,11 +396,11 @@ private fun CategoryChipsRow(
                         color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.55f),
                         shape = RoundedCornerShape(20.dp),
                     )
-                    .clickable { onCategorySelected(if (isSelected) null else category) }
+                    .clickable { onDifficultySelected(if (isSelected) null else difficulty) }
                     .padding(horizontal = 18.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = category.label,
+                    text = difficulty.label,
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isSelected) Color.White else TextPrimary,
                     fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,

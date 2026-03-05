@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,17 +31,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.theme.Background
@@ -51,6 +53,11 @@ import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 
 @Composable
 fun CatalogueScreen(
@@ -96,7 +103,6 @@ fun CatalogueScreen(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
         ) {
-            // "All" chip
             item {
                 CatalogueChip(
                     label = "All",
@@ -118,7 +124,7 @@ fun CatalogueScreen(
             contentPadding = PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
-                bottom = 100.dp, // space for bottom nav
+                bottom = 100.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
@@ -165,7 +171,7 @@ private fun CatalogueChip(
     }
 }
 
-// ─── Hike card (maquette style: large image + overlay text + stats row) ───────
+// ─── Hike card ────────────────────────────────────────────────────────────────
 
 @Composable
 fun CatalogueHikeCard(
@@ -173,42 +179,56 @@ fun CatalogueHikeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hazeState = remember { HazeState() }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(240.dp)
+            .height(440.dp)
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // Background gradient simulating mountain photo
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Primary.copy(alpha = 0.55f),
-                            0.5f to Primary.copy(alpha = 0.30f),
-                            1.0f to Color(0xFF1a2520),
+        // ── Background: image if available, gradient fallback ─────────────
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
+            )
+            // Scrim overlay for readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color(0xFF111a16).copy(alpha = 0.25f),
+                                1.0f to Color(0xFF111a16).copy(alpha = 0.70f),
+                            ),
                         ),
                     ),
-                ),
-        )
-
-        // Dark overlay at bottom for readability
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xCC111a16)),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState)
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.55f),
+                                0.5f to Primary.copy(alpha = 0.30f),
+                                1.0f to Color(0xFF1a2520),
+                            ),
+                        ),
                     ),
-                ),
-        )
+            )
+        }
 
-        // Top-right arrow icon
+        // ── Top-right arrow icon ──────────────────────────────────────────
         Icon(
             imageVector = Icons.Filled.ArrowOutward,
             contentDescription = null,
@@ -219,39 +239,62 @@ fun CatalogueHikeCard(
                 .size(22.dp),
         )
 
-        // Title + elevation (top-left)
+        // ── Title + elevation (top-left) ──────────────────────────────────
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 18.dp, top = 18.dp),
         ) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 26.sp,
             )
             Text(
-                text = "${hike.elevationMeters} meters",
+                text = hike.formattedElevation,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.80f),
                 fontSize = 14.sp,
             )
         }
 
-        // Stats row at the bottom
+        // ── Liquid glass stats panel (bottom) ─────────────────────────────
         Row(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .hazeChild(
+                    state = hazeState,
+                    style = HazeStyle(
+                        backgroundColor = Color(0xFF111a16).copy(alpha = 0.45f),
+                        blurRadius = 20.dp,
+                        tints = listOf(
+                            HazeTint(color = Primary.copy(alpha = 0.18f)),
+                            HazeTint(color = Color.White.copy(alpha = 0.06f)),
+                        ),
+                        noiseFactor = 0.04f,
+                    ),
+                )
+                .border(
+                    width = 0.5.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.05f),
+                        ),
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                )
+                .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CardStatItem(
                 icon = Icons.Outlined.Schedule,
-                value = hike.displayDuration,
+                value = hike.formattedDuration,
                 label = "Duration",
             )
             CardStatItem(

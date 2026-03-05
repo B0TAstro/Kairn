@@ -45,7 +45,9 @@ fun KairnNavHost(
             arguments = listOf(navArgument("hikeId") { type = NavType.StringType }),
         ) { backStackEntry ->
             val hikeId = backStackEntry.arguments?.getString("hikeId") ?: return@composable
-            val hike = Hike.previewList.find { it.id == hikeId } ?: Hike.preview
+            val hike = Hike.previewList.find { it.id == hikeId }
+                ?: Hike.previewList.firstOrNull()
+                ?: Hike.preview
             HikeDetailScreenWithCta(
                 hike = hike,
                 onBack = { navController.popBackStack() },

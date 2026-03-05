@@ -1,6 +1,7 @@
 package com.example.kairn.ui.catalogue
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -39,10 +41,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
@@ -51,6 +55,8 @@ import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
+
+private val PANEL_OVERLAP = 48.dp
 
 @Composable
 fun HikeDetailScreen(
@@ -68,11 +74,12 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            // Hero image area
             HeroImageArea(hike = hike)
 
-            // Content panel — dark rounded top
-            DetailPanel(hike = hike)
+            DetailPanel(
+                hike = hike,
+                modifier = Modifier.offset(y = -PANEL_OVERLAP),
+            )
         }
 
         // ── Sticky top actions (back + bookmark) ──────────────────────────
@@ -97,7 +104,7 @@ fun HikeDetailScreen(
     }
 }
 
-// ─── Hero image (gradient placeholder) ───────────────────────────────────────
+// ─── Hero image ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun HeroImageArea(
@@ -107,29 +114,44 @@ private fun HeroImageArea(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(340.dp)
-            .background(
-                Brush.verticalGradient(
-                    colorStops = arrayOf(
-                        0.0f to Primary.copy(alpha = 0.45f),
-                        0.4f to Primary.copy(alpha = 0.25f),
-                        1.0f to Color(0xFF111a16),
-                    ),
-                ),
-            ),
+            .height(420.dp),
     ) {
-        // Subtle bottom fade into the dark panel
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xFF111a16)),
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Scrim for readability at the bottom (panel overlap zone)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color(0xFF111a16).copy(alpha = 0.15f),
+                                0.7f to Color(0xFF111a16).copy(alpha = 0.10f),
+                                1.0f to Color(0xFF111a16).copy(alpha = 0.55f),
+                            ),
+                        ),
                     ),
-                ),
-        )
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.45f),
+                                0.4f to Primary.copy(alpha = 0.25f),
+                                1.0f to Color(0xFF111a16),
+                            ),
+                        ),
+                    ),
+            )
+        }
     }
 }
 
@@ -141,14 +163,15 @@ private fun DetailPanel(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val panelShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-            .background(Color(0xFF111a16))
+            .clip(panelShape)
+            .background(Background)
             .padding(horizontal = 24.dp)
-            .padding(top = 16.dp, bottom = 120.dp), // bottom space for FAB
+            .padding(top = 16.dp, bottom = 120.dp),
     ) {
         // Drag handle
         Box(
@@ -156,25 +179,25 @@ private fun DetailPanel(
                 .width(40.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.25f))
+                .background(TextSecondary.copy(alpha = 0.25f))
                 .align(Alignment.CenterHorizontally),
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Name + elevation
+        // Title + elevation
         Text(
-            text = hike.name,
+            text = hike.title,
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 28.sp,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "${hike.elevationMeters} meters",
+            text = hike.formattedElevation,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.55f),
+            color = TextSecondary,
             fontSize = 15.sp,
         )
 
@@ -187,7 +210,7 @@ private fun DetailPanel(
         ) {
             DetailStatItem(
                 icon = Icons.Outlined.Schedule,
-                value = hike.displayDuration,
+                value = hike.formattedDuration,
                 label = "Duration",
                 modifier = Modifier.weight(1f),
             )
@@ -209,14 +232,13 @@ private fun DetailPanel(
 
         // Tabs
         KairnTabRow(
-            tabs = listOf("Details", "Rout List", "Reviews"),
+            tabs = listOf("Details", "Route List", "Reviews"),
             selectedIndex = selectedTab,
             onTabSelected = { selectedTab = it },
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tab content
         when (selectedTab) {
             0 -> DetailsTabContent(hike = hike)
             1 -> PlaceholderTabContent(text = "Route waypoints coming soon.")
@@ -234,26 +256,19 @@ private fun DetailsTabContent(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "Hiking to ${hike.name}",
+            text = "Hiking to ${hike.title}",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
+            color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp,
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Panoramic views of Mont Blanc and the Alps",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.55f),
-            fontSize = 13.sp,
-        )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = hike.description.ifEmpty {
+            text = hike.description.orEmpty().ifEmpty {
                 "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery that will leave you speechless."
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.70f),
+            color = TextPrimary.copy(alpha = 0.75f),
             fontSize = 14.sp,
             lineHeight = 22.sp,
         )
@@ -268,7 +283,7 @@ private fun PlaceholderTabContent(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.50f),
+        color = TextSecondary,
         modifier = modifier,
     )
 }
@@ -297,21 +312,21 @@ private fun DetailStatItem(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+                color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.50f),
+                color = TextSecondary,
                 fontSize = 11.sp,
             )
         }
     }
 }
 
-// ─── Round action button (back / bookmark) ────────────────────────────────────
+// ─── Round action button ──────────────────────────────────────────────────────
 
 @Composable
 private fun ActionButton(
@@ -325,7 +340,12 @@ private fun ActionButton(
         modifier = modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(Color(0xFF1e2d27))
+            .background(Color(0xFF1e2d27).copy(alpha = 0.75f))
+            .border(
+                width = 0.5.dp,
+                color = Color.White.copy(alpha = 0.18f),
+                shape = CircleShape,
+            )
             .clickable(onClick = onClick),
     ) {
         Icon(
@@ -337,7 +357,7 @@ private fun ActionButton(
     }
 }
 
-// ─── Floating CTA (overlaid at bottom) ───────────────────────────────────────
+// ─── Floating CTA ─────────────────────────────────────────────────────────────
 
 @Composable
 fun HikeDetailCta(
@@ -347,11 +367,7 @@ fun HikeDetailCta(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color(0xE6111a16)),
-                ),
-            )
+            .background(Background)
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
