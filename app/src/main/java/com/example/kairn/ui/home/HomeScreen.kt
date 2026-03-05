@@ -2,11 +2,6 @@ package com.example.kairn.ui.home
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Geocoder
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -40,16 +35,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.Locale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,21 +49,21 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
@@ -90,80 +79,20 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    val context = LocalContext.current
 
+    // ── Location permission handling ──────────────────────────────────────
     var locationPermissionGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            ) == PackageManager.PERMISSION_GRANTED,
-        )
+        mutableStateOf(viewModel.hasLocationPermission)
     }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> locationPermissionGranted = granted }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    // Resolve a Location to a city name via Geocoder
-    fun resolveCity(location: Location) {
-        coroutineScope.launch {
-            val cityName = withContext(Dispatchers.IO) {
-                try {
-                    @Suppress("DEPRECATION")
-                    val addresses = Geocoder(context, Locale.getDefault())
-                        .getFromLocation(location.latitude, location.longitude, 1)
-                    if (!addresses.isNullOrEmpty()) {
-                        val addr = addresses[0]
-                        (addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: "")
-                            .let { city ->
-                                val country = addr.countryName ?: ""
-                                if (city.isNotBlank() && country.isNotBlank()) "$city, $country"
-                                else city.ifBlank { country }
-                            }
-                    } else ""
-                } catch (_: Exception) { "" }
-            }
-            viewModel.onUserLocationUpdated(location.latitude, location.longitude, cityName)
-        }
-    }
-
-    // Start GPS updates once permission is granted
-    DisposableEffect(locationPermissionGranted) {
-        if (!locationPermissionGranted) return@DisposableEffect onDispose {}
-
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val listener = object : LocationListener {
-            override fun onLocationChanged(loc: Location) { resolveCity(loc) }
-            @Deprecated("Deprecated in Java")
-            override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) = Unit
-        }
-
-        try {
-            // Use last known position immediately for fast first render
-            val lastKnown = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            lastKnown?.let { resolveCity(it) }
-
-            // Request live updates (every 5 s or 10 m)
-            val provider = when {
-                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-                else -> null
-            }
-            provider?.let {
-                locationManager.requestLocationUpdates(it, 5_000L, 10f, listener)
-            }
-        } catch (_: SecurityException) {}
-
-        onDispose {
-            locationManager.removeUpdates(listener)
-        }
+    ) { granted ->
+        locationPermissionGranted = granted
+        if (granted) viewModel.onPermissionGranted()
     }
 
     LaunchedEffect(Unit) {
@@ -172,6 +101,7 @@ fun HomeScreen(
         }
     }
 
+    // ── UI ────────────────────────────────────────────────────────────────
     Box(modifier = modifier.fillMaxSize()) {
 
         // ── OSM Map fills entire screen ───────────────────────────────────
