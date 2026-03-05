@@ -226,7 +226,7 @@ internal fun CtaContent(
         Button(
             onClick = onNavigateToSignUp,
             modifier = Modifier
-                .padding(top = 48.dp)
+                .padding(top = 40.dp)
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(14.dp),
@@ -242,7 +242,7 @@ internal fun CtaContent(
         }
         ClickableText(
             text = signInText,
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = lightTextColor,
                 textAlign = TextAlign.Center,
