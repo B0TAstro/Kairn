@@ -124,8 +124,8 @@ Backend:
 ### Phase 0 - Foundations
 - [x] Define Supabase data model (`accounts`, `paths`, `groups`)
 - [x] Implement Auth and RLS security rules
-- [ ] Set up Android architecture (`ui`, `data`, `domain`)
-- [ ] Deliver login/sign-up flow
+- [X] Set up Android architecture (`ui`, `data`, `domain`)
+- [X] Deliver login/sign-up flow
 
 ### Phase 1 - Navigation
 - [ ] Display a regional 3D map with hikes
