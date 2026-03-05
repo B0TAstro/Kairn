@@ -188,11 +188,11 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .liquidGlass(
-                    cornerRadius = 28.dp,
-                    backgroundColor = Background.copy(alpha = 0.88f),
-                    borderColor = Color.White.copy(alpha = 0.35f),
-                    shadowColor = Primary.copy(alpha = 0.08f),
-                    shadowRadius = 20.dp,
+                    cornerRadius = 40.dp,
+                    backgroundColor = Background.copy(alpha = 0.80f),
+                    borderColor = Color.White.copy(alpha = 0.25f),
+                    shadowColor = TextPrimary.copy(alpha = 0.06f),
+                    shadowRadius = 24.dp,
                 )
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
@@ -221,7 +221,7 @@ fun HomeScreen(
             onDismissRequest = { viewModel.onBottomSheetDismissed() },
             sheetState = bottomSheetState,
             containerColor = CardBackground,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         ) {
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
@@ -330,9 +330,9 @@ private fun HomeSearchBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.45f))
-            .border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.40f))
+            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
             .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -378,7 +378,7 @@ private fun DifficultyChipsRow(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(0.dp),
     ) {
         items(HikeDifficulty.entries) { difficulty ->
@@ -386,15 +386,15 @@ private fun DifficultyChipsRow(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
                         if (isSelected) ChipSelectedBackground
-                        else Color.White.copy(alpha = 0.40f),
+                        else Color.White.copy(alpha = 0.35f),
                     )
                     .border(
                         width = 1.dp,
-                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.55f),
-                        shape = RoundedCornerShape(20.dp),
+                        color = if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(24.dp),
                     )
                     .clickable { onDifficultySelected(if (isSelected) null else difficulty) }
                     .padding(horizontal = 18.dp, vertical = 8.dp),

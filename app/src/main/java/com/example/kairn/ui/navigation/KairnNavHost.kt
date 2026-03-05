@@ -35,7 +35,7 @@ fun KairnNavHost(
                 HomeScreen()
             }
 
-            composable(Screen.DETAILS.name) { backStackEntry ->
+            composable(Screen.EXPLORE.name) { backStackEntry ->
                 val exploreViewModel: ExploreViewModel = viewModel(backStackEntry)
                 ExploreScreen(
                     onHikeClick = { hikeId ->
@@ -47,12 +47,16 @@ fun KairnNavHost(
                 )
             }
 
-            composable(Screen.SAVED.name) {
-                HomeScreen() // TODO: Replace with SavedScreen
+            composable(Screen.CHAT.name) {
+                HomeScreen() // TODO: Replace with ChatScreen
             }
 
             composable(Screen.PROFILE.name) {
-                AccountScreen()
+                AccountScreen(
+                    onSignOut = {
+                        navController.navigate(Screen.PROFILE.name)
+                    },
+                )
             }
 
             composable(
@@ -62,7 +66,7 @@ fun KairnNavHost(
                 val hikeId = backStackEntry.arguments?.getString("hikeId") ?: return@composable
 
                 val exploreEntry = remember(backStackEntry) {
-                    navController.getBackStackEntry(Screen.DETAILS.name)
+                    navController.getBackStackEntry(Screen.EXPLORE.name)
                 }
                 val exploreViewModel: ExploreViewModel = viewModel(exploreEntry)
 
