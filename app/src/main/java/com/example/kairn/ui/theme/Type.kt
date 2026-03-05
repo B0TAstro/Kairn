@@ -2,16 +2,22 @@ package com.example.kairn.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.kairn.R
 
-// Fallbacks are kept to FontFamily.Default until the font files are available.
-// Add these files to app/src/main/res/font/ to enable the intended brand typography:
-// - clash_display_variable.ttf
-// - satoshi_regular.ttf (and other weights as needed)
-private val ClashDisplay = FontFamily.Default
-private val Satoshi = FontFamily.Default
+private val ClashDisplay = FontFamily(
+    Font(R.font.clash_display_variable, FontWeight.Medium),
+    Font(R.font.clash_display_variable, FontWeight.SemiBold),
+)
+
+private val Satoshi = FontFamily(
+    Font(R.font.satoshi_regular, FontWeight.Normal),
+    Font(R.font.satoshi_medium, FontWeight.Medium),
+    Font(R.font.satoshi_bold, FontWeight.Bold),
+)
 
 val Typography = Typography(
     // ── Display ──────────────────────────────────────────────
