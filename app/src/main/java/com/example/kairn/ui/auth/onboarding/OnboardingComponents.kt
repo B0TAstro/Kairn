@@ -216,31 +216,33 @@ internal fun CtaContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Rejoignez une communaute qui partage ses randonnees et ses balades.",
+            text = "Explorez, partagez et vivez l'aventure ensemble",
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Normal,
+            ),
             color = lightTextColor,
         )
         Button(
             onClick = onNavigateToSignUp,
             modifier = Modifier
-                .padding(top = 20.dp)
+                .padding(top = 48.dp)
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onTertiary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
             Text(
                 text = "S'inscrire",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleSmall,
             )
         }
         ClickableText(
             text = signInText,
-            modifier = Modifier.padding(top = 14.dp),
+            modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = lightTextColor,
                 textAlign = TextAlign.Center,

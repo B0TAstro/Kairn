@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +64,22 @@ fun OnboardingScreen(
                 ),
         )
 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(state.ctaAlpha)
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color.Transparent,
+                            0.40f to Color.Black.copy(alpha = 0.10f),
+                            0.65f to Color.Black.copy(alpha = 0.30f),
+                            1.0f to Color.Black.copy(alpha = 0.55f),
+                        ),
+                    ),
+                ),
+        )
+
         IntroContent(
             alpha = state.introAlpha,
             modifier = Modifier.align(Alignment.TopStart),
@@ -85,6 +102,7 @@ fun OnboardingScreen(
             onNavigateToSignIn = onNavigateToSignIn,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp, vertical = 28.dp),
         )
     }
