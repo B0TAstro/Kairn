@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.kairn.domain.model.HikeCategory
+import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.theme.ChipBackground
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.TextPrimary
@@ -46,10 +46,10 @@ fun CategoryChip(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CategoryChipRow(
-    categories: List<HikeCategory>,
-    selectedCategory: HikeCategory?,
-    onCategorySelected: (HikeCategory) -> Unit,
+fun DifficultyChipRow(
+    difficulties: List<HikeDifficulty>,
+    selectedDifficulty: HikeDifficulty?,
+    onDifficultySelected: (HikeDifficulty) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlowRow(
@@ -57,11 +57,11 @@ fun CategoryChipRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        categories.forEach { category ->
+        difficulties.forEach { difficulty ->
             CategoryChip(
-                label = category.label,
-                isSelected = category == selectedCategory,
-                onClick = { onCategorySelected(category) },
+                label = difficulty.label,
+                isSelected = difficulty == selectedDifficulty,
+                onClick = { onDifficultySelected(difficulty) },
             )
         }
     }
