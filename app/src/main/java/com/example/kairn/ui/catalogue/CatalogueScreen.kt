@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +53,11 @@ import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 
 @Composable
 fun CatalogueScreen(
@@ -167,7 +172,7 @@ private fun CatalogueChip(
     }
 }
 
-// ─── Hike card (maquette style: large image + overlay text + stats row) ───────
+// ─── Hike card ────────────────────────────────────────────────────────────────
 
 @Composable
 fun CatalogueHikeCard(
@@ -175,25 +180,31 @@ fun CatalogueHikeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // HazeState local à la carte pour le blur du panel stats
+    val hazeState = remember { HazeState() }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(240.dp)
+            .height(320.dp)
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // Hike photo (or gradient fallback if no URL)
+        // ── Photo (source du blur) ────────────────────────────────────────
         if (hike.imageUrl != null) {
             AsyncImage(
                 model = hike.imageUrl,
                 contentDescription = hike.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
             )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .haze(hazeState)
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
@@ -206,20 +217,7 @@ fun CatalogueHikeCard(
             )
         }
 
-        // Dark overlay at bottom for readability
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xCC111a16)),
-                    ),
-                ),
-        )
-
-        // Top-right arrow icon
+        // ── Top-right arrow icon ──────────────────────────────────────────
         Icon(
             imageVector = Icons.Filled.ArrowOutward,
             contentDescription = null,
@@ -230,7 +228,7 @@ fun CatalogueHikeCard(
                 .size(22.dp),
         )
 
-        // Title + elevation (top-left)
+        // ── Title + elevation (top-left) ──────────────────────────────────
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -251,12 +249,35 @@ fun CatalogueHikeCard(
             )
         }
 
-        // Stats row at the bottom
+        // ── Liquid glass stats panel (bottom) ─────────────────────────────
         Row(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .hazeChild(
+                    state = hazeState,
+                    style = HazeStyle(
+                        backgroundColor = Color(0xFF111a16).copy(alpha = 0.45f),
+                        blurRadius = 20.dp,
+                        tints = listOf(
+                            HazeTint(color = Primary.copy(alpha = 0.18f)),
+                            HazeTint(color = Color.White.copy(alpha = 0.06f)),
+                        ),
+                        noiseFactor = 0.04f,
+                    ),
+                )
+                .border(
+                    width = 0.5.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.05f),
+                        ),
+                    ),
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                )
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

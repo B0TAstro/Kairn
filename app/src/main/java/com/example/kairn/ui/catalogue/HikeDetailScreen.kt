@@ -1,6 +1,7 @@
 package com.example.kairn.ui.catalogue
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -48,11 +50,16 @@ import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
-import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
+
+// Valeur du chevauchement du panel sur l'image hero
+private val PANEL_OVERLAP = 48.dp
 
 @Composable
 fun HikeDetailScreen(
@@ -61,6 +68,7 @@ fun HikeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val hazeState = remember { HazeState() }
 
     Box(modifier = modifier.fillMaxSize()) {
 
@@ -70,11 +78,15 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            // Hero image area
-            HeroImageArea(hike = hike)
+            // Hero image area — source du blur
+            HeroImageArea(hike = hike, hazeState = hazeState)
 
-            // Content panel — dark rounded top
-            DetailPanel(hike = hike)
+            // Content panel — remonte de PANEL_OVERLAP sur la photo
+            DetailPanel(
+                hike = hike,
+                hazeState = hazeState,
+                modifier = Modifier.offset(y = -PANEL_OVERLAP),
+            )
         }
 
         // ── Sticky top actions (back + bookmark) ──────────────────────────
@@ -99,30 +111,34 @@ fun HikeDetailScreen(
     }
 }
 
-// ─── Hero image (gradient placeholder) ───────────────────────────────────────
+// ─── Hero image ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun HeroImageArea(
     hike: Hike,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(340.dp),
+            .height(420.dp),
     ) {
-        // Hike photo (or gradient fallback if no URL)
+        // Hike photo — source du blur haze
         if (hike.imageUrl != null) {
             AsyncImage(
                 model = hike.imageUrl,
                 contentDescription = hike.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
             )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .haze(hazeState)
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
@@ -135,35 +151,60 @@ private fun HeroImageArea(
             )
         }
 
-        // Bottom fade into the dark panel (always on top of the photo)
+        // Fondu bas léger pour adoucir la transition vers le panel
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(80.dp)
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xFF111a16)),
+                        colors = listOf(Color.Transparent, Color(0x66111a16)),
                     ),
                 ),
         )
     }
 }
 
-// ─── Detail content panel ─────────────────────────────────────────────────────
+// ─── Detail content panel (liquid glass) ─────────────────────────────────────
 
 @Composable
 private fun DetailPanel(
     hike: Hike,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val panelShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-            .background(Color(0xFF111a16))
+            .clip(panelShape)
+            // Liquid glass : blur de la photo qui se trouve derrière
+            .hazeChild(
+                state = hazeState,
+                style = HazeStyle(
+                    backgroundColor = Color(0xFF0e1712).copy(alpha = 0.72f),
+                    blurRadius = 28.dp,
+                    tints = listOf(
+                        HazeTint(color = Primary.copy(alpha = 0.22f)),
+                        HazeTint(color = Color.White.copy(alpha = 0.04f)),
+                    ),
+                    noiseFactor = 0.03f,
+                ),
+            )
+            // Bordure top frosted
+            .border(
+                width = 0.8.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.22f),
+                        Color.White.copy(alpha = 0.04f),
+                    ),
+                ),
+                shape = panelShape,
+            )
             .padding(horizontal = 24.dp)
             .padding(top = 16.dp, bottom = 120.dp), // bottom space for FAB
     ) {
@@ -173,7 +214,7 @@ private fun DetailPanel(
                 .width(40.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.25f))
+                .background(Color.White.copy(alpha = 0.28f))
                 .align(Alignment.CenterHorizontally),
         )
 
@@ -342,7 +383,12 @@ private fun ActionButton(
         modifier = modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(Color(0xFF1e2d27))
+            .background(Color(0xFF1e2d27).copy(alpha = 0.75f))
+            .border(
+                width = 0.5.dp,
+                color = Color.White.copy(alpha = 0.18f),
+                shape = CircleShape,
+            )
             .clickable(onClick = onClick),
     ) {
         Icon(
