@@ -84,9 +84,7 @@ fun ChatScreen(
     }
 
     Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding(),
+        modifier = modifier.fillMaxSize(),
         containerColor = Background,
         topBar = {
             TopAppBar(
@@ -118,6 +116,7 @@ fun ChatScreen(
                 onMessageChange = viewModel::onMessageInputChange,
                 onSendClick = viewModel::sendMessage,
                 isSending = uiState.isSending,
+                modifier = Modifier.imePadding(),
             )
         }
     ) { paddingValues ->
