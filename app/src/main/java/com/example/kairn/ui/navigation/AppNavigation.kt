@@ -10,7 +10,6 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,11 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairn.domain.model.SessionState
 import com.example.kairn.ui.auth.AuthUiState
@@ -137,6 +138,19 @@ private fun MainScreen(
     val navController = rememberNavController()
     var selectedItem by remember { mutableStateOf(Screen.HOME.name) }
     val hazeState = remember { HazeState() }
+    val currentBackStack by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStack?.destination?.route
+    val showBottomNav = currentRoute != NavRoutes.HIKE_DETAIL
+
+    LaunchedEffect(currentRoute) {
+        selectedItem = when (currentRoute) {
+            Screen.HOME.name -> Screen.HOME.name
+            Screen.EXPLORE.name, NavRoutes.HIKE_DETAIL -> Screen.EXPLORE.name
+            Screen.CHAT.name -> Screen.CHAT.name
+            Screen.PROFILE.name -> Screen.PROFILE.name
+            else -> selectedItem
+        }
+    }
 
     val navBarItems = listOf(
         NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
@@ -153,21 +167,23 @@ private fun MainScreen(
                 .haze(hazeState),
         )
 
-        KairnBottomNavBar(
-            items = navBarItems,
-            selectedItem = selectedItem,
-            onItemSelected = { itemId ->
-                selectedItem = itemId
-                navController.navigate(itemId) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
+        if (showBottomNav) {
+            KairnBottomNavBar(
+                items = navBarItems,
+                selectedItem = selectedItem,
+                onItemSelected = { itemId ->
+                    selectedItem = itemId
+                    navController.navigate(itemId) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            hazeState = hazeState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+                },
+                hazeState = hazeState,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
     }
 }
