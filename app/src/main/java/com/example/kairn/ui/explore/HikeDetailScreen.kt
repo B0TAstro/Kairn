@@ -5,7 +5,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -78,6 +77,7 @@ fun HikeDetailScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
+                .background(Background)
                 // sharedBounds sur le conteneur entier — même clé que la carte
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "hike-card-${hike.id}"),
@@ -195,10 +195,7 @@ private fun DetailPanel(
             .then(
                 with(animatedVisibilityScope) {
                     Modifier.animateEnterExit(
-                        enter = slideInVertically(
-                            animationSpec = tween(durationMillis = 500),
-                            initialOffsetY = { it },
-                        ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = 100)),
+                        enter = fadeIn(animationSpec = tween(durationMillis = 200)),
                     )
                 }
             ),
@@ -341,7 +338,8 @@ fun HikeDetailCta(
             .fillMaxWidth()
             .background(Background)
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(bottom = 20.dp),
     ) {
         KairnButton(text = "Start your trip", onClick = onStartTrip, modifier = Modifier.fillMaxWidth())
     }
