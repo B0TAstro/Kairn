@@ -54,7 +54,6 @@ internal fun IntroContent(
             .fillMaxSize()
             .alpha(alpha),
     ) {
-        // Top section: "Welcome to" + "KAIRN"
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -62,11 +61,11 @@ internal fun IntroContent(
                 .fillMaxWidth(),
         ) {
             Text(
-                text = "Welcome to",
+                text = "welcome to",
                 style = TextStyle(
                     fontFamily = MaterialTheme.typography.headlineMedium.fontFamily,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 26.sp,
+                    fontSize = 22.sp,
                     letterSpacing = 0.sp,
                 ),
                 color = titleTextColor,
@@ -83,25 +82,24 @@ internal fun IntroContent(
             )
         }
 
-        // Middle-lower section: tagline phrases
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 32.dp)
+                .padding(horizontal = 48.dp)
                 .offset(y = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Echappez a votre routine et decouvrez des sentiers a couper le souffle pres de chez vous.",
+                text = "Echappez a votre routine,\ndecouvrez des sentiers\na couper le souffle.",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
                 ),
                 color = Color.White,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Bougez, respirez, et racontez ensuite votre aventure.",
+                text = "Bougez, respirez,\net racontez votre aventure.",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.85f),
@@ -124,12 +122,11 @@ internal fun GoPrompt(
             .offset(y = bounceOffsetDp.dp)
             .clickable(enabled = alpha > 0f, onClick = onGo),
     ) {
-        // Background pill with vertical fade
         Box(
             modifier = Modifier
                 .width(56.dp)
                 .height(90.dp)
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 28.dp, bottomEnd = 28.dp))
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
@@ -141,13 +138,10 @@ internal fun GoPrompt(
                     ),
                 ),
         )
-
-        // Chevrons + GO button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(bottom = 6.dp),
         ) {
-            // Small chevrons
             Icon(
                 imageVector = Icons.Default.KeyboardArrowUp,
                 contentDescription = null,
@@ -165,7 +159,6 @@ internal fun GoPrompt(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // GO circle button
             Surface(
                 shape = CircleShape,
                 color = Color.White,

@@ -46,8 +46,6 @@ fun OnboardingScreen(
             revealProgress = state.backgroundRevealProgress,
         )
 
-        // Gradient overlay: subtle dark tint for white text readability,
-        // lighter in the middle, stronger tint at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
