@@ -16,10 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.kairn.domain.model.HikeDifficulty
-import com.example.kairn.ui.theme.ChipBackground
-import com.example.kairn.ui.theme.ChipSelectedBackground
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun CategoryChip(
@@ -32,14 +28,21 @@ fun CategoryChip(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) ChipSelectedBackground else ChipBackground)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.tertiaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer,
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (isSelected) TextPrimary else TextSecondary,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.onBackground
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
     }
 }
