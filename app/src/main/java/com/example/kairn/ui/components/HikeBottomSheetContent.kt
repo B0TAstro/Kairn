@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,26 @@ fun HikeBottomSheetContent(
             fontWeight = FontWeight.SemiBold,
             fontSize = 24.sp,
         )
+        if (hike.location != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(13.dp),
+                )
+                Text(
+                    text = hike.location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 

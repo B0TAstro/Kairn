@@ -1,7 +1,7 @@
 package com.example.kairn.ui.catalogue
 
 import androidx.lifecycle.ViewModel
-import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.HikeCategory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +12,7 @@ class CatalogueViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(CatalogueUiState())
     val uiState: StateFlow<CatalogueUiState> = _uiState.asStateFlow()
 
-    fun onDifficultySelected(difficulty: HikeDifficulty?) {
-        _uiState.update { it.copy(selectedDifficulty = difficulty) }
+    fun onCategorySelected(category: HikeCategory?) {
+        _uiState.update { it.copy(selectedCategory = category) }
     }
 }

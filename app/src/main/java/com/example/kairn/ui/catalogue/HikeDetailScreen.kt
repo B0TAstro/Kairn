@@ -41,10 +41,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
@@ -72,7 +74,7 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            HeroImageArea()
+            HeroImageArea(hike = hike)
 
             DetailPanel(
                 hike = hike,
@@ -102,26 +104,55 @@ fun HikeDetailScreen(
     }
 }
 
-// ─── Hero image (gradient — à remplacer par AsyncImage quand image_url sera dans Supabase) ───
+// ─── Hero image ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun HeroImageArea(
+    hike: Hike,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(420.dp)
-            .background(
-                Brush.verticalGradient(
-                    colorStops = arrayOf(
-                        0.0f to Primary.copy(alpha = 0.45f),
-                        0.4f to Primary.copy(alpha = 0.25f),
-                        1.0f to Color(0xFF111a16),
+            .height(420.dp),
+    ) {
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Scrim for readability at the bottom (panel overlap zone)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color(0xFF111a16).copy(alpha = 0.15f),
+                                0.7f to Color(0xFF111a16).copy(alpha = 0.10f),
+                                1.0f to Color(0xFF111a16).copy(alpha = 0.55f),
+                            ),
+                        ),
                     ),
-                ),
-            ),
-    )
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.45f),
+                                0.4f to Primary.copy(alpha = 0.25f),
+                                1.0f to Color(0xFF111a16),
+                            ),
+                        ),
+                    ),
+            )
+        }
+    }
 }
 
 // ─── Detail content panel ─────────────────────────────────────────────────────

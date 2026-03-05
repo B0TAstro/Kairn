@@ -1,13 +1,13 @@
 package com.example.kairn.ui.catalogue
 
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.HikeCategory
 
 data class CatalogueUiState(
     val allHikes: List<Hike> = Hike.previewList,
-    val selectedDifficulty: HikeDifficulty? = null,
+    val selectedCategory: HikeCategory? = null,
 ) {
     val filteredHikes: List<Hike>
-        get() = if (selectedDifficulty == null) allHikes
-        else allHikes.filter { it.difficulty == selectedDifficulty }
+        get() = if (selectedCategory == null) allHikes
+        else allHikes.filter { it.category == selectedCategory }
 }

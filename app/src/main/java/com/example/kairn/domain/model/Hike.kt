@@ -13,6 +13,10 @@ data class Hike(
     val status: HikeStatus = HikeStatus.DRAFT,
     val createdAt: String = "",
     val updatedAt: String = "",
+    // Colonnes à ajouter dans Supabase
+    val location: String? = null,
+    val imageUrl: String? = null,
+    val category: HikeCategory? = null,
 ) {
     val formattedDuration: String
         get() {
@@ -48,6 +52,9 @@ data class Hike(
             status = HikeStatus.PUBLISHED,
             createdAt = "2025-01-01T00:00:00Z",
             updatedAt = "2025-01-01T00:00:00Z",
+            location = "Chamonix, France",
+            imageUrl = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+            category = HikeCategory.MOUNTAIN,
         )
 
         val previewList = listOf(
@@ -65,6 +72,9 @@ data class Hike(
                 status = HikeStatus.PUBLISHED,
                 createdAt = "2025-01-01T00:00:00Z",
                 updatedAt = "2025-01-01T00:00:00Z",
+                location = "Chamonix, France",
+                imageUrl = "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80",
+                category = HikeCategory.LAKE,
             ),
             Hike(
                 id = "00000000-0000-0000-0000-000000000003",
@@ -79,6 +89,9 @@ data class Hike(
                 status = HikeStatus.PUBLISHED,
                 createdAt = "2025-01-01T00:00:00Z",
                 updatedAt = "2025-01-01T00:00:00Z",
+                location = "Chamonix, France",
+                imageUrl = "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
+                category = HikeCategory.MOUNTAIN,
             ),
             Hike(
                 id = "00000000-0000-0000-0000-000000000004",
@@ -93,6 +106,9 @@ data class Hike(
                 status = HikeStatus.PUBLISHED,
                 createdAt = "2025-01-01T00:00:00Z",
                 updatedAt = "2025-01-01T00:00:00Z",
+                location = "Chamonix, France",
+                imageUrl = "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80",
+                category = HikeCategory.MOUNTAIN,
             ),
             Hike(
                 id = "00000000-0000-0000-0000-000000000005",
@@ -107,6 +123,9 @@ data class Hike(
                 status = HikeStatus.PUBLISHED,
                 createdAt = "2025-01-01T00:00:00Z",
                 updatedAt = "2025-01-01T00:00:00Z",
+                location = "Servoz, France",
+                imageUrl = "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80",
+                category = HikeCategory.FOREST,
             ),
             Hike(
                 id = "00000000-0000-0000-0000-000000000006",
@@ -121,6 +140,9 @@ data class Hike(
                 status = HikeStatus.PUBLISHED,
                 createdAt = "2025-01-01T00:00:00Z",
                 updatedAt = "2025-01-01T00:00:00Z",
+                location = "Les Houches, France",
+                imageUrl = "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80",
+                category = HikeCategory.LAKE,
             ),
         )
     }
@@ -139,4 +161,12 @@ enum class HikeStatus {
     DRAFT,
     PUBLISHED,
     ARCHIVED,
+}
+
+// Colonne `category` à ajouter dans Supabase
+enum class HikeCategory(val label: String) {
+    MOUNTAIN("Mountain"),
+    FOREST("Forest"),
+    LAKE("Lake"),
+    CAVE("Cave"),
 }

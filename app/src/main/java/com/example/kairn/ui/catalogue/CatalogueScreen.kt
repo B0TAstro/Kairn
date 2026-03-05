@@ -38,13 +38,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.ChipSelectedBackground
 import com.example.kairn.ui.theme.KairnTheme
@@ -93,7 +95,7 @@ fun CatalogueScreen(
             )
         }
 
-        // ── Difficulty filter chips ───────────────────────────────────────
+        // ── Category filter chips ─────────────────────────────────────────
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -104,15 +106,15 @@ fun CatalogueScreen(
             item {
                 CatalogueChip(
                     label = "All",
-                    isSelected = uiState.selectedDifficulty == null,
-                    onClick = { viewModel.onDifficultySelected(null) },
+                    isSelected = uiState.selectedCategory == null,
+                    onClick = { viewModel.onCategorySelected(null) },
                 )
             }
-            items(HikeDifficulty.entries) { difficulty ->
+            items(HikeCategory.entries) { category ->
                 CatalogueChip(
-                    label = difficulty.label,
-                    isSelected = uiState.selectedDifficulty == difficulty,
-                    onClick = { viewModel.onDifficultySelected(difficulty) },
+                    label = category.label,
+                    isSelected = uiState.selectedCategory == category,
+                    onClick = { viewModel.onCategorySelected(category) },
                 )
             }
         }
@@ -186,21 +188,45 @@ fun CatalogueHikeCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // ── Fond gradient (à remplacer par AsyncImage quand image_url sera dans Supabase)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .haze(hazeState)
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Primary.copy(alpha = 0.55f),
-                            0.5f to Primary.copy(alpha = 0.30f),
-                            1.0f to Color(0xFF1a2520),
+        // ── Background: image if available, gradient fallback ─────────────
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
+            )
+            // Scrim overlay for readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color(0xFF111a16).copy(alpha = 0.25f),
+                                1.0f to Color(0xFF111a16).copy(alpha = 0.70f),
+                            ),
                         ),
                     ),
-                ),
-        )
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState)
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Primary.copy(alpha = 0.55f),
+                                0.5f to Primary.copy(alpha = 0.30f),
+                                1.0f to Color(0xFF1a2520),
+                            ),
+                        ),
+                    ),
+            )
+        }
 
         // ── Top-right arrow icon ──────────────────────────────────────────
         Icon(
