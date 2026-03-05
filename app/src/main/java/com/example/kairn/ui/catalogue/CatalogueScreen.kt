@@ -136,7 +136,10 @@ fun CatalogueScreen(
             items(uiState.filteredHikes, key = { it.id }) { hike ->
                 CatalogueHikeCard(
                     hike = hike,
-                    onClick = { onHikeClick(hike.id) },
+                    onClick = {
+                        viewModel.onHikeSelected(hike)
+                        onHikeClick(hike.id)
+                    },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                 )

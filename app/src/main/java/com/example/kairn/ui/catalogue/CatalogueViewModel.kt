@@ -3,6 +3,7 @@ package com.example.kairn.ui.catalogue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.data.repository.HikeRepositoryImpl
+import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.domain.repository.HikeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,10 @@ class CatalogueViewModel(
 
     private val _uiState = MutableStateFlow(CatalogueUiState())
     val uiState: StateFlow<CatalogueUiState> = _uiState.asStateFlow()
+
+    // Hike sélectionné — lu par la detail screen via le même ViewModel
+    var selectedHike: Hike? = null
+        private set
 
     init {
         loadHikes()
@@ -35,6 +40,10 @@ class CatalogueViewModel(
                     }
                 }
         }
+    }
+
+    fun onHikeSelected(hike: Hike) {
+        selectedHike = hike
     }
 
     fun onCategorySelected(category: HikeCategory?) {
