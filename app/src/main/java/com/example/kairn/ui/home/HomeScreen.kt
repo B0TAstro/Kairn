@@ -60,7 +60,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
@@ -105,6 +104,8 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             userLatitude = uiState.userLatitude,
             userLongitude = uiState.userLongitude,
+            selectedCity = uiState.selectedCity,
+            markers = uiState.mapHikeMarkers,
         )
 
         // ── Liquid glass panel overlay ────────────────────────────────────
@@ -142,8 +143,8 @@ fun HomeScreen(
             if (uiState.searchQuery.isNotBlank()) {
                 Spacer(modifier = Modifier.size(12.dp))
                 SearchResultsPanel(
-                    hikes = uiState.filteredHikes.take(5),
-                    onHikeClick = viewModel::onHikeSelected,
+                    cities = uiState.citySuggestions,
+                    onCityClick = viewModel::onCitySelected,
                 )
             }
         }
@@ -166,8 +167,8 @@ fun HomeScreen(
 
 @Composable
 private fun SearchResultsPanel(
-    hikes: List<Hike>,
-    onHikeClick: (Hike) -> Unit,
+    cities: List<MapCity>,
+    onCityClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -179,9 +180,9 @@ private fun SearchResultsPanel(
             .heightIn(max = 220.dp)
             .padding(vertical = 6.dp),
     ) {
-        if (hikes.isEmpty()) {
+        if (cities.isEmpty()) {
             Text(
-                text = "No hike found",
+                text = "Try Annecy, Chamonix or Lyon",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -190,20 +191,20 @@ private fun SearchResultsPanel(
         }
 
         LazyColumn {
-            items(hikes) { hike ->
+            items(cities) { city ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onHikeClick(hike) }
+                        .clickable { onCityClick(city.name) }
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
-                        text = hike.title,
+                        text = city.name,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = hike.location.orEmpty().ifBlank { hike.difficulty.label },
+                        text = "Show hikes around ${city.name}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -335,7 +336,7 @@ private fun HomeSearchBar(
             decorationBox = { inner ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search a hike, location...",
+                        text = "Search city: Annecy, Chamonix, Lyon",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
