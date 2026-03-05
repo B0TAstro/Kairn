@@ -10,18 +10,9 @@ import com.example.kairn.domain.repository.ChatRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.postgresChangeFlow
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,168 +23,324 @@ import javax.inject.Singleton
 
 private const val TAG = "ChatRepository"
 
+/**
+ * Chat Repository - Instagram-style architecture
+ * 
+ * Simple and robust approach:
+ * 1. No complex Realtime subscriptions - use explicit refresh
+ * 2. Optimistic UI updates after sending messages
+ * 3. Clear separation between conversations list and messages
+ * 4. Proper handling of current user ID for message alignment
+ */
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
-    private val realtime: Realtime,
 ) : ChatRepository {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    
+    // State flows for reactive UI
     private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
     private val _messages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
-    
-    private var conversationChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
-    private var messageChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+
+    // Cache current user ID to avoid repeated auth calls
+    private val currentUserId: String?
+        get() = auth.currentUserOrNull()?.id
+
+    // ==================== CONVERSATIONS ====================
 
     override fun getConversations(): Flow<List<Conversation>> {
-        scope.launch {
-            try {
-                loadConversations()
-                subscribeToConversationsUpdates()
-            } catch (e: Exception) {
-                Log.e(TAG, "getConversations: Error loading conversations", e)
-                e.printStackTrace()
-            }
-        }
         return _conversations
     }
 
+    override suspend fun refreshConversations() {
+        Log.d(TAG, "refreshConversations: Starting refresh")
+        val userId = currentUserId ?: run {
+            Log.e(TAG, "refreshConversations: User not authenticated")
+            return
+        }
+
+        try {
+            // Step 1: Fetch conversations with members (no messages to avoid parsing issues)
+            val conversationDtos = postgrest.from("conversations")
+                .select(
+                    Columns.raw("""
+                        id,
+                        type,
+                        group_id,
+                        created_at,
+                        updated_at,
+                        conversation_members!inner(user_id, last_read_message_id)
+                    """.trimIndent())
+                ) {
+                    filter {
+                        eq("conversation_members.user_id", userId)
+                    }
+                    order("updated_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                }
+                .decodeList<ConversationListDto>()
+
+            Log.d(TAG, "refreshConversations: Fetched ${conversationDtos.size} conversations")
+
+            // Step 2: Get all other user IDs for profile fetching
+            val otherUserIds = conversationDtos.flatMap { conv ->
+                conv.members.map { it.userId }
+            }.filter { it != userId }.distinct()
+
+            // Step 3: Fetch profiles for other users
+            val profilesMap = if (otherUserIds.isNotEmpty()) {
+                postgrest.from("profiles")
+                    .select(Columns.raw("id, username, avatar_url")) {
+                        filter { isIn("id", otherUserIds) }
+                    }
+                    .decodeList<ProfileDto>()
+                    .associateBy { it.id }
+            } else emptyMap()
+
+            // Step 4: Fetch last message for each conversation
+            val conversationIds = conversationDtos.map { it.id }
+            val lastMessagesMap = if (conversationIds.isNotEmpty()) {
+                // Get the last message for each conversation
+                val allMessages = postgrest.from("messages")
+                    .select(Columns.raw("id, conversation_id, sender_id, body, message_type, created_at")) {
+                        filter { isIn("conversation_id", conversationIds) }
+                        order("created_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    }
+                    .decodeList<SimpleMessageDto>()
+                
+                // Group by conversation and take the first (most recent) of each
+                allMessages.groupBy { it.conversationId }
+                    .mapValues { (_, messages) -> messages.first() }
+            } else emptyMap()
+
+            // Step 5: Convert to domain models
+            _conversations.value = conversationDtos.map { dto ->
+                val otherUserId = dto.members.firstOrNull { it.userId != userId }?.userId
+                val otherProfile = otherUserId?.let { profilesMap[it] }
+                val lastMessage = lastMessagesMap[dto.id]
+
+                dto.toDomain(
+                    currentUserId = userId,
+                    otherUserProfile = otherProfile,
+                    lastMessage = lastMessage
+                )
+            }
+
+            Log.d(TAG, "refreshConversations: SUCCESS - ${_conversations.value.size} conversations loaded")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "refreshConversations: Error", e)
+        }
+    }
+
     override suspend fun getOrCreateDirectConversation(userId: String): Result<Conversation> = runCatching {
-        Log.d(TAG, "getOrCreateDirectConversation: userId=$userId")
+        Log.d(TAG, "getOrCreateDirectConversation: targetUserId=$userId")
         
-        val currentUserId = auth.currentUserOrNull()?.id 
+        val myUserId = currentUserId 
             ?: throw IllegalStateException("User not authenticated")
 
-        Log.d(TAG, "getOrCreateDirectConversation: currentUserId=$currentUserId")
+        Log.d(TAG, "getOrCreateDirectConversation: currentUserId=$myUserId")
 
-        // Call Supabase function to get or create conversation
-        Log.d(TAG, "getOrCreateDirectConversation: Calling RPC function")
-        val response = postgrest.rpc(
+        // Call Supabase RPC function
+        val conversationId = postgrest.rpc(
             function = "get_or_create_direct_conversation",
             parameters = buildJsonObject {
-                put("user1_id", currentUserId)
+                put("user1_id", myUserId)
                 put("user2_id", userId)
             }
         ).decodeAs<String>()
 
-        Log.d(TAG, "getOrCreateDirectConversation: RPC returned conversationId=$response")
+        Log.d(TAG, "getOrCreateDirectConversation: conversationId=$conversationId")
 
-        // Fetch the conversation details
-        Log.d(TAG, "getOrCreateDirectConversation: Fetching conversation details")
-        val conversation = getConversation(response).getOrThrow()
+        // Fetch conversation details
+        val conversation = fetchConversationById(conversationId, myUserId)
         
-        Log.d(TAG, "getOrCreateDirectConversation: SUCCESS - conversation.id=${conversation.id}, displayName=${conversation.displayName}")
+        // Refresh conversations list
+        refreshConversations()
+        
+        Log.d(TAG, "getOrCreateDirectConversation: SUCCESS - ${conversation.displayName}")
         conversation
     }
 
     override suspend fun getConversation(conversationId: String): Result<Conversation> = runCatching {
-        Log.d(TAG, "getConversation: conversationId=$conversationId")
-        val currentUserId = auth.currentUserOrNull()?.id 
+        val myUserId = currentUserId 
             ?: throw IllegalStateException("User not authenticated")
+        
+        fetchConversationById(conversationId, myUserId)
+    }
 
-        // Fetch conversation basic info
+    private suspend fun fetchConversationById(conversationId: String, myUserId: String): Conversation {
+        // Fetch conversation with members
         val dto = postgrest.from("conversations")
             .select(
                 Columns.raw("""
-                    *,
-                    conversation_members!inner(
-                        user_id,
-                        last_read_message_id
-                    ),
-                    messages(*)
+                    id,
+                    type,
+                    group_id,
+                    created_at,
+                    updated_at,
+                    conversation_members(user_id, last_read_message_id)
                 """.trimIndent())
             ) {
-                filter {
-                    eq("id", conversationId)
-                }
+                filter { eq("id", conversationId) }
             }
-            .decodeSingle<ConversationDto>()
+            .decodeSingle<ConversationListDto>()
 
-        Log.d(TAG, "getConversation: Found ${dto.members.size} members")
-
-        // Fetch other user's profile separately
-        val otherUserId = dto.members.firstOrNull { it.userId != currentUserId }?.userId
-        Log.d(TAG, "getConversation: otherUserId=$otherUserId")
+        // Find other user and fetch their profile
+        val otherUserId = dto.members.firstOrNull { it.userId != myUserId }?.userId
         
-        val otherUserProfile = if (otherUserId != null) {
+        val otherProfile = if (otherUserId != null) {
             try {
                 postgrest.from("profiles")
-                    .select(Columns.raw("id, username")) {
-                        filter {
-                            eq("id", otherUserId)
-                        }
+                    .select(Columns.raw("id, username, avatar_url")) {
+                        filter { eq("id", otherUserId) }
                     }
                     .decodeSingle<ProfileDto>()
             } catch (e: Exception) {
-                Log.e(TAG, "getConversation: Failed to fetch other user profile", e)
+                Log.w(TAG, "fetchConversationById: Could not fetch other user profile", e)
                 null
             }
         } else null
 
-        Log.d(TAG, "getConversation: otherUserProfile=$otherUserProfile")
-
-        dto.toDomain(currentUserId, otherUserProfile)
+        return dto.toDomain(myUserId, otherProfile, null)
     }
 
+    // ==================== MESSAGES ====================
+
     override fun getMessages(conversationId: String): Flow<List<Message>> {
-        scope.launch {
-            try {
-                loadMessages(conversationId)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        return _messages.map { messagesMap -> 
+            messagesMap[conversationId] ?: emptyList() 
         }
+    }
+
+    override suspend fun refreshMessages(conversationId: String) {
+        Log.d(TAG, "refreshMessages: conversationId=$conversationId")
         
-        return _messages.map { it[conversationId] ?: emptyList() }
+        val myUserId = currentUserId ?: run {
+            Log.e(TAG, "refreshMessages: User not authenticated")
+            return
+        }
+
+        try {
+            val messageDtos = postgrest.from("messages")
+                .select(
+                    Columns.raw("""
+                        id,
+                        conversation_id,
+                        sender_id,
+                        body,
+                        message_type,
+                        created_at,
+                        profiles:sender_id(id, username, avatar_url)
+                    """.trimIndent())
+                ) {
+                    filter { eq("conversation_id", conversationId) }
+                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+                }
+                .decodeList<MessageDto>()
+
+            Log.d(TAG, "refreshMessages: Fetched ${messageDtos.size} messages")
+
+            val messages = messageDtos.map { it.toDomain(myUserId) }
+            _messages.value = _messages.value + (conversationId to messages)
+
+            Log.d(TAG, "refreshMessages: SUCCESS")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "refreshMessages: Error", e)
+        }
     }
 
     override suspend fun sendMessage(conversationId: String, body: String): Result<Message> = runCatching {
         Log.d(TAG, "sendMessage: conversationId=$conversationId, body='$body'")
         
-        val currentUserId = auth.currentUserOrNull()?.id 
+        val myUserId = currentUserId 
             ?: throw IllegalStateException("User not authenticated")
 
-        Log.d(TAG, "sendMessage: currentUserId=$currentUserId")
+        // Get my profile for the message
+        val myProfile = try {
+            postgrest.from("profiles")
+                .select(Columns.raw("id, username, avatar_url")) {
+                    filter { eq("id", myUserId) }
+                }
+                .decodeSingle<ProfileDto>()
+        } catch (e: Exception) {
+            Log.w(TAG, "sendMessage: Could not fetch own profile", e)
+            ProfileDto(id = myUserId, username = "Me", avatarUrl = null)
+        }
 
-        val messageDto = MessageInsertDto(
+        // Create optimistic message for immediate UI update
+        val optimisticMessage = Message(
+            id = "temp_${System.currentTimeMillis()}",
             conversationId = conversationId,
-            senderId = currentUserId,
+            senderId = myUserId,
+            senderName = myProfile.username ?: "Me",
+            senderInitials = (myProfile.username ?: "Me").take(2).uppercase(),
+            body = body,
+            messageType = MessageType.TEXT,
+            createdAt = kotlinx.datetime.Clock.System.now(),
+            isCurrentUser = true,
+        )
+
+        // Optimistic update - show message immediately
+        val currentMessages = _messages.value[conversationId] ?: emptyList()
+        _messages.value = _messages.value + (conversationId to currentMessages + optimisticMessage)
+        Log.d(TAG, "sendMessage: Optimistic update applied")
+
+        // Insert into database
+        val insertDto = MessageInsertDto(
+            conversationId = conversationId,
+            senderId = myUserId,
             body = body,
             messageType = "TEXT"
         )
 
-        Log.d(TAG, "sendMessage: Inserting message into database")
-        val inserted = postgrest.from("messages")
-            .insert(messageDto) {
+        val insertedDto = postgrest.from("messages")
+            .insert(insertDto) {
                 select(Columns.raw("""
-                    *,
-                    profiles:sender_id(id, username)
+                    id,
+                    conversation_id,
+                    sender_id,
+                    body,
+                    message_type,
+                    created_at
                 """.trimIndent()))
             }
-            .decodeSingle<MessageDto>()
+            .decodeSingle<SimpleMessageDto>()
 
-        Log.d(TAG, "sendMessage: Message inserted, id=${inserted.id}")
+        Log.d(TAG, "sendMessage: Inserted with id=${insertedDto.id}")
 
         // Update conversation's updated_at
-        Log.d(TAG, "sendMessage: Updating conversation updated_at")
         postgrest.from("conversations")
             .update({
                 set("updated_at", kotlinx.datetime.Clock.System.now().toString())
             }) {
-                filter {
-                    eq("id", conversationId)
-                }
+                filter { eq("id", conversationId) }
             }
 
-        val message = inserted.toDomain(currentUserId)
-        Log.d(TAG, "sendMessage: SUCCESS - returning message")
-        message
+        // Replace optimistic message with real one
+        val realMessage = Message(
+            id = insertedDto.id,
+            conversationId = insertedDto.conversationId,
+            senderId = insertedDto.senderId,
+            senderName = myProfile.username ?: "Me",
+            senderInitials = (myProfile.username ?: "Me").take(2).uppercase(),
+            body = insertedDto.body,
+            messageType = MessageType.valueOf(insertedDto.messageType.uppercase()),
+            createdAt = Instant.parse(insertedDto.createdAt),
+            isCurrentUser = true,
+        )
+
+        // Update with real message (remove optimistic, add real)
+        val updatedMessages = (_messages.value[conversationId] ?: emptyList())
+            .filterNot { it.id == optimisticMessage.id } + realMessage
+        _messages.value = _messages.value + (conversationId to updatedMessages)
+
+        Log.d(TAG, "sendMessage: SUCCESS")
+        realMessage
     }
 
     override suspend fun markAsRead(conversationId: String, messageId: String): Result<Unit> = runCatching {
-        val currentUserId = auth.currentUserOrNull()?.id 
+        val myUserId = currentUserId 
             ?: throw IllegalStateException("User not authenticated")
 
         postgrest.from("conversation_members")
@@ -202,200 +349,52 @@ class ChatRepositoryImpl @Inject constructor(
             }) {
                 filter {
                     eq("conversation_id", conversationId)
-                    eq("user_id", currentUserId)
+                    eq("user_id", myUserId)
                 }
             }
     }
 
+    // ==================== REALTIME (Simplified) ====================
+
     override suspend fun subscribeToConversation(conversationId: String) {
-        Log.d(TAG, "subscribeToConversation: conversationId=$conversationId")
-        val currentUserId = auth.currentUserOrNull()?.id ?: return
-
-        // Unsubscribe from previous channel if exists
-        messageChannel?.unsubscribe()
-
-        // Subscribe to new messages in this conversation
-        // IMPORTANT: Create channel and setup flow BEFORE subscribing
-        messageChannel = realtime.channel("messages_$conversationId")
-        
-        val changeFlow = messageChannel!!.postgresChangeFlow<PostgresAction>("public") {
-            table = "messages"
-            // Filter is not used in Supabase v3 - we'll filter on the client side
-        }
-        
-        // Launch collection in coroutine
-        scope.launch {
-            changeFlow.collect { action ->
-                Log.d(TAG, "subscribeToConversation: Realtime change detected: ${action.javaClass.simpleName}")
-                when (action) {
-                    is PostgresAction.Insert -> {
-                        // Reload messages to get the latest
-                        Log.d(TAG, "subscribeToConversation: New message inserted, reloading messages")
-                        loadMessages(conversationId)
-                    }
-                    else -> {
-                        Log.d(TAG, "subscribeToConversation: Other action: ${action.javaClass.simpleName}")
-                    }
-                }
-            }
-        }
-
-        // Now subscribe to the channel
-        Log.d(TAG, "subscribeToConversation: Calling subscribe() on channel")
-        messageChannel?.subscribe()
+        // For now, just load messages - Realtime can be added later
+        Log.d(TAG, "subscribeToConversation: Loading messages for $conversationId")
+        refreshMessages(conversationId)
     }
 
     override suspend fun unsubscribeFromConversation(conversationId: String) {
-        messageChannel?.unsubscribe()
-        messageChannel = null
-    }
-
-    private suspend fun loadConversations() {
-        val currentUserId = auth.currentUserOrNull()?.id ?: return
-
-        val dtos = postgrest.from("conversations")
-            .select(
-                Columns.raw("""
-                    *,
-                    conversation_members!inner(
-                        user_id,
-                        last_read_message_id
-                    ),
-                    messages(
-                        id,
-                        sender_id,
-                        body,
-                        message_type,
-                        created_at
-                    )
-                """.trimIndent())
-            ) {
-                filter {
-                    // Only get conversations where current user is a member
-                    eq("conversation_members.user_id", currentUserId)
-                }
-                order("updated_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-            }
-            .decodeList<ConversationDto>()
-
-        // Fetch all other users' profiles in one query
-        val otherUserIds = dtos.flatMap { dto ->
-            dto.members.map { it.userId }
-        }.filter { it != currentUserId }.distinct()
-
-        val profiles = if (otherUserIds.isNotEmpty()) {
-            postgrest.from("profiles")
-                .select(Columns.raw("id, username")) {
-                    filter {
-                        isIn("id", otherUserIds)
-                    }
-                }
-                .decodeList<ProfileDto>()
-        } else emptyList()
-
-        val profilesMap = profiles.associateBy { it.id }
-
-        _conversations.value = dtos.map { dto ->
-            val otherUserId = dto.members.firstOrNull { it.userId != currentUserId }?.userId
-            val otherProfile = otherUserId?.let { profilesMap[it] }
-            dto.toDomain(currentUserId, otherProfile)
-        }
-    }
-
-    private suspend fun loadMessages(conversationId: String) {
-        Log.d(TAG, "loadMessages: conversationId=$conversationId")
-        val currentUserId = auth.currentUserOrNull()?.id ?: run {
-            Log.e(TAG, "loadMessages: User not authenticated")
-            return
-        }
-
-        try {
-            val dtos = postgrest.from("messages")
-                .select(
-                    Columns.raw("""
-                        *,
-                        profiles:sender_id(id, username)
-                    """.trimIndent())
-                ) {
-                    filter {
-                        eq("conversation_id", conversationId)
-                    }
-                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.ASCENDING)
-                }
-                .decodeList<MessageDto>()
-
-            Log.d(TAG, "loadMessages: Loaded ${dtos.size} messages from database")
-            val messages = dtos.map { it.toDomain(currentUserId) }
-            _messages.value = _messages.value + (conversationId to messages)
-            Log.d(TAG, "loadMessages: Updated _messages flow with ${messages.size} messages")
-        } catch (e: Exception) {
-            Log.e(TAG, "loadMessages: Error loading messages", e)
-            throw e
-        }
-    }
-
-    private suspend fun subscribeToConversationsUpdates() {
-        Log.d(TAG, "subscribeToConversationsUpdates: Starting subscription")
-        conversationChannel?.unsubscribe()
-
-        // IMPORTANT: Create channel and setup flow BEFORE subscribing
-        conversationChannel = realtime.channel("conversations")
-        
-        val changeFlow = conversationChannel!!.postgresChangeFlow<PostgresAction>("public") {
-            table = "conversations"
-        }
-        
-        // Launch collection in coroutine
-        scope.launch {
-            changeFlow.collect { action ->
-                Log.d(TAG, "subscribeToConversationsUpdates: Realtime change detected: ${action.javaClass.simpleName}")
-                // Reload conversations when any changes
-                loadConversations()
-            }
-        }
-
-        // Now subscribe to the channel
-        Log.d(TAG, "subscribeToConversationsUpdates: Calling subscribe() on channel")
-        conversationChannel?.subscribe()
+        // No-op for now since we're not using Realtime
+        Log.d(TAG, "unsubscribeFromConversation: $conversationId")
     }
 }
 
 // ==================== DTOs ====================
 
+/**
+ * DTO for conversation list - no embedded messages to avoid parsing issues
+ */
 @Serializable
-private data class ConversationDto(
+private data class ConversationListDto(
     val id: String,
     val type: String,
     @SerialName("group_id") val groupId: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
     @SerialName("conversation_members") val members: List<ConversationMemberDto> = emptyList(),
-    val messages: List<MessageDto> = emptyList(),
 ) {
-    fun toDomain(currentUserId: String, otherUserProfile: ProfileDto? = null): Conversation {
-        val lastMessage = messages.maxByOrNull { it.createdAt }
-        
-        // Calculate unread count
-        val lastReadMessageId = members.firstOrNull { it.userId == currentUserId }?.lastReadMessageId
-        val unreadCount = if (lastReadMessageId == null) {
-            messages.count { it.senderId != currentUserId }
-        } else {
-            val lastReadTime = messages.firstOrNull { it.id == lastReadMessageId }?.createdAt
-            if (lastReadTime != null) {
-                messages.count { 
-                    it.senderId != currentUserId && it.createdAt > lastReadTime 
-                }
-            } else 0
-        }
-
+    fun toDomain(
+        currentUserId: String,
+        otherUserProfile: ProfileDto?,
+        lastMessage: SimpleMessageDto?
+    ): Conversation {
         return Conversation(
             id = id,
             type = ConversationType.valueOf(type.uppercase()),
             groupId = groupId,
             lastMessage = lastMessage?.toDomain(currentUserId),
-            unreadCount = unreadCount,
+            unreadCount = 0, // TODO: Calculate from last_read_message_id
             otherUser = otherUserProfile?.toDomain(),
-            groupName = null, // Will be populated for group chats
+            groupName = null,
             createdAt = Instant.parse(createdAt),
             updatedAt = Instant.parse(updatedAt),
         )
@@ -406,12 +405,38 @@ private data class ConversationDto(
 private data class ConversationMemberDto(
     @SerialName("user_id") val userId: String,
     @SerialName("last_read_message_id") val lastReadMessageId: String? = null,
-    val profiles: ProfileDto? = null,
+)
+
+/**
+ * Simple message DTO without nested profiles - for list/last message queries
+ */
+@Serializable
+private data class SimpleMessageDto(
+    val id: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("sender_id") val senderId: String,
+    val body: String,
+    @SerialName("message_type") val messageType: String,
+    @SerialName("created_at") val createdAt: String,
 ) {
-    val profile: ProfileDto?
-        get() = profiles
+    fun toDomain(currentUserId: String): Message {
+        return Message(
+            id = id,
+            conversationId = conversationId,
+            senderId = senderId,
+            senderName = "", // Not available in simple DTO
+            senderInitials = "",
+            body = body,
+            messageType = MessageType.valueOf(messageType.uppercase()),
+            createdAt = Instant.parse(createdAt),
+            isCurrentUser = senderId == currentUserId,
+        )
+    }
 }
 
+/**
+ * Full message DTO with nested profile - for message detail queries
+ */
 @Serializable
 private data class MessageDto(
     val id: String,
@@ -452,12 +477,13 @@ private data class MessageInsertDto(
 private data class ProfileDto(
     val id: String,
     val username: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
 ) {
     fun toDomain() = User(
         id = id,
-        email = "", // Email not available from profiles table
+        email = "",
         username = username,
-        avatarUrl = null,
+        avatarUrl = avatarUrl,
         level = 1,
         xp = 0,
         city = null,

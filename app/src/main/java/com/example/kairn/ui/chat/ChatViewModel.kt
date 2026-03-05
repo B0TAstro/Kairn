@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.domain.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,19 +18,27 @@ import javax.inject.Inject
 
 private const val TAG = "ChatViewModel"
 
+/**
+ * ViewModel for Chat functionality
+ * 
+ * Handles both:
+ * - Chat list (all conversations)
+ * - Individual chat screen (messages in a conversation)
+ */
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
 ) : ViewModel() {
 
+    // Job to track message collection - can be cancelled when leaving chat
+    private var messagesJob: Job? = null
+
+    // ==================== CHAT LIST ====================
+
     val chatListUiState: StateFlow<ChatListUiState> = chatRepository
         .getConversations()
         .map<_, ChatListUiState> { conversations ->
-            if (conversations.isEmpty()) {
-                ChatListUiState.Success(emptyList())
-            } else {
-                ChatListUiState.Success(conversations)
-            }
+            ChatListUiState.Success(conversations)
         }
         .stateIn(
             scope = viewModelScope,
@@ -37,24 +46,49 @@ class ChatViewModel @Inject constructor(
             initialValue = ChatListUiState.Loading
         )
 
+    init {
+        // Load conversations on init
+        refreshConversations()
+    }
+
+    fun refreshConversations() {
+        viewModelScope.launch {
+            chatRepository.refreshConversations()
+        }
+    }
+
+    // ==================== INDIVIDUAL CHAT ====================
+
     private val _chatUiState = MutableStateFlow(ChatUiState())
     val chatUiState: StateFlow<ChatUiState> = _chatUiState.asStateFlow()
 
     fun loadConversation(conversationId: String, conversationName: String) {
+        Log.d(TAG, "loadConversation: id=$conversationId, name=$conversationName")
+        
+        // Cancel any existing message collection
+        messagesJob?.cancel()
+        
+        // Reset state for new conversation
         _chatUiState.update { 
-            it.copy(
+            ChatUiState(
                 conversationId = conversationId,
                 conversationName = conversationName,
-                isLoading = true
-            ) 
+                isLoading = true,
+                messages = emptyList(),
+                messageInput = "",
+                isSending = false,
+                error = null,
+            )
         }
 
-        viewModelScope.launch {
-            // Subscribe to real-time updates
-            chatRepository.subscribeToConversation(conversationId)
-
-            // Load messages
+        // Start collecting messages
+        messagesJob = viewModelScope.launch {
+            // First, refresh messages from server
+            chatRepository.refreshMessages(conversationId)
+            
+            // Then collect updates
             chatRepository.getMessages(conversationId).collect { messages ->
+                Log.d(TAG, "loadConversation: Received ${messages.size} messages")
                 _chatUiState.update { 
                     it.copy(
                         messages = messages,
@@ -77,7 +111,9 @@ class ChatViewModel @Inject constructor(
         }
 
         val message = currentState.messageInput
-        Log.d(TAG, "sendMessage: Sending message: '$message' to conversation ${currentState.conversationId}")
+        Log.d(TAG, "sendMessage: Sending '$message' to ${currentState.conversationId}")
+        
+        // Clear input immediately for better UX
         _chatUiState.update { it.copy(messageInput = "", isSending = true) }
 
         viewModelScope.launch {
@@ -85,10 +121,12 @@ class ChatViewModel @Inject constructor(
                 conversationId = currentState.conversationId,
                 body = message
             )
+            
             result.onSuccess { sentMessage ->
-                Log.d(TAG, "sendMessage: SUCCESS - messageId=${sentMessage.id}")
+                Log.d(TAG, "sendMessage: SUCCESS - id=${sentMessage.id}")
                 _chatUiState.update { it.copy(isSending = false) }
             }
+            
             result.onFailure { error ->
                 Log.e(TAG, "sendMessage: FAILED - ${error.message}", error)
                 _chatUiState.update { 
@@ -114,11 +152,13 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun clearError() {
+        _chatUiState.update { it.copy(error = null) }
+    }
+
     override fun onCleared() {
         super.onCleared()
-        // Unsubscribe from real-time updates
-        viewModelScope.launch {
-            chatRepository.unsubscribeFromConversation(_chatUiState.value.conversationId)
-        }
+        messagesJob?.cancel()
+        Log.d(TAG, "onCleared: ViewModel destroyed")
     }
 }
