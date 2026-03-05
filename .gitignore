@@ -15,6 +15,9 @@ local.properties
 # Kotlin
 *.kotlin_module
 
+# Data / seed files (not versioned)
+*.csv
+
 # Signing / secrets
 *.jks
 *.keystore
