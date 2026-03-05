@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -36,6 +37,17 @@ data class UserLocation(
 class LocationService @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    companion object {
+        private const val NETWORK_MIN_TIME_MS = 15_000L
+        private const val NETWORK_MIN_DISTANCE_M = 50f
+        private const val GPS_MIN_TIME_MS = 30_000L
+        private const val GPS_MIN_DISTANCE_M = 100f
+        private const val PASSIVE_MIN_TIME_MS = 60_000L
+        private const val PASSIVE_MIN_DISTANCE_M = 100f
+        private const val GEOCODE_MIN_INTERVAL_MS = 120_000L
+        private const val GEOCODE_MIN_DISTANCE_M = 250f
+    }
+
     fun hasLocationPermission(): Boolean =
         ContextCompat.checkSelfPermission(
             context,
@@ -60,18 +72,30 @@ class LocationService @Inject constructor(
             val lastKnown =
                 locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                    ?: locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
             lastKnown?.let { trySend(it) }
 
-            // Request live updates (every 5 s or 10 m)
             val provider = when {
-                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ->
-                    LocationManager.GPS_PROVIDER
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ->
                     LocationManager.NETWORK_PROVIDER
+                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ->
+                    LocationManager.GPS_PROVIDER
+                locationManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER) ->
+                    LocationManager.PASSIVE_PROVIDER
                 else -> null
             }
             provider?.let {
-                locationManager.requestLocationUpdates(it, 5_000L, 10f, listener)
+                val minTimeMs = when (it) {
+                    LocationManager.NETWORK_PROVIDER -> NETWORK_MIN_TIME_MS
+                    LocationManager.GPS_PROVIDER -> GPS_MIN_TIME_MS
+                    else -> PASSIVE_MIN_TIME_MS
+                }
+                val minDistanceM = when (it) {
+                    LocationManager.NETWORK_PROVIDER -> NETWORK_MIN_DISTANCE_M
+                    LocationManager.GPS_PROVIDER -> GPS_MIN_DISTANCE_M
+                    else -> PASSIVE_MIN_DISTANCE_M
+                }
+                locationManager.requestLocationUpdates(it, minTimeMs, minDistanceM, listener)
             }
         } catch (_: SecurityException) {
             // Permission was revoked between check and request — close silently
@@ -82,6 +106,7 @@ class LocationService @Inject constructor(
         }
     }
         .flowOn(Dispatchers.Main) // LocationManager must be called on main/looper thread
+        .conflate()
         .reverseGeocode()
 
     /**
@@ -89,15 +114,30 @@ class LocationService @Inject constructor(
      */
     private fun Flow<Location>.reverseGeocode(): Flow<UserLocation> =
         kotlinx.coroutines.flow.flow {
+            var lastGeocodedLocation: Location? = null
+            var lastCityName = ""
+            var lastGeocodeAt = 0L
+
             this@reverseGeocode.collect { location ->
-                val cityName = withContext(Dispatchers.IO) {
-                    resolveCity(location.latitude, location.longitude)
+                val now = System.currentTimeMillis()
+                val previousGeocodedLocation = lastGeocodedLocation
+                val shouldGeocode = previousGeocodedLocation == null ||
+                    location.distanceTo(previousGeocodedLocation) >= GEOCODE_MIN_DISTANCE_M ||
+                    now - lastGeocodeAt >= GEOCODE_MIN_INTERVAL_MS
+
+                if (shouldGeocode) {
+                    lastCityName = withContext(Dispatchers.IO) {
+                        resolveCity(location.latitude, location.longitude)
+                    }
+                    lastGeocodedLocation = location
+                    lastGeocodeAt = now
                 }
+
                 emit(
                     UserLocation(
                         latitude = location.latitude,
                         longitude = location.longitude,
-                        cityName = cityName,
+                        cityName = lastCityName,
                     ),
                 )
             }

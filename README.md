@@ -154,16 +154,10 @@ Backend:
 - [ ] Add anti-cheat validation for route run consistency
 
 ### Phase 5 - Production Readiness
-- [ ] Add monitoring, crash reporting, and product analytics
-- [ ] Add tests and CI/CD pipeline
-- [ ] Optimize battery and GPS performance
-- [ ] Release a stable private beta build
+- [x] Add tests and CI/CD pipeline
+- [x] Optimize battery and GPS performance
 - [x] Set up Hilt dependency injection and Supabase modules (Auth, PostgREST, Realtime, Storage)
 - [x] Add baseline Android/JUnit and instrumented test scaffolding
-
-### Phase 6 - Platform Expansion (Post-MVP)
-- [ ] Start native iOS app (SwiftUI)
-- [ ] Build React PWA with Three.js
 
 ## How to Start 🚀
 ### Prerequisites

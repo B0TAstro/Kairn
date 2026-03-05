@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,6 +23,7 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private var locationCollectionJob: Job? = null
 
     /** Whether the device currently has fine-location permission. */
     val hasLocationPermission: Boolean
@@ -53,7 +55,9 @@ class HomeViewModel @Inject constructor(
      */
     private fun collectLocation() {
         if (!locationService.hasLocationPermission()) return
-        viewModelScope.launch {
+        if (locationCollectionJob?.isActive == true) return
+
+        locationCollectionJob = viewModelScope.launch {
             locationService.locationUpdates().collect { loc ->
                 _uiState.update {
                     it.copy(
