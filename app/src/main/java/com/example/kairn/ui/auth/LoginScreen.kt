@@ -55,6 +55,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState) {
@@ -114,9 +115,14 @@ fun LoginScreen(
                 modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 // Error message
-                if (uiState is AuthUiState.Error) {
+                val errorMessage = when {
+                    uiState is AuthUiState.Error -> (uiState as AuthUiState.Error).message
+                    validationError != null -> validationError
+                    else -> null
+                }
+                if (errorMessage != null) {
                     Text(
-                        text = (uiState as AuthUiState.Error).message,
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -190,14 +196,22 @@ fun LoginScreen(
                     }
                 } else {
                     Button(
-                        onClick = { viewModel.signIn(email.trim(), password) },
+                        onClick = {
+                            when {
+                                email.isBlank() -> validationError = "Veuillez entrer votre email"
+                                password.isBlank() -> validationError = "Veuillez entrer votre mot de passe"
+                                else -> {
+                                    validationError = null
+                                    viewModel.signIn(email.trim(), password)
+                                }
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
-                        enabled = email.isNotBlank() && password.isNotBlank(),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
                             contentColor = Color.White,
                         ),
                     ) {

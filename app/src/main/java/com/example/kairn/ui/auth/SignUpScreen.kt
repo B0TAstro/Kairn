@@ -56,6 +56,7 @@ fun SignUpScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var validationError by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val passwordsMatch = password == confirmPassword
@@ -125,9 +126,14 @@ fun SignUpScreen(
                 modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 // Error message
-                if (uiState is AuthUiState.Error) {
+                val errorMessage = when {
+                    uiState is AuthUiState.Error -> (uiState as AuthUiState.Error).message
+                    validationError != null -> validationError
+                    else -> null
+                }
+                if (errorMessage != null) {
                     Text(
-                        text = (uiState as AuthUiState.Error).message,
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -216,21 +222,31 @@ fun SignUpScreen(
                 } else {
                     Button(
                         onClick = {
-                            viewModel.signUp(
-                                email = email.trim(),
-                                password = password,
-                                firstName = firstName.trim(),
-                                lastName = lastName.trim(),
-                                pseudo = pseudo.trim(),
-                            )
+                            when {
+                                firstName.isBlank() -> validationError = "Veuillez entrer votre prenom"
+                                lastName.isBlank() -> validationError = "Veuillez entrer votre nom"
+                                pseudo.isBlank() -> validationError = "Veuillez entrer un pseudo"
+                                email.isBlank() -> validationError = "Veuillez entrer votre email"
+                                password.isBlank() -> validationError = "Veuillez entrer un mot de passe"
+                                !passwordsMatch -> validationError = "Les mots de passe ne correspondent pas"
+                                else -> {
+                                    validationError = null
+                                    viewModel.signUp(
+                                        email = email.trim(),
+                                        password = password,
+                                        firstName = firstName.trim(),
+                                        lastName = lastName.trim(),
+                                        pseudo = pseudo.trim(),
+                                    )
+                                }
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
-                        enabled = canSignUp,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
                             contentColor = Color.White,
                         ),
                     ) {
