@@ -50,13 +50,11 @@ import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
+import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import com.example.kairn.ui.theme.TextPrimary
+import com.example.kairn.ui.theme.TextSecondary
 
 // Valeur du chevauchement du panel sur l'image hero
 private val PANEL_OVERLAP = 48.dp
@@ -68,7 +66,6 @@ fun HikeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val hazeState = remember { HazeState() }
 
     Box(modifier = modifier.fillMaxSize()) {
 
@@ -78,13 +75,12 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            // Hero image area — source du blur
-            HeroImageArea(hike = hike, hazeState = hazeState)
+            // Hero image area
+            HeroImageArea(hike = hike)
 
             // Content panel — remonte de PANEL_OVERLAP sur la photo
             DetailPanel(
                 hike = hike,
-                hazeState = hazeState,
                 modifier = Modifier.offset(y = -PANEL_OVERLAP),
             )
         }
@@ -116,7 +112,6 @@ fun HikeDetailScreen(
 @Composable
 private fun HeroImageArea(
     hike: Hike,
-    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -124,21 +119,17 @@ private fun HeroImageArea(
             .fillMaxWidth()
             .height(420.dp),
     ) {
-        // Hike photo — source du blur haze
         if (hike.imageUrl != null) {
             AsyncImage(
                 model = hike.imageUrl,
                 contentDescription = hike.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(hazeState),
+                modifier = Modifier.fillMaxSize(),
             )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .haze(hazeState)
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
@@ -150,28 +141,14 @@ private fun HeroImageArea(
                     ),
             )
         }
-
-        // Fondu bas léger pour adoucir la transition vers le panel
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0x66111a16)),
-                    ),
-                ),
-        )
     }
 }
 
-// ─── Detail content panel (liquid glass) ─────────────────────────────────────
+// ─── Detail content panel ─────────────────────────────────────────────────────
 
 @Composable
 private fun DetailPanel(
     hike: Hike,
-    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -181,32 +158,9 @@ private fun DetailPanel(
         modifier = modifier
             .fillMaxWidth()
             .clip(panelShape)
-            // Liquid glass : blur de la photo qui se trouve derrière
-            .hazeChild(
-                state = hazeState,
-                style = HazeStyle(
-                    backgroundColor = Color(0xFF0e1712).copy(alpha = 0.72f),
-                    blurRadius = 28.dp,
-                    tints = listOf(
-                        HazeTint(color = Primary.copy(alpha = 0.22f)),
-                        HazeTint(color = Color.White.copy(alpha = 0.04f)),
-                    ),
-                    noiseFactor = 0.03f,
-                ),
-            )
-            // Bordure top frosted
-            .border(
-                width = 0.8.dp,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.22f),
-                        Color.White.copy(alpha = 0.04f),
-                    ),
-                ),
-                shape = panelShape,
-            )
+            .background(Background)
             .padding(horizontal = 24.dp)
-            .padding(top = 16.dp, bottom = 120.dp), // bottom space for FAB
+            .padding(top = 16.dp, bottom = 120.dp),
     ) {
         // Drag handle
         Box(
@@ -214,7 +168,7 @@ private fun DetailPanel(
                 .width(40.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.28f))
+                .background(TextSecondary.copy(alpha = 0.25f))
                 .align(Alignment.CenterHorizontally),
         )
 
@@ -224,7 +178,7 @@ private fun DetailPanel(
         Text(
             text = hike.name,
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 28.sp,
         )
@@ -232,7 +186,7 @@ private fun DetailPanel(
         Text(
             text = "${hike.elevationMeters} meters",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.55f),
+            color = TextSecondary,
             fontSize = 15.sp,
         )
 
@@ -294,7 +248,7 @@ private fun DetailsTabContent(
         Text(
             text = "Hiking to ${hike.name}",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
+            color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp,
         )
@@ -302,7 +256,7 @@ private fun DetailsTabContent(
         Text(
             text = "Panoramic views of Mont Blanc and the Alps",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.55f),
+            color = TextSecondary,
             fontSize = 13.sp,
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -311,7 +265,7 @@ private fun DetailsTabContent(
                 "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery that will leave you speechless."
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.70f),
+            color = TextPrimary.copy(alpha = 0.75f),
             fontSize = 14.sp,
             lineHeight = 22.sp,
         )
@@ -326,7 +280,7 @@ private fun PlaceholderTabContent(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.50f),
+        color = TextSecondary,
         modifier = modifier,
     )
 }
@@ -355,14 +309,14 @@ private fun DetailStatItem(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+                color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.50f),
+                color = TextSecondary,
                 fontSize = 11.sp,
             )
         }
@@ -410,11 +364,7 @@ fun HikeDetailCta(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color(0xE6111a16)),
-                ),
-            )
+            .background(Background)
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {

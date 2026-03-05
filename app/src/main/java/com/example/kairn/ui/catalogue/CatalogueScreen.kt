@@ -249,12 +249,12 @@ fun CatalogueHikeCard(
             )
         }
 
-        // ── Liquid glass stats panel (bottom) ─────────────────────────────
+        // ── Liquid glass stats panel (bottom, largeur réduite) ───────────
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .clip(RoundedCornerShape(16.dp))
                 .hazeChild(
                     state = hazeState,
                     style = HazeStyle(
@@ -275,9 +275,9 @@ fun CatalogueHikeCard(
                             Color.White.copy(alpha = 0.05f),
                         ),
                     ),
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                    shape = RoundedCornerShape(16.dp),
                 )
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+                .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
