@@ -13,16 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
+import com.example.kairn.ui.theme.CompassNorth
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -31,12 +26,16 @@ fun CompassWidget(
     degrees: Float,
     modifier: Modifier = Modifier,
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(200.dp)
             .clip(CircleShape)
-            .background(Background),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         Canvas(modifier = Modifier.size(180.dp)) {
             val center = Offset(size.width / 2, size.height / 2)
@@ -44,7 +43,7 @@ fun CompassWidget(
 
             // Outer circle
             drawCircle(
-                color = Primary.copy(alpha = 0.3f),
+                color = primaryColor.copy(alpha = 0.3f),
                 radius = radius,
                 center = center,
                 style = Stroke(width = 2f),
@@ -52,7 +51,7 @@ fun CompassWidget(
 
             // Inner circle
             drawCircle(
-                color = Primary.copy(alpha = 0.2f),
+                color = primaryColor.copy(alpha = 0.2f),
                 radius = radius * 0.7f,
                 center = center,
                 style = Stroke(width = 1f),
@@ -68,9 +67,9 @@ fun CompassWidget(
                 else if (isMajor) radius * 0.82f
                 else radius * 0.88f
                 val endRadius = radius * 0.92f
-                val tickColor = if (isCardinal) TextPrimary
-                else if (isMajor) TextSecondary
-                else TextSecondary.copy(alpha = 0.4f)
+                val tickColor = if (isCardinal) onBackgroundColor
+                else if (isMajor) onSurfaceVariantColor
+                else onSurfaceVariantColor.copy(alpha = 0.4f)
 
                 drawLine(
                     color = tickColor,
@@ -87,14 +86,14 @@ fun CompassWidget(
                 )
             }
 
-            // North indicator (red triangle area)
+            // North indicator (red line)
             val northAngle = Math.toRadians(-90.0)
             val northEnd = Offset(
                 x = center.x + (radius * 0.6f * cos(northAngle)).toFloat(),
                 y = center.y + (radius * 0.6f * sin(northAngle)).toFloat(),
             )
             drawLine(
-                color = Color(0xFFe57373),
+                color = CompassNorth,
                 start = center,
                 end = northEnd,
                 strokeWidth = 3f,
@@ -105,36 +104,40 @@ fun CompassWidget(
         // Cardinal letters
         Text(
             text = "N",
-            color = Color(0xFFe57373),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = CompassNorth,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 12.dp),
         )
         Text(
             text = "S",
-            color = TextSecondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp),
         )
         Text(
             text = "E",
-            color = TextSecondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 12.dp),
         )
         Text(
             text = "W",
-            color = TextSecondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 12.dp),
@@ -143,10 +146,10 @@ fun CompassWidget(
         // Degree text in center
         Text(
             text = "${degrees.toInt()}\u00B0",
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 28.sp,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }

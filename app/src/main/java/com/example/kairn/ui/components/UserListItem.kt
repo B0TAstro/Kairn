@@ -17,11 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Accent
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 data class HikeParticipant(
     val name: String,
@@ -39,7 +34,7 @@ fun UserListItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBackground)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -47,9 +42,9 @@ fun UserListItem(
         Text(
             text = "#${participant.position}",
             style = MaterialTheme.typography.bodyMedium,
-            color = if (participant.position <= 3) Accent else TextSecondary,
+            color = if (participant.position <= 3) MaterialTheme.colorScheme.tertiary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
         )
         Spacer(modifier = Modifier.width(12.dp))
         UserAvatar(
@@ -61,8 +56,7 @@ fun UserListItem(
         Text(
             text = participant.name,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f),
         )
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,9 +32,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextAccent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -54,6 +52,7 @@ fun KairnBottomNavBar(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(50.dp)
+    val hazeBackgroundColor = MaterialTheme.colorScheme.onBackground
 
     Box(
         modifier = modifier
@@ -69,11 +68,11 @@ fun KairnBottomNavBar(
                 .hazeChild(
                     state = hazeState,
                     style = HazeStyle(
-                        backgroundColor = TextPrimary.copy(alpha = 0.55f),
+                        backgroundColor = hazeBackgroundColor.copy(alpha = 0.55f),
                         blurRadius = 24.dp,
                         tints = listOf(
                             HazeTint(
-                                color = TextPrimary.copy(alpha = 0.3f),
+                                color = hazeBackgroundColor.copy(alpha = 0.3f),
                             ),
                         ),
                         noiseFactor = 0.03f,
@@ -103,8 +102,11 @@ private fun NavBarItemPill(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val accentColor = MaterialTheme.colorScheme.primaryContainer
+
     val pillColor by animateColorAsState(
-        targetValue = if (isSelected) Background.copy(alpha = 0.65f) else Color.Transparent,
+        targetValue = if (isSelected) backgroundColor.copy(alpha = 0.65f) else Color.Transparent,
         animationSpec = tween(durationMillis = 350),
         label = "pillColor",
     )
@@ -116,7 +118,7 @@ private fun NavBarItemPill(
     )
 
     val iconTint by animateColorAsState(
-        targetValue = if (isSelected) TextAccent else Color.White.copy(alpha = 0.55f),
+        targetValue = if (isSelected) accentColor else Color.White.copy(alpha = 0.55f),
         animationSpec = tween(durationMillis = 300),
         label = "iconTint",
     )
@@ -162,10 +164,11 @@ private fun NavBarItemPill(
             ) {
                 Text(
                     text = item.label,
-                    color = TextAccent.copy(alpha = textAlpha),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.3.sp,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.3.sp,
+                    ),
+                    color = accentColor.copy(alpha = textAlpha),
                     maxLines = 1,
                     softWrap = false,
                 )

@@ -32,9 +32,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,18 +43,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
-import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.ChipSelectedBackground
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
+import com.example.kairn.ui.theme.OverlayDark
+import com.example.kairn.ui.theme.OverlayMedium
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -65,16 +60,16 @@ import dev.chrisbanes.haze.hazeChild
 fun ExploreScreen(
     onHikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ExploreViewModel = viewModel(),
+    viewModel: ExploreViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Background),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         // ── Header ────────────────────────────────────────────────────────
         Column(
@@ -86,16 +81,13 @@ fun ExploreScreen(
         ) {
             Text(
                 text = "Explore",
-                style = MaterialTheme.typography.displayLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 36.sp,
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = "${uiState.filteredHikes.size} hikes available",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -157,9 +149,12 @@ private fun ExploreChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val bgColor = if (isSelected) ChipSelectedBackground else Color.White.copy(alpha = 0.0f)
-    val borderColor = if (isSelected) Color.Transparent else TextSecondary.copy(alpha = 0.35f)
-    val textColor = if (isSelected) Color.White else TextSecondary
+    val bgColor = if (isSelected) MaterialTheme.colorScheme.tertiaryContainer
+    else Color.White.copy(alpha = 0.0f)
+    val borderColor = if (isSelected) Color.Transparent
+    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+    val textColor = if (isSelected) MaterialTheme.colorScheme.onTertiaryContainer
+    else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         contentAlignment = Alignment.Center,
@@ -174,8 +169,6 @@ private fun ExploreChip(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = textColor,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-            fontSize = 13.sp,
         )
     }
 }
@@ -224,8 +217,8 @@ fun ExploreHikeCard(
                         .background(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
-                                    0.0f to Color(0xFF111a16).copy(alpha = 0.25f),
-                                    1.0f to Color(0xFF111a16).copy(alpha = 0.70f),
+                                    0.0f to OverlayDark.copy(alpha = 0.25f),
+                                    1.0f to OverlayDark.copy(alpha = 0.70f),
                                 ),
                             ),
                         ),
@@ -238,9 +231,9 @@ fun ExploreHikeCard(
                         .background(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
-                                    0.0f to Primary.copy(alpha = 0.55f),
-                                    0.5f to Primary.copy(alpha = 0.30f),
-                                    1.0f to Color(0xFF1a2520),
+                                    0.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                                    0.5f to MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                                    1.0f to OverlayMedium,
                                 ),
                             ),
                         ),
@@ -266,16 +259,13 @@ fun ExploreHikeCard(
             ) {
                 Text(
                     text = hike.title,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 26.sp,
                 )
                 Text(
                     text = hike.formattedElevation,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.80f),
-                    fontSize = 14.sp,
                 )
             }
 
@@ -288,10 +278,10 @@ fun ExploreHikeCard(
                     .hazeChild(
                         state = hazeState,
                         style = HazeStyle(
-                            backgroundColor = Color(0xFF111a16).copy(alpha = 0.45f),
+                            backgroundColor = OverlayDark.copy(alpha = 0.45f),
                             blurRadius = 20.dp,
                             tints = listOf(
-                                HazeTint(color = Primary.copy(alpha = 0.18f)),
+                                HazeTint(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
                                 HazeTint(color = Color.White.copy(alpha = 0.06f)),
                             ),
                             noiseFactor = 0.04f,
@@ -339,14 +329,11 @@ private fun CardStatItem(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp,
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.60f),
-                fontSize = 10.sp,
             )
         }
     }

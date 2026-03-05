@@ -24,14 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.kairn.domain.model.Hike
-import com.example.kairn.ui.theme.CardBackground
-import com.example.kairn.ui.theme.Primary
-import com.example.kairn.ui.theme.TextPrimary
-import com.example.kairn.ui.theme.TextSecondary
 
 @Composable
 fun HikeCard(
@@ -43,7 +37,7 @@ fun HikeCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(CardBackground)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick),
     ) {
         // Image placeholder area with gradient overlay
@@ -54,8 +48,8 @@ fun HikeCard(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Primary.copy(alpha = 0.3f),
-                            Primary.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                         ),
                     ),
                 ),
@@ -68,7 +62,7 @@ fun HikeCard(
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, CardBackground),
+                            colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surface),
                         ),
                     ),
             )
@@ -79,16 +73,13 @@ fun HikeCard(
         ) {
             Text(
                 text = hike.title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 22.sp,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = hike.formattedElevation,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(12.dp))
             HikeStatRow(
@@ -111,7 +102,7 @@ fun HikeCardCompact(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -121,12 +112,12 @@ fun HikeCardCompact(
             modifier = Modifier
                 .size(64.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Primary.copy(alpha = 0.3f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "\u26F0",
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.titleLarge,
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
@@ -134,8 +125,7 @@ fun HikeCardCompact(
             Text(
                 text = hike.title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             if (hike.location != null) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -146,14 +136,13 @@ fun HikeCardCompact(
                     Icon(
                         imageVector = Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint = TextSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(11.dp),
                     )
                     Text(
                         text = hike.location,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -161,15 +150,13 @@ fun HikeCardCompact(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = hike.formattedDuration,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = hike.formattedDistance,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 DifficultyBadge(difficulty = hike.difficulty)
             }

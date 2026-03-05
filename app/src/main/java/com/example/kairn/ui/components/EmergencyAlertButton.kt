@@ -21,9 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.kairn.ui.theme.ErrorRed
-import com.example.kairn.ui.theme.TextPrimary
 
 @Composable
 fun EmergencyAlertButton(
@@ -34,7 +31,7 @@ fun EmergencyAlertButton(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(ErrorRed.copy(alpha = 0.15f))
+            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -43,16 +40,16 @@ fun EmergencyAlertButton(
         Icon(
             imageVector = Icons.Filled.Warning,
             contentDescription = "Emergency",
-            tint = ErrorRed,
+            tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = "Emergency alert",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextPrimary,
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Medium,
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }
