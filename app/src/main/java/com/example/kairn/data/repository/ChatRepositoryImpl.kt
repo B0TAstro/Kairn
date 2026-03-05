@@ -51,13 +51,13 @@ class ChatRepositoryImpl @Inject constructor(
         scope.launch {
             try {
                 loadConversations()
-                // Realtime disabled temporarily
-                // subscribeToConversationsUpdates()
+                subscribeToConversationsUpdates()
             } catch (e: Exception) {
+                Log.e(TAG, "getConversations: Error loading conversations", e)
                 e.printStackTrace()
             }
         }
-        return _conversations.asStateFlow()
+        return _conversations
     }
 
     override suspend fun getOrCreateDirectConversation(userId: String): Result<Conversation> = runCatching {
