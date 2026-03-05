@@ -1,8 +1,12 @@
 package com.example.kairn.di
 
 import com.example.kairn.data.repository.AuthRepositoryImpl
+import com.example.kairn.data.repository.ChatRepositoryImpl
+import com.example.kairn.data.repository.FriendshipRepositoryImpl
 import com.example.kairn.data.repository.HikeRepositoryImpl
 import com.example.kairn.domain.repository.AuthRepository
+import com.example.kairn.domain.repository.ChatRepository
+import com.example.kairn.domain.repository.FriendshipRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.Binds
 import dagger.Module
@@ -17,6 +21,14 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFriendshipRepository(impl: FriendshipRepositoryImpl): FriendshipRepository
 
     @Binds
     @Singleton

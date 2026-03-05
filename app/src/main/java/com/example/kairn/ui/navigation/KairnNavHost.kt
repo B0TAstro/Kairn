@@ -17,6 +17,9 @@ import com.example.kairn.ui.explore.ExploreScreen
 import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
 import com.example.kairn.ui.home.HomeScreen
+import com.example.kairn.ui.chat.ChatListScreen
+import com.example.kairn.ui.chat.ChatScreen
+import com.example.kairn.ui.friends.FriendListScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -48,7 +51,14 @@ fun KairnNavHost(
             }
 
             composable(Screen.CHAT.name) {
-                HomeScreen() // TODO: Replace with ChatScreen
+                ChatListScreen(
+                    onNavigateToChat = { conversationId, conversationName ->
+                        navController.navigate(NavRoutes.chat(conversationId, conversationName))
+                    },
+                    onNavigateToNewChat = {
+                        navController.navigate(NavRoutes.FRIEND_LIST)
+                    }
+                )
             }
 
             composable(Screen.PROFILE.name) {
@@ -80,6 +90,36 @@ fun KairnNavHost(
                     onStartTrip = { navController.popBackStack() },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this@composable,
+                )
+            }
+            
+            // Chat detail screen
+            composable(
+                route = NavRoutes.CHAT,
+                arguments = listOf(
+                    navArgument("conversationId") { type = NavType.StringType },
+                    navArgument("conversationName") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
+                val conversationName = backStackEntry.arguments?.getString("conversationName") ?: return@composable
+                
+                ChatScreen(
+                    conversationId = conversationId,
+                    conversationName = conversationName,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            // Friend list screen
+            composable(NavRoutes.FRIEND_LIST) {
+                FriendListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { conversationId, conversationName ->
+                        navController.navigate(NavRoutes.chat(conversationId, conversationName)) {
+                            popUpTo(Screen.CHAT.name)
+                        }
+                    }
                 )
             }
         }
