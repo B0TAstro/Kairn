@@ -16,4 +16,18 @@ data class HomeUiState(
     val userLongitude: Double? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
-)
+) {
+    val filteredHikes: List<Hike>
+        get() {
+            val normalizedQuery = searchQuery.trim().lowercase()
+
+            return nearbyHikes.filter { hike ->
+                val matchesDifficulty = selectedDifficulty == null || hike.difficulty == selectedDifficulty
+                val matchesQuery = normalizedQuery.isBlank() ||
+                    hike.title.lowercase().contains(normalizedQuery) ||
+                    hike.location.orEmpty().lowercase().contains(normalizedQuery)
+
+                matchesDifficulty && matchesQuery
+            }
+        }
+}

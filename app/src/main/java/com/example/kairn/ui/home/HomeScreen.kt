@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -57,6 +60,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import com.example.kairn.ui.components.UserAvatar
@@ -134,6 +138,14 @@ fun HomeScreen(
                 selectedDifficulty = uiState.selectedDifficulty,
                 onDifficultySelected = viewModel::onDifficultySelected,
             )
+
+            if (uiState.searchQuery.isNotBlank()) {
+                Spacer(modifier = Modifier.size(12.dp))
+                SearchResultsPanel(
+                    hikes = uiState.filteredHikes.take(5),
+                    onHikeClick = viewModel::onHikeSelected,
+                )
+            }
         }
     }
 
@@ -148,6 +160,56 @@ fun HomeScreen(
                 hike = uiState.selectedHike!!,
                 onStartTrip = { viewModel.onBottomSheetDismissed() },
             )
+        }
+    }
+}
+
+@Composable
+private fun SearchResultsPanel(
+    hikes: List<Hike>,
+    onHikeClick: (Hike) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.55f))
+            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            .heightIn(max = 220.dp)
+            .padding(vertical = 6.dp),
+    ) {
+        if (hikes.isEmpty()) {
+            Text(
+                text = "No hike found",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            )
+            return
+        }
+
+        LazyColumn {
+            items(hikes) { hike ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onHikeClick(hike) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Text(
+                        text = hike.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = hike.location.orEmpty().ifBlank { hike.difficulty.label },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider(color = Color.White.copy(alpha = 0.45f))
+            }
         }
     }
 }
