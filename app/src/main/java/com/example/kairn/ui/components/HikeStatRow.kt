@@ -65,9 +65,9 @@ fun DifficultyBadge(
     modifier: Modifier = Modifier,
 ) {
     val color = when (difficulty) {
-        HikeDifficulty.BEGINNER -> Color(0xFF66bb6a)
-        HikeDifficulty.INTERMEDIATE -> Color(0xFFffa726)
-        HikeDifficulty.ADVANCED -> Color(0xFFef5350)
+        HikeDifficulty.EASY -> Color(0xFF66bb6a)
+        HikeDifficulty.MODERATE -> Color(0xFFffa726)
+        HikeDifficulty.HARD -> Color(0xFFef5350)
         HikeDifficulty.EXPERT -> Color(0xFFab47bc)
     }
 

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
@@ -44,29 +43,33 @@ fun HikeBottomSheetContent(
             .padding(horizontal = 20.dp)
             .padding(bottom = 32.dp),
     ) {
-        // Hike name + location
+        // Title
         Text(
-            text = hike.name,
+            text = hike.title,
             style = MaterialTheme.typography.headlineMedium,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 24.sp,
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.LocationOn,
-                contentDescription = null,
-                tint = TextSecondary,
-                modifier = Modifier.size(14.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = hike.location,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 13.sp,
-            )
+        if (hike.location != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(13.dp),
+                )
+                Text(
+                    text = hike.location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -113,26 +116,19 @@ fun HikeBottomSheetContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Description
+        // Tab content
         when (selectedTab) {
             0 -> {
                 Text(
-                    text = "Hiking to ${hike.name}",
+                    text = "Hiking to ${hike.title}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Panoramic views of Mont Blanc and the Alps",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = hike.description.ifEmpty {
+                    text = hike.description.orEmpty().ifEmpty {
                         "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -141,25 +137,20 @@ fun HikeBottomSheetContent(
                     lineHeight = 22.sp,
                 )
             }
-            1 -> {
-                Text(
-                    text = "Route waypoints coming soon.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                )
-            }
-            2 -> {
-                Text(
-                    text = "Reviews coming soon.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                )
-            }
+            1 -> Text(
+                text = "Route waypoints coming soon.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+            )
+            2 -> Text(
+                text = "Reviews coming soon.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // CTA
         KairnButton(
             text = "Start your trip",
             onClick = onStartTrip,

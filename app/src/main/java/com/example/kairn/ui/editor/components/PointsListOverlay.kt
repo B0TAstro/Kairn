@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +49,7 @@ import com.example.kairn.ui.theme.Accent
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
-import kotlinx.coroutines.flow.StateFlow
+
 
 @Composable
 fun PointsListOverlay(

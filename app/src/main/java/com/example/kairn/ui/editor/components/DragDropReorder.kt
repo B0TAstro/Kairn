@@ -12,19 +12,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun <T> DragDropReorderList(
     items: List<T>,
     key: (T) -> Any,
     onReorder: (List<T>) -> Unit,
-    content: @Composable (item: T, isDragging: Boolean, onDragStart: () -> Unit) -> Unit,
+    content: @Composable (T, Boolean, () -> Unit) -> Unit,
 ) {
     var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
-    val reorderedItems = remember(items) { items.toImmutableList() }
 
     LaunchedEffect(items) {
         if (draggedItemIndex != null) {
@@ -35,7 +32,7 @@ fun <T> DragDropReorderList(
     Box(modifier = Modifier.fillMaxSize()) {
         items.forEachIndexed { index, item ->
             val isDragging = index == draggedItemIndex
-            
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -45,7 +42,7 @@ fun <T> DragDropReorderList(
                                 draggedItemIndex = index
                                 dragOffset = offset
                             },
-                            onDrag = { change, dragAmount ->
+                            onDrag = { _, dragAmount ->
                                 dragOffset += dragAmount
                                 val targetIndex = calculateTargetIndex(
                                     items = items,
@@ -65,11 +62,11 @@ fun <T> DragDropReorderList(
                             onDragEnd = {
                                 draggedItemIndex = null
                                 dragOffset = Offset.Zero
-                            }
+                            },
                         )
-                    }
+                    },
             ) {
-                content(item, isDragging, onDragStart = { draggedItemIndex = index })
+                content(item, isDragging) { draggedItemIndex = index }
             }
         }
     }
@@ -82,13 +79,13 @@ private fun <T> calculateTargetIndex(
     itemHeight: Float,
 ): Int? {
     if (items.isEmpty()) return null
-    
+
     val direction = when {
         dragOffset.y < -itemHeight / 2 -> -1
         dragOffset.y > itemHeight / 2 -> 1
         else -> return null
     }
-    
+
     val targetIndex = draggedIndex + direction
     return if (targetIndex in items.indices) targetIndex else null
 }

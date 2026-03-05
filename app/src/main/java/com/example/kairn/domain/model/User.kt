@@ -3,7 +3,7 @@ package com.example.kairn.domain.model
 data class User(
     val id: String,
     val email: String,
-    val username: String,
+    val username: String? = null,
     val avatarUrl: String? = null,
     val level: Int = 1,
     val xp: Int = 0,

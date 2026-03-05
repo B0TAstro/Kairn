@@ -8,7 +8,7 @@ interface MapProvider {
     
     fun addPoint(lat: Double, lon: Double, id: String)
     fun removePoint(id: String)
-    fun drawRoute(points: List<GeoPoint>)
+    fun drawRoute(points: List<GeoPoint>, routeId: String = "default")
     fun clearRoutes()
     fun setOnMapClickListener(listener: (lat: Double, lon: Double) -> Unit)
     fun centerMap(lat: Double, lon: Double, zoom: Double? = null)

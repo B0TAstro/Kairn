@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +61,6 @@ fun HikeCard(
                 ),
             contentAlignment = Alignment.BottomStart,
         ) {
-            // Gradient overlay at the bottom
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -66,10 +68,7 @@ fun HikeCard(
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                CardBackground,
-                            ),
+                            colors = listOf(Color.Transparent, CardBackground),
                         ),
                     ),
             )
@@ -79,14 +78,14 @@ fun HikeCard(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
             )
             Text(
-                text = "${hike.formattedElevation} meters",
+                text = hike.formattedElevation,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 fontSize = 13.sp,
@@ -133,16 +132,31 @@ fun HikeCardCompact(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = hike.name,
+                text = hike.title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.Medium,
             )
-            Text(
-                text = hike.location,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-            )
+            if (hike.location != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(11.dp),
+                    )
+                    Text(
+                        text = hike.location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

@@ -3,12 +3,13 @@ package com.example.kairn.ui.editor.map
 import android.content.Context
 import android.graphics.Color
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
-import java.util.UUID
 
 class OsmMapProvider : MapProvider {
     private lateinit var mapView: MapView
@@ -22,13 +23,18 @@ class OsmMapProvider : MapProvider {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(14.0)
-            
-            setOnClickListener { _, geoPoint ->
-                mapClickListener?.invoke(geoPoint.latitude, geoPoint.longitude)
-                true
+
+            val eventsReceiver = object : MapEventsReceiver {
+                override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
+                    mapClickListener?.invoke(p.latitude, p.longitude)
+                    return true
+                }
+
+                override fun longPressHelper(p: GeoPoint): Boolean = false
             }
+            overlays.add(MapEventsOverlay(eventsReceiver))
         }
-        
+
         return MapViewWrapper(mapView, MapProviderType.OSMDROID)
     }
 
@@ -39,7 +45,7 @@ class OsmMapProvider : MapProvider {
             title = id
             isDraggable = true
         }
-        
+
         mapView.overlays.add(marker)
         markers[id] = marker
         mapView.invalidate()
@@ -57,13 +63,13 @@ class OsmMapProvider : MapProvider {
         routes[routeId]?.let { existingRoute ->
             mapView.overlays.remove(existingRoute)
         }
-        
+
         val route = Polyline(mapView).apply {
             setPoints(points)
             color = Color.parseColor("#587B6C")
             width = 10f
         }
-        
+
         mapView.overlays.add(route)
         routes[routeId] = route
         mapView.invalidate()

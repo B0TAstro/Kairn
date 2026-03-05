@@ -6,10 +6,11 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.osmdroid.util.GeoPoint
-import java.util.UUID
-import kotlin.math.roundToInt
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class OsrmService {
+@Singleton
+class OsrmService @Inject constructor() {
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
     private val baseUrl = "https://router.project-osrm.org"

@@ -1,8 +1,7 @@
 package com.example.kairn.data.repository
 
-import com.example.kairn.data.supabase.SupabaseClient
 import com.example.kairn.ui.editor.model.EditorPoint
-import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
@@ -10,11 +9,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class GpxStorageService {
-    private val storage = SupabaseClient.getStorage()
+@Singleton
+class GpxStorageService @Inject constructor(
+    private val storage: Storage,
+) {
     private val bucketName = "GPX_FILES"
-    
+
     suspend fun uploadGpx(
         points: List<EditorPoint>,
         routes: List<List<GeoPoint>>,
@@ -22,29 +25,28 @@ class GpxStorageService {
         return@withContext try {
             val gpxContent = generateGpxContent(points, routes)
             val fileName = generateFileName()
-            
+
             storage.from(bucketName).upload(
                 path = fileName,
                 data = gpxContent.encodeToByteArray(),
-                upsert = true
             )
-            
-            val publicUrl = storage.from(bucketName).getPublicUrl(fileName)
+
+            val publicUrl = storage.from(bucketName).publicUrl(fileName)
             Result.success(publicUrl)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     private fun generateFileName(): String {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val uuid = UUID.randomUUID().toString().take(8)
-        return "./${timestamp}_${uuid}.gpx"
+        return "${timestamp}_${uuid}.gpx"
     }
-    
+
     private fun generateGpxContent(points: List<EditorPoint>, routes: List<List<GeoPoint>>): String {
         val builder = StringBuilder()
-        
+
         builder.appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
         builder.appendLine("<gpx version=\"1.1\" creator=\"Kairn Editor\" xmlns=\"http://www.topografix.com/GPX/1/1\">")
         builder.appendLine("  <metadata>")
@@ -52,20 +54,20 @@ class GpxStorageService {
         builder.appendLine("    <desc>Route created with Kairn hiking app</desc>")
         builder.appendLine("    <time>${formatIsoDateTime(Date())}</time>")
         builder.appendLine("  </metadata>")
-        
+
         if (points.isNotEmpty()) {
             builder.appendLine("  <wpt lat=\"${points.first().latitude}\" lon=\"${points.first().longitude}\">")
             builder.appendLine("    <name>Start</name>")
             builder.appendLine("    <sym>Flag</sym>")
             builder.appendLine("  </wpt>")
-            
+
             if (points.size > 1) {
                 builder.appendLine("  <wpt lat=\"${points.last().latitude}\" lon=\"${points.last().longitude}\">")
                 builder.appendLine("    <name>End</name>")
                 builder.appendLine("    <sym>Flag</sym>")
                 builder.appendLine("  </wpt>")
             }
-            
+
             points.forEachIndexed { index, point ->
                 if (index > 0 && index < points.size - 1) {
                     builder.appendLine("  <wpt lat=\"${point.latitude}\" lon=\"${point.longitude}\">")
@@ -75,25 +77,25 @@ class GpxStorageService {
                 }
             }
         }
-        
+
         if (routes.isNotEmpty()) {
             builder.appendLine("  <trk>")
             builder.appendLine("    <name>Kairn Route</name>")
             builder.appendLine("    <trkseg>")
-            
+
             routes.flatMap { it }.forEach { point ->
                 builder.appendLine("      <trkpt lat=\"${point.latitude}\" lon=\"${point.longitude}\" />")
             }
-            
+
             builder.appendLine("    </trkseg>")
             builder.appendLine("  </trk>")
         }
-        
+
         builder.appendLine("</gpx>")
-        
+
         return builder.toString()
     }
-    
+
     private fun formatIsoDateTime(date: Date): String {
         val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
         format.timeZone = java.util.TimeZone.getTimeZone("UTC")

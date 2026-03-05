@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.1"
+agp = "8.8.0"
 osmdroid = "6.1.20"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -12,8 +12,11 @@ composeBom = "2025.02.00"
 navigationCompose = "2.8.0"
 lifecycleViewModelCompose = "2.8.2"
 haze = "1.1.0"
-kotlinxSerialization = "1.7.3"
-supabaseKt = "2.6.0"
+coil = "2.7.0"
+supabase = "3.1.4"
+ktor = "3.1.2"
+hilt = "2.54"
+ksp = "2.0.21-1.0.28"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,15 +36,27 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewModelCompose" }
-    osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
-    haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
-    kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
-    supabase-kt = { group = "io.supabase", name = "supabase-kt", version.ref = "supabaseKt" }
-    supabase-storage-kt = { group = "io.supabase", name = "storage-kt", version.ref = "supabaseKt" }
-    supabase-gotrue-kt = { group = "io.supabase", name = "gotrue-kt", version.ref = "supabaseKt" }
+osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+# Supabase & Dependencies
+supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version.ref = "supabase" }
+supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt" }
+supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt" }
+supabase-storage = { group = "io.github.jan-tennert.supabase", name = "storage-kt" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.7.3" }
+# HTTP Client
+ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
+# Dependency Injection
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version = "1.2.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
