@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -28,7 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -84,51 +83,44 @@ fun ChatScreen(
         }
     }
 
-    Scaffold(
+    Column(
         modifier = modifier
             .fillMaxSize()
+            .background(Background)
+            .statusBarsPadding()
             .imePadding(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        containerColor = Background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = conversationName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Background,
-                    titleContentColor = TextPrimary,
-                    navigationIconContentColor = TextPrimary,
+    ) {
+        // Top bar
+        TopAppBar(
+            title = {
+                Text(
+                    text = conversationName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
                 )
-            )
-        },
-        bottomBar = {
-            MessageInput(
-                messageInput = uiState.messageInput,
-                onMessageChange = viewModel::onMessageInputChange,
-                onSendClick = viewModel::sendMessage,
-                isSending = uiState.isSending,
-            )
-        }
-    ) { paddingValues ->
+            },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Background,
+                titleContentColor = TextPrimary,
+                navigationIconContentColor = TextPrimary,
+            ),
+        )
+
+        // Message list (takes remaining space)
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = Primary)
             }
@@ -137,10 +129,18 @@ fun ChatScreen(
                 messages = uiState.messages,
                 listState = listState,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                    .weight(1f)
+                    .fillMaxWidth(),
             )
         }
+
+        // Input at bottom — sits directly above keyboard thanks to imePadding on Column
+        MessageInput(
+            messageInput = uiState.messageInput,
+            onMessageChange = viewModel::onMessageInputChange,
+            onSendClick = viewModel::sendMessage,
+            isSending = uiState.isSending,
+        )
     }
 }
 
@@ -153,13 +153,13 @@ private fun MessageList(
     if (messages.isEmpty()) {
         Box(
             modifier = modifier,
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No messages yet\nSend a message to start the conversation",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
             )
         }
     } else {
@@ -220,7 +220,7 @@ private fun MessageInput(
                     )
                 }
                 innerTextField()
-            }
+            },
         )
 
         Spacer(modifier = Modifier.size(12.dp))
@@ -231,7 +231,7 @@ private fun MessageInput(
                 .size(48.dp)
                 .clip(CircleShape)
                 .background(if (messageInput.isNotBlank() && !isSending) Accent else CardBackground),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             if (isSending) {
                 CircularProgressIndicator(
@@ -248,7 +248,7 @@ private fun MessageInput(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
                         tint = if (messageInput.isNotBlank()) Background else TextSecondary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
