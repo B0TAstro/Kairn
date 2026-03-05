@@ -1,5 +1,8 @@
 package com.example.kairn.ui.catalogue
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,7 +51,6 @@ import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 import com.example.kairn.ui.theme.Background
 import com.example.kairn.ui.theme.ChipSelectedBackground
-import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
@@ -59,11 +60,14 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogueScreen(
     onHikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CatalogueViewModel = viewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -133,6 +137,8 @@ fun CatalogueScreen(
                 CatalogueHikeCard(
                     hike = hike,
                     onClick = { onHikeClick(hike.id) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             }
         }
@@ -173,11 +179,14 @@ private fun CatalogueChip(
 
 // ─── Hike card ────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogueHikeCard(
     hike: Hike,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val hazeState = remember { HazeState() }
 
@@ -188,16 +197,22 @@ fun CatalogueHikeCard(
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
-        // ── Background: image if available, gradient fallback ─────────────
+        // ── Background: image with shared element, gradient fallback ──────
         if (hike.imageUrl != null) {
-            AsyncImage(
-                model = hike.imageUrl,
-                contentDescription = hike.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(hazeState),
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = hike.imageUrl,
+                    contentDescription = hike.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedElement(
+                            state = rememberSharedContentState(key = "hike-image-${hike.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
+                        .haze(hazeState),
+                )
+            }
             // Scrim overlay for readability
             Box(
                 modifier = Modifier
@@ -344,15 +359,5 @@ private fun CardStatItem(
                 fontSize = 10.sp,
             )
         }
-    }
-}
-
-// ─── Preview ─────────────────────────────────────────────────────────────────
-
-@Preview(showBackground = true)
-@Composable
-fun CatalogueScreenPreview() {
-    KairnTheme {
-        CatalogueScreen(onHikeClick = {})
     }
 }

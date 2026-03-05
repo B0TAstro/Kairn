@@ -1,5 +1,13 @@
 package com.example.kairn.ui.catalogue
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,10 +66,13 @@ import com.example.kairn.ui.theme.TextSecondary
 
 private val PANEL_OVERLAP = 48.dp
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HikeDetailScreen(
     hike: Hike,
     onBack: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -74,10 +85,15 @@ fun HikeDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            HeroImageArea(hike = hike)
+            HeroImageArea(
+                hike = hike,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+            )
 
             DetailPanel(
                 hike = hike,
+                animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier.offset(y = -PANEL_OVERLAP),
             )
         }
@@ -106,9 +122,12 @@ fun HikeDetailScreen(
 
 // ─── Hero image ───────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HeroImageArea(
     hike: Hike,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -117,12 +136,25 @@ private fun HeroImageArea(
             .height(420.dp),
     ) {
         if (hike.imageUrl != null) {
-            AsyncImage(
-                model = hike.imageUrl,
-                contentDescription = hike.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = hike.imageUrl,
+                    contentDescription = hike.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedElement(
+                            state = rememberSharedContentState(key = "hike-image-${hike.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow,
+                                )
+                            },
+                        ),
+                )
+            }
             // Scrim for readability at the bottom (panel overlap zone)
             Box(
                 modifier = Modifier
@@ -157,9 +189,11 @@ private fun HeroImageArea(
 
 // ─── Detail content panel ─────────────────────────────────────────────────────
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun DetailPanel(
     hike: Hike,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -171,7 +205,17 @@ private fun DetailPanel(
             .clip(panelShape)
             .background(Background)
             .padding(horizontal = 24.dp)
-            .padding(top = 16.dp, bottom = 120.dp),
+            .padding(top = 16.dp, bottom = 120.dp)
+            .then(
+                with(animatedVisibilityScope) {
+                    Modifier.animateEnterExit(
+                        enter = slideInVertically(
+                            animationSpec = tween(durationMillis = 400),
+                            initialOffsetY = { it / 2 },
+                        ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                    )
+                }
+            ),
     ) {
         // Drag handle
         Box(
@@ -381,15 +425,23 @@ fun HikeDetailCta(
 
 // ─── Composed screen with CTA overlay ────────────────────────────────────────
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HikeDetailScreenWithCta(
     hike: Hike,
     onBack: () -> Unit,
     onStartTrip: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        HikeDetailScreen(hike = hike, onBack = onBack)
+        HikeDetailScreen(
+            hike = hike,
+            onBack = onBack,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
 
         HikeDetailCta(
             onStartTrip = onStartTrip,
@@ -404,10 +456,12 @@ fun HikeDetailScreenWithCta(
 @Composable
 fun HikeDetailScreenPreview() {
     KairnTheme {
-        HikeDetailScreenWithCta(
-            hike = Hike.preview,
-            onBack = {},
-            onStartTrip = {},
-        )
+        // Preview without shared transition (not available outside NavHost)
+        Box(modifier = Modifier.fillMaxSize()) {
+            HikeDetailCta(
+                onStartTrip = {},
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
     }
 }
