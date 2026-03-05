@@ -96,10 +96,9 @@ fun HomeScreen(
     // ── UI ────────────────────────────────────────────────────────────────
     Box(modifier = modifier.fillMaxSize()) {
 
-        // ── OSM Map fills entire screen ───────────────────────────────────
-        OsmMapView(
+        // ── Mapbox 3D POC map fills entire screen ─────────────────────────
+        MapboxPocMapView(
             modifier = Modifier.fillMaxSize(),
-            locationPermissionGranted = locationPermissionGranted,
             userLatitude = uiState.userLatitude,
             userLongitude = uiState.userLongitude,
         )
