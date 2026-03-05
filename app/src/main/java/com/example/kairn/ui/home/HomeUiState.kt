@@ -9,13 +9,6 @@ data class MapCity(
     val longitude: Double,
 )
 
-data class HikeMapMarker(
-    val id: String,
-    val title: String,
-    val latitude: Double,
-    val longitude: Double,
-)
-
 data class HomeUiState(
     val username: String = "Agnes",
     val location: String = "Localisation...",
@@ -29,7 +22,6 @@ data class HomeUiState(
     val userLongitude: Double? = null,
     val selectedCity: MapCity? = null,
     val citySuggestions: List<MapCity> = emptyList(),
-    val mapHikeMarkers: List<HikeMapMarker> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
 ) {

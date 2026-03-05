@@ -1,8 +1,6 @@
 package com.example.kairn.ui.home
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
-import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -22,11 +20,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.kairn.BuildConfig
 import androidx.compose.material3.Text
 import com.mapbox.common.MapboxOptions
-import com.mapbox.maps.AnnotatedFeature
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
-import com.mapbox.maps.ViewAnnotationOptions
 
 @Composable
 fun MapboxPocMapView(
@@ -34,13 +30,11 @@ fun MapboxPocMapView(
     userLatitude: Double? = null,
     userLongitude: Double? = null,
     selectedCity: MapCity? = null,
-    markers: List<HikeMapMarker> = emptyList(),
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val token = BuildConfig.MAPBOX_ACCESS_TOKEN.trim()
     var mapInitError by remember { mutableStateOf<String?>(null) }
-    var styleReady by remember { mutableStateOf(false) }
 
     if (token.isBlank()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -53,7 +47,7 @@ fun MapboxPocMapView(
         MapboxOptions.accessToken = token
         runCatching {
             createMapboxMapView(context) {
-                styleReady = true
+                Unit
             }
         }
             .onFailure { mapInitError = it.message ?: "Mapbox initialization failed" }
@@ -89,27 +83,6 @@ fun MapboxPocMapView(
                     .bearing(20.0)
                     .build(),
             )
-        }
-    }
-
-    LaunchedEffect(mapView, markers, styleReady) {
-        if (!styleReady) return@LaunchedEffect
-
-        val viewAnnotationManager = mapView.viewAnnotationManager
-        viewAnnotationManager.removeAllViewAnnotations()
-        if (markers.isEmpty()) return@LaunchedEffect
-
-        markers.forEach { marker ->
-            val markerView = createMarkerView(context)
-            val options = ViewAnnotationOptions.Builder()
-                .annotatedFeature(
-                    AnnotatedFeature.valueOf(
-                        com.mapbox.geojson.Point.fromLngLat(marker.longitude, marker.latitude),
-                    ),
-                )
-                .allowOverlap(true)
-                .build()
-            viewAnnotationManager.addViewAnnotation(markerView, options)
         }
     }
 
@@ -151,18 +124,6 @@ private fun createMapboxMapView(
                     .bearing(28.0)
                     .build(),
             )
-        }
-    }
-}
-
-private fun createMarkerView(context: Context): View {
-    val sizePx = (14 * context.resources.displayMetrics.density).toInt()
-    return View(context).apply {
-        layoutParams = android.view.ViewGroup.LayoutParams(sizePx, sizePx)
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(android.graphics.Color.parseColor("#587B6C"))
-            setStroke((2 * context.resources.displayMetrics.density).toInt(), android.graphics.Color.parseColor("#ECE7DF"))
         }
     }
 }

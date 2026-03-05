@@ -27,14 +27,6 @@ class HomeViewModel @Inject constructor(
         MapCity(name = "Lyon", latitude = 45.764043, longitude = 4.835659),
     )
 
-    private val markerOffsets = listOf(
-        Pair(0.012, 0.010),
-        Pair(-0.009, 0.014),
-        Pair(0.015, -0.011),
-        Pair(-0.013, -0.010),
-        Pair(0.006, 0.018),
-    )
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var locationCollectionJob: Job? = null
@@ -59,11 +51,6 @@ class HomeViewModel @Inject constructor(
                             nearbyHikes = hikes,
                             selectedCity = selectedCity,
                             citySuggestions = citySuggestionsForQuery(current.searchQuery),
-                            mapHikeMarkers = buildMarkersForCity(
-                                city = selectedCity,
-                                hikes = hikes,
-                                selectedDifficulty = current.selectedDifficulty,
-                            ),
                             isLoading = false,
                         )
                     }
@@ -118,25 +105,13 @@ class HomeViewModel @Inject constructor(
                 searchQuery = city.name,
                 location = city.name,
                 selectedCity = city,
-                citySuggestions = listOf(city),
-                mapHikeMarkers = buildMarkersForCity(
-                    city = city,
-                    hikes = current.nearbyHikes,
-                    selectedDifficulty = current.selectedDifficulty,
-                ),
+                citySuggestions = emptyList(),
             )
         }
     }
 
     fun onDifficultySelected(difficulty: HikeDifficulty?) {
-        _uiState.update { current ->
-            current.copy(
-                selectedDifficulty = difficulty,
-                mapHikeMarkers = current.selectedCity?.let { city ->
-                    buildMarkersForCity(city, current.nearbyHikes, difficulty)
-                } ?: current.mapHikeMarkers,
-            )
-        }
+        _uiState.update { it.copy(selectedDifficulty = difficulty) }
     }
 
     fun onHikeSelected(hike: Hike) {
@@ -155,28 +130,5 @@ class HomeViewModel @Inject constructor(
         val normalized = query.trim().lowercase()
         if (normalized.isBlank()) return emptyList()
         return supportedCities.filter { it.name.lowercase().contains(normalized) }
-    }
-
-    private fun buildMarkersForCity(
-        city: MapCity,
-        hikes: List<Hike>,
-        selectedDifficulty: HikeDifficulty?,
-    ): List<HikeMapMarker> {
-        val source = hikes
-            .asSequence()
-            .filter { selectedDifficulty == null || it.difficulty == selectedDifficulty }
-            .ifEmpty { hikes.asSequence() }
-            .take(markerOffsets.size)
-            .toList()
-
-        return source.mapIndexed { index, hike ->
-            val (latOffset, lonOffset) = markerOffsets[index % markerOffsets.size]
-            HikeMapMarker(
-                id = hike.id,
-                title = hike.title,
-                latitude = city.latitude + latOffset,
-                longitude = city.longitude + lonOffset,
-            )
-        }
     }
 }

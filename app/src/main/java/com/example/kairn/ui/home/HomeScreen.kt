@@ -45,14 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -105,7 +100,6 @@ fun HomeScreen(
             userLatitude = uiState.userLatitude,
             userLongitude = uiState.userLongitude,
             selectedCity = uiState.selectedCity,
-            markers = uiState.mapHikeMarkers,
         )
 
         // ── Liquid glass panel overlay ────────────────────────────────────
@@ -113,13 +107,8 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .liquidGlass(
-                    cornerRadius = 40.dp,
-                    backgroundColor = MaterialTheme.colorScheme.background.copy(alpha = 0.80f),
-                    borderColor = Color.White.copy(alpha = 0.25f),
-                    shadowColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
-                    shadowRadius = 24.dp,
-                )
+                .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f))
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 20.dp),
@@ -140,7 +129,7 @@ fun HomeScreen(
                 onDifficultySelected = viewModel::onDifficultySelected,
             )
 
-            if (uiState.searchQuery.isNotBlank()) {
+            if (uiState.searchQuery.isNotBlank() && uiState.citySuggestions.isNotEmpty()) {
                 Spacer(modifier = Modifier.size(12.dp))
                 SearchResultsPanel(
                     cities = uiState.citySuggestions,
@@ -214,50 +203,6 @@ private fun SearchResultsPanel(
         }
     }
 }
-
-// ─── Liquid glass modifier ────────────────────────────────────────────────────
-
-fun Modifier.liquidGlass(
-    cornerRadius: Dp = 24.dp,
-    backgroundColor: Color = Color.White.copy(alpha = 0.75f),
-    borderColor: Color = Color.White.copy(alpha = 0.4f),
-    shadowColor: Color = Color.Black.copy(alpha = 0.08f),
-    shadowRadius: Dp = 16.dp,
-): Modifier = this
-    .drawBehind {
-        // Soft drop shadow beneath the panel
-        drawIntoCanvas { canvas ->
-            val paint = Paint().apply {
-                asFrameworkPaint().apply {
-                    isAntiAlias = true
-                    color = android.graphics.Color.TRANSPARENT
-                    setShadowLayer(
-                        shadowRadius.toPx(),
-                        0f,
-                        shadowRadius.toPx() / 2f,
-                        shadowColor.copy(alpha = 0.18f).toArgb(),
-                    )
-                }
-            }
-            val r = cornerRadius.toPx()
-            canvas.drawRoundRect(
-                left = 0f,
-                top = 0f,
-                right = size.width,
-                bottom = size.height,
-                radiusX = r,
-                radiusY = r,
-                paint = paint,
-            )
-        }
-    }
-    .clip(RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius))
-    .background(backgroundColor)
-    .border(
-        width = 1.dp,
-        color = borderColor,
-        shape = RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius),
-    )
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
