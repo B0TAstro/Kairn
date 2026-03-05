@@ -186,7 +186,7 @@ fun CatalogueHikeCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(320.dp)
+            .height(440.dp)
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick),
     ) {
