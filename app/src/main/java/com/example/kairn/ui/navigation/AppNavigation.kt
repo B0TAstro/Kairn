@@ -65,8 +65,10 @@ fun AppNavigation(
         }
 
         is SessionState.NotAuthenticated -> {
+            val isSignOut = (sessionState as SessionState.NotAuthenticated).isSignOut
             UnauthenticatedNavigation(
                 authViewModel = authViewModel,
+                isSignOut = isSignOut,
                 modifier = modifier,
             )
         }
@@ -76,6 +78,7 @@ fun AppNavigation(
 @Composable
 private fun UnauthenticatedNavigation(
     authViewModel: AuthViewModel,
+    isSignOut: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -84,6 +87,7 @@ private fun UnauthenticatedNavigation(
     val sharedImageAssetPath = remember {
         com.example.kairn.ui.auth.onboarding.pickRandomOnboardingImage(context)
     }
+    val startDestination = if (isSignOut) AuthRoute.Login.route else AuthRoute.Onboarding.route
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -93,7 +97,7 @@ private fun UnauthenticatedNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = AuthRoute.Onboarding.route,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
         authGraph(
