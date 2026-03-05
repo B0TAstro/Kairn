@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
+    import androidx.compose.material.icons.outlined.BookmarkBorder
+    import androidx.compose.material.icons.outlined.Edit
+    import androidx.compose.material.icons.outlined.Explore
+    import androidx.compose.material.icons.outlined.Home
+    import androidx.compose.material.icons.outlined.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +55,8 @@ fun KairnApp() {
 
     val navBarItems = listOf(
         NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
-        NavBarItem(Screen.DETAILS.name, "Details", Icons.Outlined.Explore),
+        NavBarItem(Screen.DETAILS.name, "Explore", Icons.Outlined.Explore),
+        NavBarItem(Screen.EDITOR.name, "Create", Icons.Outlined.Edit),
         NavBarItem(Screen.SAVED.name, "Saved", Icons.Outlined.BookmarkBorder),
         NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
     )
