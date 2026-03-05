@@ -109,9 +109,9 @@ internal fun AuthTextField(
             color = Color.White,
         ),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.White.copy(alpha = 0.18f),
-            unfocusedContainerColor = Color.White.copy(alpha = 0.14f),
-            disabledContainerColor = Color.White.copy(alpha = 0.08f),
+            focusedContainerColor = Color.White.copy(alpha = 0.35f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.28f),
+            disabledContainerColor = Color.White.copy(alpha = 0.18f),
             cursorColor = Color.White,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,

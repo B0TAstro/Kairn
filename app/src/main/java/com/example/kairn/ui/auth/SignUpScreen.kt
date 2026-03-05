@@ -230,8 +230,8 @@ fun SignUpScreen(
                         enabled = canSignUp,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f),
+                            contentColor = Color.White,
                         ),
                     ) {
                         Text(
