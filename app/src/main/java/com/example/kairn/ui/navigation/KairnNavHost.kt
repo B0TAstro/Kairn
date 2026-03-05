@@ -5,7 +5,7 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,7 +36,7 @@ fun KairnNavHost(
             }
 
             composable(Screen.EXPLORE.name) { backStackEntry ->
-                val exploreViewModel: ExploreViewModel = viewModel(backStackEntry)
+                val exploreViewModel: ExploreViewModel = hiltViewModel(backStackEntry)
                 ExploreScreen(
                     onHikeClick = { hikeId ->
                         navController.navigate(NavRoutes.hikeDetail(hikeId))
@@ -68,7 +68,7 @@ fun KairnNavHost(
                 val exploreEntry = remember(backStackEntry) {
                     navController.getBackStackEntry(Screen.EXPLORE.name)
                 }
-                val exploreViewModel: ExploreViewModel = viewModel(exploreEntry)
+                val exploreViewModel: ExploreViewModel = hiltViewModel(exploreEntry)
 
                 val hike: Hike = exploreViewModel.selectedHike
                     ?: exploreViewModel.uiState.value.allHikes.find { it.id == hikeId }
