@@ -124,14 +124,17 @@ Backend:
 ### Phase 0 - Foundations
 - [x] Define Supabase data model (`accounts`, `paths`, `groups`)
 - [x] Implement Auth and RLS security rules
-- [X] Set up Android architecture (`ui`, `data`, `domain`)
-- [X] Deliver login/sign-up flow
+- [x] Set up Android architecture (`ui`, `data`, `domain`)
+- [x] Deliver login/sign-up flow
 
 ### Phase 1 - Navigation
 - [ ] Display a regional 3D map with hikes
 - [ ] Show route quick details on map cards (name, time, difficulty, distance, elevation, level)
 - [ ] Start a route and track GPS progression
 - [ ] Ensure core flow works offline and syncs later
+- [x] Build Home map screen with OSM map rendering and real GPS location centering
+- [x] Add Explore catalog with filters, hike cards, and detail navigation
+- [x] Implement hike detail screen with shared element transition and CTA
 
 ### Phase 2 - Hikes Editor
 - [ ] Build hike create/edit flow
@@ -142,6 +145,7 @@ Backend:
 - [ ] Add friend system and group creation
 - [ ] Add group chat and hike sharing
 - [ ] Add comments and creator/community photos on hike detail pages
+- [x] Add social navigation shell (Chat tab routing placeholder)
 
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
@@ -154,6 +158,8 @@ Backend:
 - [ ] Add tests and CI/CD pipeline
 - [ ] Optimize battery and GPS performance
 - [ ] Release a stable private beta build
+- [x] Set up Hilt dependency injection and Supabase modules (Auth, PostgREST, Realtime, Storage)
+- [x] Add baseline Android/JUnit and instrumented test scaffolding
 
 ### Phase 6 - Platform Expansion (Post-MVP)
 - [ ] Start native iOS app (SwiftUI)
