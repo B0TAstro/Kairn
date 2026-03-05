@@ -5,7 +5,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -196,10 +195,7 @@ private fun DetailPanel(
             .then(
                 with(animatedVisibilityScope) {
                     Modifier.animateEnterExit(
-                        enter = slideInVertically(
-                            animationSpec = tween(durationMillis = 500),
-                            initialOffsetY = { it },
-                        ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = 100)),
+                        enter = fadeIn(animationSpec = tween(durationMillis = 200)),
                     )
                 }
             ),
