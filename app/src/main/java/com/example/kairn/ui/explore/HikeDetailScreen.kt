@@ -1,10 +1,8 @@
-package com.example.kairn.ui.catalogue
+package com.example.kairn.ui.explore
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -48,10 +46,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -59,7 +57,6 @@ import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
 import com.example.kairn.ui.theme.Background
-import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
 import com.example.kairn.ui.theme.TextSecondary
@@ -77,57 +74,60 @@ fun HikeDetailScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    Box(modifier = modifier.fillMaxSize()) {
-
-        // ── Scrollable content ────────────────────────────────────────────
-        Column(
-            modifier = Modifier
+    with(sharedTransitionScope) {
+        Box(
+            modifier = modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState),
+                // sharedBounds sur le conteneur entier — même clé que la carte
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "hike-card-${hike.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    clipInOverlayDuringTransition = OverlayClip(RectangleShape),
+                ),
         ) {
-            HeroImageArea(
-                hike = hike,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
+            // ── Scrollable content ────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
+            ) {
+                HeroImageArea(hike = hike)
 
-            DetailPanel(
-                hike = hike,
-                animatedVisibilityScope = animatedVisibilityScope,
-                modifier = Modifier.offset(y = -PANEL_OVERLAP),
-            )
-        }
+                DetailPanel(
+                    hike = hike,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    modifier = Modifier.offset(y = -PANEL_OVERLAP),
+                )
+            }
 
-        // ── Sticky top actions (back + bookmark) ──────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            ActionButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                onClick = onBack,
-            )
-            ActionButton(
-                icon = Icons.Outlined.BookmarkBorder,
-                contentDescription = "Save",
-                onClick = {},
-            )
+            // ── Sticky top actions ────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                ActionButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    onClick = onBack,
+                )
+                ActionButton(
+                    icon = Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Save",
+                    onClick = {},
+                )
+            }
         }
     }
 }
 
 // ─── Hero image ───────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HeroImageArea(
     hike: Hike,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -136,26 +136,12 @@ private fun HeroImageArea(
             .height(420.dp),
     ) {
         if (hike.imageUrl != null) {
-            with(sharedTransitionScope) {
-                AsyncImage(
-                    model = hike.imageUrl,
-                    contentDescription = hike.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .sharedElement(
-                            state = rememberSharedContentState(key = "hike-image-${hike.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessMediumLow,
-                                )
-                            },
-                        ),
-                )
-            }
-            // Scrim for readability at the bottom (panel overlap zone)
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -210,14 +196,13 @@ private fun DetailPanel(
                 with(animatedVisibilityScope) {
                     Modifier.animateEnterExit(
                         enter = slideInVertically(
-                            animationSpec = tween(durationMillis = 400),
-                            initialOffsetY = { it / 2 },
-                        ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                            animationSpec = tween(durationMillis = 500),
+                            initialOffsetY = { it },
+                        ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = 100)),
                     )
                 }
             ),
     ) {
-        // Drag handle
         Box(
             modifier = Modifier
                 .width(40.dp)
@@ -229,7 +214,6 @@ private fun DetailPanel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Title + elevation
         Text(
             text = hike.title,
             style = MaterialTheme.typography.headlineMedium,
@@ -247,34 +231,17 @@ private fun DetailPanel(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Stats row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            DetailStatItem(
-                icon = Icons.Outlined.Schedule,
-                value = hike.formattedDuration,
-                label = "Duration",
-                modifier = Modifier.weight(1f),
-            )
-            DetailStatItem(
-                icon = Icons.Outlined.Route,
-                value = hike.formattedDistance,
-                label = "Distance",
-                modifier = Modifier.weight(1f),
-            )
-            DetailStatItem(
-                icon = Icons.Outlined.StarBorder,
-                value = hike.difficulty.label,
-                label = "Level",
-                modifier = Modifier.weight(1f),
-            )
+            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level", Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Tabs
         KairnTabRow(
             tabs = listOf("Details", "Route List", "Reviews"),
             selectedIndex = selectedTab,
@@ -294,10 +261,7 @@ private fun DetailPanel(
 // ─── Tab content ──────────────────────────────────────────────────────────────
 
 @Composable
-private fun DetailsTabContent(
-    hike: Hike,
-    modifier: Modifier = Modifier,
-) {
+private fun DetailsTabContent(hike: Hike, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
             text = "Hiking to ${hike.title}",
@@ -320,16 +284,8 @@ private fun DetailsTabContent(
 }
 
 @Composable
-private fun PlaceholderTabContent(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = TextSecondary,
-        modifier = modifier,
-    )
+private fun PlaceholderTabContent(text: String, modifier: Modifier = Modifier) {
+    Text(text = text, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = modifier)
 }
 
 // ─── Stat item ────────────────────────────────────────────────────────────────
@@ -341,31 +297,12 @@ private fun DetailStatItem(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Primary,
-            modifier = Modifier.size(18.dp),
-        )
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        Icon(imageVector = icon, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Column {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 11.sp,
-            )
+            Text(text = value, style = MaterialTheme.typography.bodySmall, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(text = label, style = MaterialTheme.typography.bodySmall, color = TextSecondary, fontSize = 11.sp)
         }
     }
 }
@@ -385,19 +322,10 @@ private fun ActionButton(
             .size(44.dp)
             .clip(CircleShape)
             .background(Color(0xFF1e2d27).copy(alpha = 0.75f))
-            .border(
-                width = 0.5.dp,
-                color = Color.White.copy(alpha = 0.18f),
-                shape = CircleShape,
-            )
+            .border(0.5.dp, Color.White.copy(alpha = 0.18f), CircleShape)
             .clickable(onClick = onClick),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp),
-        )
+        Icon(imageVector = icon, contentDescription = contentDescription, tint = Color.White, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -415,11 +343,7 @@ fun HikeDetailCta(
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
-        KairnButton(
-            text = "Start your trip",
-            onClick = onStartTrip,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        KairnButton(text = "Start your trip", onClick = onStartTrip, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -442,26 +366,9 @@ fun HikeDetailScreenWithCta(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
-
         HikeDetailCta(
             onStartTrip = onStartTrip,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    }
-}
-
-// ─── Preview ─────────────────────────────────────────────────────────────────
-
-@Preview(showBackground = true)
-@Composable
-fun HikeDetailScreenPreview() {
-    KairnTheme {
-        // Preview without shared transition (not available outside NavHost)
-        Box(modifier = Modifier.fillMaxSize()) {
-            HikeDetailCta(
-                onStartTrip = {},
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
     }
 }

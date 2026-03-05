@@ -1,9 +1,9 @@
-package com.example.kairn.ui.catalogue
+package com.example.kairn.ui.explore
 
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
 
-data class CatalogueUiState(
+data class ExploreUiState(
     val allHikes: List<Hike> = emptyList(),
     val selectedCategory: HikeCategory? = null,
     val isLoading: Boolean = true,

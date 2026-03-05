@@ -13,9 +13,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.account.AccountScreen
-import com.example.kairn.ui.catalogue.CatalogueScreen
-import com.example.kairn.ui.catalogue.CatalogueViewModel
-import com.example.kairn.ui.catalogue.HikeDetailScreenWithCta
+import com.example.kairn.ui.explore.ExploreScreen
+import com.example.kairn.ui.explore.ExploreViewModel
+import com.example.kairn.ui.explore.HikeDetailScreenWithCta
 import com.example.kairn.ui.home.HomeScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -36,15 +36,14 @@ fun KairnNavHost(
             }
 
             composable(Screen.DETAILS.name) { backStackEntry ->
-                // ViewModel scoped to this back stack entry so detail can read selectedHike
-                val catalogueViewModel: CatalogueViewModel = viewModel(backStackEntry)
-                CatalogueScreen(
+                val exploreViewModel: ExploreViewModel = viewModel(backStackEntry)
+                ExploreScreen(
                     onHikeClick = { hikeId ->
                         navController.navigate(NavRoutes.hikeDetail(hikeId))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this@composable,
-                    viewModel = catalogueViewModel,
+                    viewModel = exploreViewModel,
                 )
             }
 
@@ -62,15 +61,13 @@ fun KairnNavHost(
             ) { backStackEntry ->
                 val hikeId = backStackEntry.arguments?.getString("hikeId") ?: return@composable
 
-                // Retrieve the catalogue back stack entry to share its ViewModel
-                val catalogueEntry = remember(backStackEntry) {
+                val exploreEntry = remember(backStackEntry) {
                     navController.getBackStackEntry(Screen.DETAILS.name)
                 }
-                val catalogueViewModel: CatalogueViewModel = viewModel(catalogueEntry)
+                val exploreViewModel: ExploreViewModel = viewModel(exploreEntry)
 
-                // Use the hike stored by the catalogue, fallback to preview
-                val hike: Hike = catalogueViewModel.selectedHike
-                    ?: catalogueViewModel.uiState.value.allHikes.find { it.id == hikeId }
+                val hike: Hike = exploreViewModel.selectedHike
+                    ?: exploreViewModel.uiState.value.allHikes.find { it.id == hikeId }
                     ?: Hike.preview
 
                 HikeDetailScreenWithCta(

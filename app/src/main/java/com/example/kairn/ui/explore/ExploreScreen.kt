@@ -1,4 +1,4 @@
-package com.example.kairn.ui.catalogue
+package com.example.kairn.ui.explore
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -62,10 +62,10 @@ import dev.chrisbanes.haze.hazeChild
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun CatalogueScreen(
+fun ExploreScreen(
     onHikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CatalogueViewModel = viewModel(),
+    viewModel: ExploreViewModel = viewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -108,14 +108,14 @@ fun CatalogueScreen(
                 .padding(bottom = 16.dp),
         ) {
             item {
-                CatalogueChip(
+                ExploreChip(
                     label = "All",
                     isSelected = uiState.selectedCategory == null,
                     onClick = { viewModel.onCategorySelected(null) },
                 )
             }
             items(HikeCategory.entries) { category ->
-                CatalogueChip(
+                ExploreChip(
                     label = category.label,
                     isSelected = uiState.selectedCategory == category,
                     onClick = { viewModel.onCategorySelected(category) },
@@ -134,7 +134,7 @@ fun CatalogueScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(uiState.filteredHikes, key = { it.id }) { hike ->
-                CatalogueHikeCard(
+                ExploreHikeCard(
                     hike = hike,
                     onClick = {
                         viewModel.onHikeSelected(hike)
@@ -148,10 +148,10 @@ fun CatalogueScreen(
     }
 }
 
-// ─── Catalogue chip ───────────────────────────────────────────────────────────
+// ─── Chip ─────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun CatalogueChip(
+private fun ExploreChip(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -184,7 +184,7 @@ private fun CatalogueChip(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun CatalogueHikeCard(
+fun ExploreHikeCard(
     hike: Hike,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -192,139 +192,129 @@ fun CatalogueHikeCard(
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val hazeState = remember { HazeState() }
+    val cardShape = RoundedCornerShape(24.dp)
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(440.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick),
-    ) {
-        // ── Background: image with shared element, gradient fallback ──────
-        if (hike.imageUrl != null) {
-            with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(440.dp)
+                // sharedBounds sur le conteneur entier : interpole shape + position + taille
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "hike-card-${hike.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    clipInOverlayDuringTransition = OverlayClip(cardShape),
+                )
+                .clip(cardShape)
+                .clickable(onClick = onClick),
+        ) {
+            // ── Background: image ou gradient ────────────────────────────
+            if (hike.imageUrl != null) {
                 AsyncImage(
                     model = hike.imageUrl,
                     contentDescription = hike.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .sharedElement(
-                            state = rememberSharedContentState(key = "hike-image-${hike.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
                         .haze(hazeState),
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color(0xFF111a16).copy(alpha = 0.25f),
+                                    1.0f to Color(0xFF111a16).copy(alpha = 0.70f),
+                                ),
+                            ),
+                        ),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .haze(hazeState)
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Primary.copy(alpha = 0.55f),
+                                    0.5f to Primary.copy(alpha = 0.30f),
+                                    1.0f to Color(0xFF1a2520),
+                                ),
+                            ),
+                        ),
+                )
             }
-            // Scrim overlay for readability
-            Box(
+
+            // ── Arrow icon ────────────────────────────────────────────────
+            Icon(
+                imageVector = Icons.Filled.ArrowOutward,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.85f),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color(0xFF111a16).copy(alpha = 0.25f),
-                                1.0f to Color(0xFF111a16).copy(alpha = 0.70f),
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .size(22.dp),
+            )
+
+            // ── Title + elevation ─────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 18.dp, top = 18.dp),
+            ) {
+                Text(
+                    text = hike.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 26.sp,
+                )
+                Text(
+                    text = hike.formattedElevation,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.80f),
+                    fontSize = 14.sp,
+                )
+            }
+
+            // ── Liquid glass stats panel ──────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .hazeChild(
+                        state = hazeState,
+                        style = HazeStyle(
+                            backgroundColor = Color(0xFF111a16).copy(alpha = 0.45f),
+                            blurRadius = 20.dp,
+                            tints = listOf(
+                                HazeTint(color = Primary.copy(alpha = 0.18f)),
+                                HazeTint(color = Color.White.copy(alpha = 0.06f)),
+                            ),
+                            noiseFactor = 0.04f,
+                        ),
+                    )
+                    .border(
+                        width = 0.5.dp,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.25f),
+                                Color.White.copy(alpha = 0.05f),
                             ),
                         ),
-                    ),
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(hazeState)
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Primary.copy(alpha = 0.55f),
-                                0.5f to Primary.copy(alpha = 0.30f),
-                                1.0f to Color(0xFF1a2520),
-                            ),
-                        ),
-                    ),
-            )
-        }
-
-        // ── Top-right arrow icon ──────────────────────────────────────────
-        Icon(
-            imageVector = Icons.Filled.ArrowOutward,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.85f),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-                .size(22.dp),
-        )
-
-        // ── Title + elevation (top-left) ──────────────────────────────────
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 18.dp, top = 18.dp),
-        ) {
-            Text(
-                text = hike.title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 26.sp,
-            )
-            Text(
-                text = hike.formattedElevation,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.80f),
-                fontSize = 14.sp,
-            )
-        }
-
-        // ── Liquid glass stats panel (bottom) ─────────────────────────────
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .hazeChild(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = Color(0xFF111a16).copy(alpha = 0.45f),
-                        blurRadius = 20.dp,
-                        tints = listOf(
-                            HazeTint(color = Primary.copy(alpha = 0.18f)),
-                            HazeTint(color = Color.White.copy(alpha = 0.06f)),
-                        ),
-                        noiseFactor = 0.04f,
-                    ),
-                )
-                .border(
-                    width = 0.5.dp,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.25f),
-                            Color.White.copy(alpha = 0.05f),
-                        ),
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                )
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CardStatItem(
-                icon = Icons.Outlined.Schedule,
-                value = hike.formattedDuration,
-                label = "Duration",
-            )
-            CardStatItem(
-                icon = Icons.Outlined.Route,
-                value = hike.formattedDistance,
-                label = "Distance",
-            )
-            CardStatItem(
-                icon = Icons.Outlined.StarBorder,
-                value = hike.difficulty.label,
-                label = "Level",
-            )
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                    .padding(horizontal = 18.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CardStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration")
+                CardStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance")
+                CardStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level")
+            }
         }
     }
 }
@@ -336,10 +326,7 @@ private fun CardStatItem(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier,
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         Icon(
             imageVector = icon,
             contentDescription = null,

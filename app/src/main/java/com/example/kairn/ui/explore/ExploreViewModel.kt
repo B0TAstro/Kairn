@@ -1,4 +1,4 @@
-package com.example.kairn.ui.catalogue
+package com.example.kairn.ui.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CatalogueViewModel(
+class ExploreViewModel(
     private val hikeRepository: HikeRepository = HikeRepositoryImpl(),
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CatalogueUiState())
-    val uiState: StateFlow<CatalogueUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ExploreUiState())
+    val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
 
     // Hike sélectionné — lu par la detail screen via le même ViewModel
     var selectedHike: Hike? = null
