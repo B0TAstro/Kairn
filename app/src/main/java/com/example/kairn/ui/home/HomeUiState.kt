@@ -9,9 +9,11 @@ data class HomeUiState(
     val initials: String = "AG",
     val searchQuery: String = "",
     val selectedDifficulty: HikeDifficulty? = null,
-    val nearbyHikes: List<Hike> = Hike.previewList,
+    val nearbyHikes: List<Hike> = emptyList(),
     val selectedHike: Hike? = null,
     val isBottomSheetExpanded: Boolean = false,
     val userLatitude: Double? = null,
     val userLongitude: Double? = null,
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
 )
