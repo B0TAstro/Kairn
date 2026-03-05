@@ -78,6 +78,7 @@ fun HikeDetailScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
+                .background(Background)
                 // sharedBounds sur le conteneur entier — même clé que la carte
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "hike-card-${hike.id}"),
@@ -341,7 +342,8 @@ fun HikeDetailCta(
             .fillMaxWidth()
             .background(Background)
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(bottom = 20.dp),
     ) {
         KairnButton(text = "Start your trip", onClick = onStartTrip, modifier = Modifier.fillMaxWidth())
     }
