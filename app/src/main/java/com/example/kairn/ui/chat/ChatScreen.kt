@@ -174,6 +174,7 @@ private fun MessageList(
                     senderName = message.senderName,
                     senderInitials = message.senderInitials,
                     message = message.body,
+                    messageType = message.messageType,
                     isCurrentUser = message.isCurrentUser,
                 )
             }
