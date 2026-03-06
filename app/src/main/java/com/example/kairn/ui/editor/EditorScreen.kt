@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -28,9 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.BuildConfig
 import com.example.kairn.ui.editor.components.EditorMap
 import com.example.kairn.ui.editor.components.PointsListOverlay
 import com.example.kairn.ui.editor.map.MapProvider
+import com.example.kairn.ui.editor.map.MapboxMapProvider
 import com.example.kairn.ui.editor.map.OsmMapProvider
 
 @Composable
@@ -40,7 +42,13 @@ fun EditorScreen(
     val bottomOverlayOffset = 96.dp
     var isPointsPanelExpanded by rememberSaveable { mutableStateOf(true) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val mapProvider: MapProvider = remember { OsmMapProvider() }
+    val mapProvider: MapProvider = remember {
+        if (BuildConfig.MAPBOX_ACCESS_TOKEN.isBlank()) {
+            OsmMapProvider()
+        } else {
+            MapboxMapProvider()
+        }
+    }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState) {

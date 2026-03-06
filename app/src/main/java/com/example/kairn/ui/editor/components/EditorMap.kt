@@ -5,8 +5,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,7 +17,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.kairn.ui.editor.EditorViewModel
 import com.example.kairn.ui.editor.EditorUiState
 import com.example.kairn.ui.editor.map.MapProvider
-import org.osmdroid.views.MapView
 
 @Composable
 fun EditorMap(
@@ -32,12 +31,15 @@ fun EditorMap(
     val readyState = uiState as? EditorUiState.Ready
 
     val mapViewWrapper = remember { mapProvider.createMapView(context) }
-    val mapView = mapViewWrapper.view as MapView
+    val mapView = mapViewWrapper.view
 
     var displayedPointIds by remember { mutableStateOf(setOf<String>()) }
 
-    mapProvider.setOnMapClickListener { lat, lon ->
-        viewModel.addPoint(lat, lon)
+    DisposableEffect(mapProvider) {
+        mapProvider.setOnMapClickListener { lat, lon ->
+            viewModel.addPoint(lat, lon)
+        }
+        onDispose { mapProvider.setOnMapClickListener { _, _ -> Unit } }
     }
 
     LaunchedEffect(readyState?.points, readyState?.routes) {
@@ -69,13 +71,22 @@ fun EditorMap(
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_START -> mapProvider.onStart()
+                Lifecycle.Event.ON_RESUME -> mapProvider.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapProvider.onPause()
+                Lifecycle.Event.ON_STOP -> mapProvider.onStop()
+                Lifecycle.Event.ON_DESTROY -> mapProvider.onDestroy()
                 else -> Unit
             }
         }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycle.removeObserver(observer)
+            if (lifecycle.currentState != Lifecycle.State.DESTROYED) {
+                mapProvider.onStop()
+                mapProvider.onDestroy()
+            }
+        }
     }
 
     AndroidView(

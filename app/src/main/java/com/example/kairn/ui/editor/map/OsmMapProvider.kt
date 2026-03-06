@@ -92,4 +92,22 @@ class OsmMapProvider : MapProvider {
         mapView.controller.animateTo(GeoPoint(lat, lon))
         zoom?.let { mapView.controller.setZoom(it) }
     }
+
+    override fun onStart() = Unit
+
+    override fun onResume() {
+        if (::mapView.isInitialized) {
+            mapView.onResume()
+        }
+    }
+
+    override fun onPause() {
+        if (::mapView.isInitialized) {
+            mapView.onPause()
+        }
+    }
+
+    override fun onStop() = Unit
+
+    override fun onDestroy() = Unit
 }
