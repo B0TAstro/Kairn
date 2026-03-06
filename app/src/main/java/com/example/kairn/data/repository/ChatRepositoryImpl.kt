@@ -20,7 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -60,9 +59,6 @@ class ChatRepositoryImpl @Inject constructor(
     // Realtime channels per conversation
     private val realtimeChannels = mutableMapOf<String, RealtimeChannel>()
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    
-    // Polling jobs as fallback when Realtime doesn't work
-    private val pollingJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
     // Cache current user ID to avoid repeated auth calls
     private val currentUserId: String?
@@ -387,10 +383,9 @@ class ChatRepositoryImpl @Inject constructor(
         // Clean up existing channel if any
         unsubscribeFromConversation(conversationId)
         
-        // Start Realtime subscription
         try {
             // Create unique channel for this conversation
-            val channel = realtime.channel("messages:conversation_id=eq.$conversationId")
+            val channel = realtime.channel("messages-$conversationId")
             
             // Setup postgres change listener BEFORE subscribing
             val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
@@ -399,7 +394,7 @@ class ChatRepositoryImpl @Inject constructor(
             
             // Collect changes and refresh messages
             changeFlow.onEach { action ->
-                Log.d(TAG, "subscribeToConversation: Realtime event ${action.javaClass.simpleName}")
+                Log.d(TAG, "subscribeToConversation: Realtime ${action.javaClass.simpleName} - refreshing messages")
                 refreshMessages(conversationId)
             }.launchIn(realtimeScope)
             
@@ -408,43 +403,23 @@ class ChatRepositoryImpl @Inject constructor(
             
             // Store the channel for cleanup
             realtimeChannels[conversationId] = channel
-            Log.d(TAG, "subscribeToConversation: Realtime subscribed to $conversationId")
+            Log.d(TAG, "subscribeToConversation: SUCCESS - Realtime active for $conversationId")
             
         } catch (e: Exception) {
-            Log.e(TAG, "subscribeToConversation: Realtime failed for $conversationId", e)
+            Log.e(TAG, "subscribeToConversation: FAILED - $conversationId", e)
         }
-        
-        // Also start polling as fallback (every 3 seconds)
-        // This ensures messages appear even if Realtime is not configured
-        val pollingJob = realtimeScope.launch {
-            while (true) {
-                delay(3000) // Poll every 3 seconds
-                try {
-                    refreshMessages(conversationId)
-                } catch (e: Exception) {
-                    Log.e(TAG, "subscribeToConversation: Polling failed", e)
-                }
-            }
-        }
-        pollingJobs[conversationId] = pollingJob
-        Log.d(TAG, "subscribeToConversation: Polling started for $conversationId")
     }
 
     override suspend fun unsubscribeFromConversation(conversationId: String) {
         Log.d(TAG, "unsubscribeFromConversation: $conversationId")
         
-        // Stop polling
-        pollingJobs[conversationId]?.cancel()
-        pollingJobs.remove(conversationId)
-        
-        // Unsubscribe Realtime channel
         realtimeChannels[conversationId]?.let { channel ->
             try {
                 channel.unsubscribe()
                 realtimeChannels.remove(conversationId)
-                Log.d(TAG, "unsubscribeFromConversation: Realtime unsubscribed from $conversationId")
+                Log.d(TAG, "unsubscribeFromConversation: SUCCESS - $conversationId")
             } catch (e: Exception) {
-                Log.e(TAG, "unsubscribeFromConversation: Realtime failed for $conversationId", e)
+                Log.e(TAG, "unsubscribeFromConversation: FAILED - $conversationId", e)
             }
         }
     }
