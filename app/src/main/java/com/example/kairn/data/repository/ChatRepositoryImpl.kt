@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -59,6 +60,9 @@ class ChatRepositoryImpl @Inject constructor(
     // Realtime channels per conversation
     private val realtimeChannels = mutableMapOf<String, RealtimeChannel>()
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
+    // Polling jobs as fallback when Realtime doesn't work
+    private val pollingJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
     // Cache current user ID to avoid repeated auth calls
     private val currentUserId: String?
@@ -383,47 +387,64 @@ class ChatRepositoryImpl @Inject constructor(
         // Clean up existing channel if any
         unsubscribeFromConversation(conversationId)
         
+        // Start Realtime subscription
         try {
             // Create unique channel for this conversation
-            // Use table-specific channel name to avoid conflicts
             val channel = realtime.channel("messages:conversation_id=eq.$conversationId")
             
             // Setup postgres change listener BEFORE subscribing
-            // Listen to all changes on messages table for this conversation
             val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "messages"
             }
             
-            // Collect changes and refresh messages for this conversation
+            // Collect changes and refresh messages
             changeFlow.onEach { action ->
                 Log.d(TAG, "subscribeToConversation: Realtime event ${action.javaClass.simpleName}")
-                // Refresh only if the change is for our conversation
-                // (Supabase RLS should already filter, but double-check)
                 refreshMessages(conversationId)
             }.launchIn(realtimeScope)
             
-            // Now subscribe the channel
+            // Subscribe the channel
             channel.subscribe()
             
             // Store the channel for cleanup
             realtimeChannels[conversationId] = channel
-            Log.d(TAG, "subscribeToConversation: SUCCESS - subscribed to $conversationId")
+            Log.d(TAG, "subscribeToConversation: Realtime subscribed to $conversationId")
             
         } catch (e: Exception) {
-            Log.e(TAG, "subscribeToConversation: Failed for $conversationId", e)
+            Log.e(TAG, "subscribeToConversation: Realtime failed for $conversationId", e)
         }
+        
+        // Also start polling as fallback (every 3 seconds)
+        // This ensures messages appear even if Realtime is not configured
+        val pollingJob = realtimeScope.launch {
+            while (true) {
+                delay(3000) // Poll every 3 seconds
+                try {
+                    refreshMessages(conversationId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "subscribeToConversation: Polling failed", e)
+                }
+            }
+        }
+        pollingJobs[conversationId] = pollingJob
+        Log.d(TAG, "subscribeToConversation: Polling started for $conversationId")
     }
 
     override suspend fun unsubscribeFromConversation(conversationId: String) {
         Log.d(TAG, "unsubscribeFromConversation: $conversationId")
         
+        // Stop polling
+        pollingJobs[conversationId]?.cancel()
+        pollingJobs.remove(conversationId)
+        
+        // Unsubscribe Realtime channel
         realtimeChannels[conversationId]?.let { channel ->
             try {
                 channel.unsubscribe()
                 realtimeChannels.remove(conversationId)
-                Log.d(TAG, "unsubscribeFromConversation: SUCCESS - unsubscribed from $conversationId")
+                Log.d(TAG, "unsubscribeFromConversation: Realtime unsubscribed from $conversationId")
             } catch (e: Exception) {
-                Log.e(TAG, "unsubscribeFromConversation: Failed for $conversationId", e)
+                Log.e(TAG, "unsubscribeFromConversation: Realtime failed for $conversationId", e)
             }
         }
     }
