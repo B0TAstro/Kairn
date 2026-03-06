@@ -15,6 +15,7 @@ data class ProfileDto(
     @SerialName("username") val username: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("bio") val bio: String? = null,
+    @SerialName("region_id") val regionId: Long? = null,
     @SerialName("country_code") val countryCode: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
 )
@@ -28,4 +29,13 @@ data class ProfileUpdateDto(
     @SerialName("username") val username: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("bio") val bio: String? = null,
+)
+
+/**
+ * Payload for updating geolocation fields on a profile.
+ */
+@Serializable
+data class ProfileGeoUpdateDto(
+    @SerialName("country_code") val countryCode: String,
+    @SerialName("region_id") val regionId: Long,
 )

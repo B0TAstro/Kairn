@@ -1,6 +1,7 @@
 package com.example.kairn.data.repository
 
 import com.example.kairn.data.remote.ProfileDto
+import com.example.kairn.data.remote.ProfileGeoUpdateDto
 import com.example.kairn.data.remote.ProfileUpdateDto
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.ProfileRepository
@@ -37,7 +38,9 @@ class ProfileRepositoryImpl @Inject constructor(
                     username = dto.username ?: currentUser.username,
                     avatarUrl = dto.avatarUrl ?: currentUser.avatarUrl,
                     bio = dto.bio ?: currentUser.bio,
+                    regionId = dto.regionId ?: currentUser.regionId,
                     country = dto.countryCode ?: currentUser.country,
+                    countryCode = dto.countryCode ?: currentUser.countryCode,
                     createdAt = dto.createdAt ?: currentUser.createdAt,
                 )
             } else {
@@ -56,6 +59,22 @@ class ProfileRepositoryImpl @Inject constructor(
             username = pseudo,
             bio = bio,
             avatarUrl = avatarUrl,
+        )
+        postgrest
+            .from(PROFILES_TABLE)
+            .update(update) {
+                filter { eq("id", userId) }
+            }
+    }
+
+    override suspend fun updateGeoLocation(
+        userId: String,
+        countryCode: String,
+        regionId: Long,
+    ): Result<Unit> = runCatching {
+        val update = ProfileGeoUpdateDto(
+            countryCode = countryCode,
+            regionId = regionId,
         )
         postgrest
             .from(PROFILES_TABLE)

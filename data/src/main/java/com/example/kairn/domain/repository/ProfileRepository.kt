@@ -26,4 +26,13 @@ interface ProfileRepository {
      * Returns the public URL of the uploaded image.
      */
     suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): Result<String>
+
+    /**
+     * Updates geolocation fields (country_code and region_id) on the user's profile.
+     */
+    suspend fun updateGeoLocation(
+        userId: String,
+        countryCode: String,
+        regionId: Long,
+    ): Result<Unit>
 }
