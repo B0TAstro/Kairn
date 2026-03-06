@@ -148,6 +148,7 @@ Backend:
 - [ ] Add group chat and hike sharing
 - [ ] Add comments and creator/community photos on hike detail pages
 - [x] Add social navigation shell (Chat tab routing placeholder)
+- [x] Add friend search/requests and direct message flows (chat list + chat detail)
 
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
