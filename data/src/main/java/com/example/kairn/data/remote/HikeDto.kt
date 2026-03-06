@@ -24,6 +24,7 @@ internal data class HikeDto(
     @SerialName("location") val location: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("category") val category: String? = null,
+    @SerialName("gpx_filename") val gpxFilename: String? = null,
 ) {
     fun toDomain(): Hike = Hike(
         id = id,

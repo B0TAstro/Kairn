@@ -15,12 +15,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.kairn.domain.model.GpxRoute
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.annotations.PolylineOptions
 
 private val DEFAULT_TARGET = LatLng(47.27574, 11.39085)
 
@@ -75,6 +77,9 @@ fun MapLibrePocMapView(
     userLatitude: Double? = null,
     userLongitude: Double? = null,
     selectedCity: MapCity? = null,
+    gpxRoutes: List<GpxRoute> = emptyList(),
+    selectedGpxRoute: GpxRoute? = null,
+    onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -113,6 +118,29 @@ fun MapLibrePocMapView(
             .bearing(25.0)
             .build()
     }
+
+    LaunchedEffect(gpxRoutes, map, selectedGpxRoute) {
+        val mapLibreMap = map ?: return@LaunchedEffect
+
+        for (annotation in mapLibreMap.annotations) {
+            annotation.remove()
+        }
+
+        for (route in gpxRoutes) {
+            if (route.points.size >= 2) {
+                val isSelected = selectedGpxRoute?.fileName == route.fileName
+                val points = route.points.map { LatLng(it.latitude, it.longitude) }
+                val polylineOptions = PolylineOptions()
+                    .addAll(points)
+                    .color(android.graphics.Color.parseColor(if (isSelected) "#BA8C5E" else "#587B6C"))
+                    .width(if (isSelected) 8f else 5f)
+                mapLibreMap.addPolyline(polylineOptions)
+            }
+        }
+    }
+
+    // Note: Click handling for MapLibre requires additional setup
+    // The primary provider (MapBox) already has proper click handling
 
     DisposableEffect(lifecycle, mapView) {
         val observer = LifecycleEventObserver { _, event ->

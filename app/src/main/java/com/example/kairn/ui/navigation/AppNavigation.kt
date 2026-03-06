@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -162,14 +163,16 @@ private fun MainScreen(
     val navController = rememberNavController()
     var selectedItem by remember { mutableStateOf(Screen.HOME.name) }
     val hazeState = remember { HazeState() }
-    
-    // Track current route to hide bottom nav in chat detail and hike detail screens
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+
+    // Track current route to hide bottom nav in chat detail and hike detail screens
     val showBottomNav = currentRoute !in listOf(
         NavRoutes.HIKE_DETAIL,
         NavRoutes.CHAT,
-        NavRoutes.FRIEND_LIST
+        NavRoutes.FRIEND_LIST,
+        NavRoutes.EDIT_PROFILE,
+        NavRoutes.ACCOUNT_HIKE_DETAIL,
     )
 
     // Update selected item based on current route
@@ -178,7 +181,7 @@ private fun MainScreen(
             Screen.HOME.name -> Screen.HOME.name
             Screen.EXPLORE.name, NavRoutes.HIKE_DETAIL -> Screen.EXPLORE.name
             Screen.CHAT.name -> Screen.CHAT.name
-            Screen.PROFILE.name -> Screen.PROFILE.name
+            Screen.PROFILE.name, NavRoutes.EDIT_PROFILE, NavRoutes.ACCOUNT_HIKE_DETAIL -> Screen.PROFILE.name
             else -> selectedItem
         }
     }
@@ -186,6 +189,7 @@ private fun MainScreen(
     val navBarItems = listOf(
         NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
         NavBarItem(Screen.EXPLORE.name, "Explore", Icons.Outlined.Explore),
+        NavBarItem(Screen.EDITOR.name, "Create", Icons.Outlined.Edit),
         NavBarItem(Screen.CHAT.name, "Chat", Icons.AutoMirrored.Outlined.Chat),
         NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
     )

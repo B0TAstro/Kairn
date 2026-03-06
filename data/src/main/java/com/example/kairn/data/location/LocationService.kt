@@ -23,12 +23,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Represents a resolved user location with coordinates and an optional city name.
+ * Represents a resolved user location with coordinates and optional geo details.
  */
 data class UserLocation(
     val latitude: Double,
     val longitude: Double,
     val cityName: String = "",
+    val countryCode: String = "",
+    val regionName: String = "",
 )
 
 /**
@@ -115,12 +117,12 @@ class LocationService @Inject constructor(
         .reverseGeocode()
 
     /**
-     * Maps raw [Location] emissions to [UserLocation] with a resolved city name.
+     * Maps raw [Location] emissions to [UserLocation] with resolved geo details.
      */
     private fun Flow<Location>.reverseGeocode(): Flow<UserLocation> =
         flow {
             var lastGeocodedLocation: Location? = null
-            var lastCityName = ""
+            var lastGeoResult = GeoResult()
             var lastGeocodeAt = 0L
 
             this@reverseGeocode.collect { location ->
@@ -131,8 +133,8 @@ class LocationService @Inject constructor(
                     now - lastGeocodeAt >= GEOCODE_MIN_INTERVAL_MS
 
                 if (shouldGeocode) {
-                    lastCityName = withContext(Dispatchers.IO) {
-                        resolveCity(location.latitude, location.longitude)
+                    lastGeoResult = withContext(Dispatchers.IO) {
+                        resolveGeo(location.latitude, location.longitude)
                     }
                     lastGeocodedLocation = location
                     lastGeocodeAt = now
@@ -142,14 +144,25 @@ class LocationService @Inject constructor(
                     UserLocation(
                         latitude = location.latitude,
                         longitude = location.longitude,
-                        cityName = lastCityName,
+                        cityName = lastGeoResult.cityName,
+                        countryCode = lastGeoResult.countryCode,
+                        regionName = lastGeoResult.regionName,
                     ),
                 )
             }
         }
 
+    /**
+     * Internal result of reverse geocoding holding all resolved fields.
+     */
+    private data class GeoResult(
+        val cityName: String = "",
+        val countryCode: String = "",
+        val regionName: String = "",
+    )
+
     @Suppress("DEPRECATION")
-    private fun resolveCity(latitude: Double, longitude: Double): String {
+    private fun resolveGeo(latitude: Double, longitude: Double): GeoResult {
         return try {
             val addresses = Geocoder(context, Locale.getDefault())
                 .getFromLocation(latitude, longitude, 1)
@@ -157,14 +170,19 @@ class LocationService @Inject constructor(
                 val addr = addresses[0]
                 val city = addr.locality ?: addr.subAdminArea ?: addr.adminArea ?: ""
                 val country = addr.countryName ?: ""
-                when {
+                val cityDisplay = when {
                     city.isNotBlank() && country.isNotBlank() -> "$city, $country"
                     city.isNotBlank() -> city
                     else -> country
                 }
-            } else ""
+                GeoResult(
+                    cityName = cityDisplay,
+                    countryCode = addr.countryCode ?: "",
+                    regionName = addr.adminArea ?: "",
+                )
+            } else GeoResult()
         } catch (_: Exception) {
-            ""
+            GeoResult()
         }
     }
 }

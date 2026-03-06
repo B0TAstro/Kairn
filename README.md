@@ -34,6 +34,8 @@ Kairn is a community mobile app to create, share, and follow hiking and walking 
 - `Account` tab
   - Profile (username, avatar, level, XP)
   - Activity history and progression summary
+  - Leaderboard section (regional, national, global tabs)
+  - Geolocation-based country and region detection
 
 ## Offline + GPS
 - Local cache for routes and profile with deferred sync
@@ -138,6 +140,7 @@ Backend:
 - [x] Add Explore catalog with filters, hike cards, and detail navigation
 - [x] Implement hike detail screen with shared element transition and CTA
 - [ ] Connect hike markers and map cards to backend hike data
+- [ ] Update route rendering consistency across Home, Explore and map overlays
 
 ### Phase 2 - Hikes Editor
 - [ ] Add Editor tab and navigation entry points
@@ -145,6 +148,7 @@ Backend:
 - [ ] Edit GPS points and route metadata
 - [ ] Enable user route publishing
 - [ ] Persist draft routes locally and restore draft session
+- [ ] Upgrade route editor UX and route update workflow
 
 ### Phase 3 - Social
 - [ ] Add full friend system and group creation
@@ -152,12 +156,14 @@ Backend:
 - [ ] Add comments and creator/community photos on hike detail pages
 - [x] Add social navigation shell (Chat tab routing placeholder)
 - [x] Add friend search/requests and direct message flows (chat list + chat detail)
+- [ ] Fix app crash during friend invitation flow
+- [ ] Add in-app chatbot assistant for discovery and support
 - [ ] Add moderation/reporting flows in the app UI
 
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
 - [ ] Add level progression rules and thresholds
-- [ ] Launch leaderboards (city/region/country/global)
+- [x] Launch leaderboards (region/country/global)
 - [ ] Add anti-cheat validation for route run consistency
 
 ### Phase 5 - Production Readiness
@@ -168,11 +174,13 @@ Backend:
 - [x] Add baseline Android/JUnit and instrumented test scaffolding
 - [ ] Increase test coverage for ViewModels and repositories
 - [ ] Stabilize lint (fix or baseline non-critical legacy warnings)
+- [ ] Move and normalize static assets/resources structure
 
 ### Phase 6 - UI/UX + Branding
 - [ ] Run a full UI consistency pass (spacing, typography, components)
 - [ ] Run a complete UX flow audit (onboarding, auth, discover, social, error states)
 - [ ] Design and integrate the final Kairn logo (app icon, splash, in-app branding)
+- [ ] Validate logo quality across launcher densities and in-app placements
 - [ ] Add accessibility pass (contrast, touch targets, TalkBack labels)
 - [ ] Define empty/loading/error states for every primary screen
 

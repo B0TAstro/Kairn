@@ -1,24 +1,35 @@
 package com.example.kairn.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.data.location.LocationService
+import com.example.kairn.data.parser.GpxParser
+import com.example.kairn.data.repository.GpxRepository
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.User
+import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "HomeViewModel"
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val hikeRepository: HikeRepository,
     private val locationService: LocationService,
+    private val gpxRepository: GpxRepository,
+    private val gpxParser: GpxParser,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val supportedCities = listOf(
@@ -36,8 +47,19 @@ class HomeViewModel @Inject constructor(
         get() = locationService.hasLocationPermission()
 
     init {
+        observeCurrentUser()
         loadHikes()
+        loadGpxRoutes()
         collectLocation()
+    }
+
+    private fun observeCurrentUser() {
+        viewModelScope.launch {
+            authRepository.currentUser.collectLatest { user ->
+                val name = user?.displayName().orEmpty().ifBlank { "Hiker" }
+                _uiState.update { it.copy(username = name) }
+            }
+        }
     }
 
     private fun loadHikes() {
@@ -58,6 +80,63 @@ class HomeViewModel @Inject constructor(
                 .onFailure { error ->
                     _uiState.update {
                         it.copy(isLoading = false, errorMessage = error.message ?: "Unknown error")
+                    }
+                }
+        }
+    }
+
+    private fun loadGpxRoutes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingGpx = true, gpxError = null) }
+            Log.d(TAG, "loadGpxRoutes: starting")
+
+            // 1. Récupérer les métadonnées des hikes depuis Supabase
+            val hikesMetadataResult = gpxRepository.getHikesMetadata()
+            val hikesMetadata = hikesMetadataResult.getOrDefault(emptyMap())
+            Log.d(TAG, "loadGpxRoutes: found ${hikesMetadata.size} hike metadata entries")
+
+            gpxRepository.listGpxFiles()
+                .onSuccess { gpxFiles ->
+                    Log.d(TAG, "loadGpxRoutes: found ${gpxFiles.size} GPX files")
+                    val routes = mutableListOf<com.example.kairn.domain.model.GpxRoute>()
+
+                    for (file in gpxFiles) {
+                        Log.d(TAG, "loadGpxRoutes: processing ${file.name}")
+                        val contentResult = gpxRepository.downloadGpxContent(file.publicUrl)
+                        contentResult.onSuccess { content ->
+                            val parseResult = gpxParser.parse(content, file.name)
+                            parseResult.onSuccess { gpxRoute ->
+                                Log.d(TAG, "loadGpxRoutes: parsed ${gpxRoute.name} with ${gpxRoute.points.size} points")
+
+                                // 2. Chercher les métadonnées du hike correspondant
+                                val hikeDto = hikesMetadata[file.name]
+
+                                // 3. Créer un GpxRoute avec les métadonnées mergées
+                                val mergedRoute = gpxRoute.copy(
+                                    id = hikeDto?.id,
+                                    creatorId = hikeDto?.creatorId,
+                                    createdAt = hikeDto?.createdAt ?: gpxRoute.createdAt,
+                                )
+
+                                routes.add(mergedRoute)
+                                Log.d(TAG, "loadGpxRoutes: merged route ${gpxRoute.name} with hike metadata: ${hikeDto != null}")
+                            }.onFailure { e ->
+                                Log.e(TAG, "loadGpxRoutes: parse error for ${file.name}", e)
+                            }
+                        }.onFailure { e ->
+                            Log.e(TAG, "loadGpxRoutes: download error for ${file.name}", e)
+                        }
+                    }
+
+                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes")
+                    _uiState.update {
+                        it.copy(gpxRoutes = routes, isLoadingGpx = false)
+                    }
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "loadGpxRoutes: list error", error)
+                    _uiState.update {
+                        it.copy(isLoadingGpx = false, gpxError = error.message)
                     }
                 }
         }
@@ -122,6 +201,14 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
     }
 
+    fun onGpxRouteSelected(route: com.example.kairn.domain.model.GpxRoute) {
+        _uiState.update { it.copy(selectedGpxRoute = route, isGpxBottomSheetExpanded = true) }
+    }
+
+    fun onGpxBottomSheetDismissed() {
+        _uiState.update { it.copy(selectedGpxRoute = null, isGpxBottomSheetExpanded = false) }
+    }
+
     fun retry() {
         loadHikes()
     }
@@ -130,5 +217,15 @@ class HomeViewModel @Inject constructor(
         val normalized = query.trim().lowercase()
         if (normalized.isBlank()) return emptyList()
         return supportedCities.filter { it.name.lowercase().contains(normalized) }
+    }
+
+    private fun User.displayName(): String {
+        return pseudo
+            ?: username
+            ?: listOfNotNull(firstName, lastName)
+                .joinToString(" ")
+                .trim()
+                .ifBlank { null }
+            ?: email.substringBefore('@')
     }
 }
