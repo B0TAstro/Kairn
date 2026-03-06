@@ -90,7 +90,7 @@ fun MapLibrePocMapView(
                     mapLibreMap.cameraPosition = CameraPosition.Builder()
                         .target(DEFAULT_TARGET)
                         .zoom(13.6)
-                        .tilt(72.0)
+                        .tilt(60.0)
                         .bearing(25.0)
                         .build()
                 }
@@ -109,7 +109,7 @@ fun MapLibrePocMapView(
         mapLibreMap.cameraPosition = CameraPosition.Builder()
             .target(target)
             .zoom(13.6)
-            .tilt(72.0)
+            .tilt(60.0)
             .bearing(25.0)
             .build()
     }
