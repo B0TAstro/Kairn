@@ -34,6 +34,8 @@ Kairn is a community mobile app to create, share, and follow hiking and walking 
 - `Account` tab
   - Profile (username, avatar, level, XP)
   - Activity history and progression summary
+  - Leaderboard section (regional, national, global tabs)
+  - Geolocation-based country and region detection
 
 ## Offline + GPS
 - Local cache for routes and profile with deferred sync
@@ -157,7 +159,7 @@ Backend:
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
 - [ ] Add level progression rules and thresholds
-- [ ] Launch leaderboards (city/region/country/global)
+- [x] Launch leaderboards (region/country/global)
 - [ ] Add anti-cheat validation for route run consistency
 
 ### Phase 5 - Production Readiness
