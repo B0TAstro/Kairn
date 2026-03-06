@@ -1,6 +1,7 @@
 package com.example.kairn.data.repository
 
 import com.example.kairn.data.remote.ProfileDto
+import com.example.kairn.data.remote.UserStatsDto
 import com.example.kairn.domain.model.SessionState
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
@@ -53,7 +54,7 @@ class AuthRepositoryImpl @Inject constructor(
         scope.launch {
             auth.sessionStatus.collect { status ->
                 val domainState = status.toDomain()
-                // Enrich with profile data from the profiles table
+                // Enrich with profile + stats data from Supabase tables
                 _sessionState.value = if (domainState is SessionState.Authenticated) {
                     val enriched = enrichWithProfile(domainState.user)
                     SessionState.Authenticated(enriched)
@@ -65,33 +66,49 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Fetches additional profile data (avatar, bio, city, etc.) from the `profiles` table
-     * and merges it into the [User] built from auth metadata.
-     * Falls back silently to the original user if the query fails.
+     * Fetches additional profile data and user stats from Supabase tables
+     * and merges them into the [User] built from auth metadata.
+     * Falls back silently to the original user if the queries fail.
      */
     private suspend fun enrichWithProfile(user: User): User {
-        return try {
+        var enriched = user
+        // 1. Fetch profile data
+        try {
             val profile = postgrest
                 .from("profiles")
                 .select { filter { eq("id", user.id) } }
                 .decodeSingleOrNull<ProfileDto>()
             if (profile != null) {
-                user.copy(
-                    pseudo = profile.username ?: user.pseudo,
-                    username = profile.username ?: user.username,
-                    avatarUrl = profile.avatarUrl ?: user.avatarUrl,
-                    bio = profile.bio ?: user.bio,
-                    city = profile.city ?: user.city,
-                    region = profile.region ?: user.region,
-                    country = profile.country ?: user.country,
+                enriched = enriched.copy(
+                    pseudo = profile.username ?: enriched.pseudo,
+                    username = profile.username ?: enriched.username,
+                    avatarUrl = profile.avatarUrl ?: enriched.avatarUrl,
+                    bio = profile.bio ?: enriched.bio,
+                    country = profile.countryCode ?: enriched.country,
+                    createdAt = profile.createdAt ?: enriched.createdAt,
                 )
-            } else {
-                user
             }
         } catch (_: Exception) {
-            // Profile table might not exist yet or network failure — not critical
-            user
+            // Profile table query failed — not critical
         }
+        // 2. Fetch user stats
+        try {
+            val stats = postgrest
+                .from("user_stats")
+                .select { filter { eq("user_id", user.id) } }
+                .decodeSingleOrNull<UserStatsDto>()
+            if (stats != null) {
+                enriched = enriched.copy(
+                    level = stats.level,
+                    xp = stats.totalXp.toInt(),
+                    hikesCompleted = stats.completedRunsCount,
+                    totalDistanceM = stats.totalDistanceM,
+                )
+            }
+        } catch (_: Exception) {
+            // user_stats table query failed — not critical
+        }
+        return enriched
     }
 
     override suspend fun signIn(email: String, password: String): Result<Unit> = runCatching {
@@ -164,6 +181,7 @@ class AuthRepositoryImpl @Inject constructor(
             pseudo = meta?.get("pseudo")?.toString()?.removeSurrounding("\""),
             username = meta?.get("pseudo")?.toString()?.removeSurrounding("\"")
                 ?: email?.substringBefore("@") ?: "",
+            createdAt = createdAt.toString(),
         )
     }
 }

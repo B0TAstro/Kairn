@@ -18,6 +18,7 @@ import com.example.kairn.ui.account.EditProfileScreen
 import com.example.kairn.ui.explore.ExploreScreen
 import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
+import com.example.kairn.ui.explore.StandaloneHikeDetailScreenWithCta
 import com.example.kairn.ui.home.HomeScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -62,6 +63,9 @@ fun KairnNavHost(
                     onNavigateToEditProfile = {
                         navController.navigate(NavRoutes.EDIT_PROFILE)
                     },
+                    onNavigateToHikeDetail = { hikeId ->
+                        navController.navigate(NavRoutes.accountHikeDetail(hikeId))
+                    },
                     viewModel = accountViewModel,
                 )
             }
@@ -98,6 +102,29 @@ fun KairnNavHost(
                     onStartTrip = { navController.popBackStack() },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this@composable,
+                )
+            }
+
+            // ── Hike detail from Account (standalone, no shared transitions) ──
+            composable(
+                route = NavRoutes.ACCOUNT_HIKE_DETAIL,
+                arguments = listOf(navArgument("hikeId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val hikeId = backStackEntry.arguments?.getString("hikeId") ?: return@composable
+
+                val profileEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Screen.PROFILE.name)
+                }
+                val accountViewModel: AccountViewModel = hiltViewModel(profileEntry)
+
+                val hike: Hike = accountViewModel.completedHikes.value
+                    .find { it.id == hikeId }
+                    ?: Hike.preview
+
+                StandaloneHikeDetailScreenWithCta(
+                    hike = hike,
+                    onBack = { navController.popBackStack() },
+                    onStartTrip = { navController.popBackStack() },
                 )
             }
         }

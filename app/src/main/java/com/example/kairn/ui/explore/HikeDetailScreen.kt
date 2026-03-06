@@ -384,3 +384,135 @@ fun HikeDetailScreenWithCta(
         )
     }
 }
+
+// ─── Standalone variant (no shared transitions) ──────────────────────────────
+
+/**
+ * A standalone hike detail screen that doesn't require SharedTransitionScope.
+ * Used when navigating from screens other than Explore (e.g., Account completed hikes).
+ */
+@Composable
+fun StandaloneHikeDetailScreenWithCta(
+    hike: Hike,
+    onBack: () -> Unit,
+    onStartTrip: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
+            ) {
+                HeroImageArea(hike = hike)
+
+                StandaloneDetailPanel(
+                    hike = hike,
+                    modifier = Modifier.offset(y = -PANEL_OVERLAP),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                ActionButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    onClick = onBack,
+                )
+                ActionButton(
+                    icon = Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Save",
+                    onClick = {},
+                )
+            }
+        }
+
+        HikeDetailCta(
+            onStartTrip = onStartTrip,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+/**
+ * Detail panel without AnimatedVisibilityScope-dependent animations.
+ */
+@Composable
+private fun StandaloneDetailPanel(
+    hike: Hike,
+    modifier: Modifier = Modifier,
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val panelShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(panelShape)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 24.dp)
+            .padding(top = 16.dp, bottom = 120.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+                .align(Alignment.CenterHorizontally),
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = hike.title,
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = hike.formattedElevation,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level", Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        KairnTabRow(
+            tabs = listOf("Details", "Route List", "Reviews"),
+            selectedIndex = selectedTab,
+            onTabSelected = { selectedTab = it },
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        when (selectedTab) {
+            0 -> DetailsTabContent(hike = hike)
+            1 -> PlaceholderTabContent(text = "Route waypoints coming soon.")
+            2 -> PlaceholderTabContent(text = "Reviews coming soon.")
+        }
+    }
+}

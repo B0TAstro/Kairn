@@ -6,10 +6,8 @@ import kotlinx.serialization.Serializable
 /**
  * DTO matching the Supabase `profiles` table.
  *
- * Table schema (from README):
- * `profiles`: (`id`, `username`, `avatar_url`, `bio`, `city_id`, `region_id`, `country_code`)
- *
- * We keep the fields nullable so partial selects / upserts work fine.
+ * Table schema:
+ * `profiles`: (`id`, `username`, `avatar_url`, `bio`, `city_id`, `region_id`, `country_code`, `created_at`)
  */
 @Serializable
 data class ProfileDto(
@@ -17,9 +15,8 @@ data class ProfileDto(
     @SerialName("username") val username: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("bio") val bio: String? = null,
-    @SerialName("city") val city: String? = null,
-    @SerialName("region") val region: String? = null,
-    @SerialName("country") val country: String? = null,
+    @SerialName("country_code") val countryCode: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
 )
 
 /**
@@ -31,5 +28,4 @@ data class ProfileUpdateDto(
     @SerialName("username") val username: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("bio") val bio: String? = null,
-    @SerialName("city") val city: String? = null,
 )

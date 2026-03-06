@@ -2,8 +2,10 @@ package com.example.kairn.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
+import com.example.kairn.domain.repository.HikeRepository
 import com.example.kairn.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,13 +32,58 @@ data class EditProfileUiState(
 class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
+    private val hikeRepository: HikeRepository,
 ) : ViewModel() {
 
     val currentUser: StateFlow<User?> = authRepository.currentUser
 
+    // --- Completed hikes ---
+    private val _completedHikes = MutableStateFlow<List<Hike>>(emptyList())
+    val completedHikes: StateFlow<List<Hike>> = _completedHikes.asStateFlow()
+
     // --- Edit Profile state ---
     private val _editState = MutableStateFlow(EditProfileUiState())
     val editState: StateFlow<EditProfileUiState> = _editState.asStateFlow()
+
+    init {
+        loadCompletedHikes()
+    }
+
+    private fun loadCompletedHikes() {
+        viewModelScope.launch {
+            val userId = currentUser.value?.id ?: return@launch
+            hikeRepository.getCompletedHikes(userId)
+                .onSuccess { hikes ->
+                    _completedHikes.value = hikes
+                    // Update longestTrailKm on the user if we have hikes
+                    if (hikes.isNotEmpty()) {
+                        val longestKm = hikes
+                            .mapNotNull { it.distanceM }
+                            .maxOrNull()
+                            ?.let { it / 1000.0 }
+                            ?: 0.0
+                        authRepository.currentUser.value?.let { user ->
+                            if (longestKm > user.longestTrailKm) {
+                                // Update locally — this is a derived stat
+                                // The user object from auth is immutable; we compute on the fly
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    /**
+     * Computes the longest trail distance in km from the completed hikes list.
+     * Falls back to the value stored in [User.longestTrailKm] if no hikes loaded.
+     */
+    fun longestTrailKm(): Double {
+        val fromHikes = _completedHikes.value
+            .mapNotNull { it.distanceM }
+            .maxOrNull()
+            ?.let { it / 1000.0 }
+        return fromHikes ?: (currentUser.value?.longestTrailKm ?: 0.0)
+    }
 
     /**
      * Initialise the edit form fields from the current user data.
@@ -122,9 +169,6 @@ class AccountViewModel @Inject constructor(
     }
 
     companion object {
-        /** XP required per level — simple linear formula for now. */
-        private const val XP_PER_LEVEL = 500
-
         /**
          * Returns the user's initials derived from [User.pseudo], falling back to
          * [User.firstName]/[User.lastName], and finally to [User.email].
@@ -148,19 +192,25 @@ class AccountViewModel @Inject constructor(
         }
 
         /**
-         * Returns a pair of (current XP within current level, XP needed for next level).
+         * Formats a "Member Since" string from an ISO date.
+         * E.g. "2023-05-15T10:30:00Z" → "MAY 2023".
          */
-        fun xpProgress(user: User): Pair<Int, Int> {
-            val xpInLevel = user.xp % XP_PER_LEVEL
-            return xpInLevel to XP_PER_LEVEL
-        }
-
-        /**
-         * Returns XP progress as a fraction between 0f and 1f.
-         */
-        fun xpFraction(user: User): Float {
-            val (current, total) = xpProgress(user)
-            return if (total > 0) current.toFloat() / total.toFloat() else 0f
+        fun formatMemberSince(createdAt: String?): String {
+            if (createdAt.isNullOrBlank()) return "—"
+            return try {
+                // Parse ISO date: extract month and year
+                val parts = createdAt.split("-")
+                if (parts.size < 2) return "—"
+                val year = parts[0]
+                val monthNum = parts[1].toIntOrNull() ?: return "—"
+                val monthName = listOf(
+                    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+                ).getOrElse(monthNum - 1) { "—" }
+                "$monthName $year"
+            } catch (_: Exception) {
+                "—"
+            }
         }
     }
 }

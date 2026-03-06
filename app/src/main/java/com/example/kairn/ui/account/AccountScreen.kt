@@ -1,8 +1,7 @@
 package com.example.kairn.ui.account
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,13 +28,17 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +46,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,36 +61,49 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.User
 import com.example.kairn.ui.theme.KairnTheme
+import com.example.kairn.ui.theme.OverlayDark
 
 @Composable
 fun AccountScreen(
     onSignOut: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
+    onNavigateToHikeDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val completedHikes by viewModel.completedHikes.collectAsStateWithLifecycle()
 
     AccountContent(
         user = currentUser,
+        completedHikes = completedHikes,
+        longestTrailKm = viewModel.longestTrailKm(),
         onSignOut = {
             viewModel.signOut()
             onSignOut()
         },
         onEditProfile = onNavigateToEditProfile,
+        onHikeClick = onNavigateToHikeDetail,
         modifier = modifier,
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountContent(
     user: User?,
+    completedHikes: List<Hike>,
+    longestTrailKm: Double,
     onSignOut: () -> Unit,
     onEditProfile: () -> Unit,
+    onHikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showAllTrailsSheet by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -95,7 +115,7 @@ private fun AccountContent(
         Spacer(modifier = Modifier.height(48.dp))
 
         if (user != null) {
-            // --- Avatar ---
+            // --- Avatar with white border ---
             ProfileAvatar(
                 initials = AccountViewModel.getInitials(user),
                 avatarUrl = user.avatarUrl,
@@ -111,17 +131,6 @@ private fun AccountContent(
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            // --- Location ---
-            val location = buildLocationString(user)
-            if (location.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = location,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
             // --- Bio ---
             if (!user.bio.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -136,15 +145,20 @@ private fun AccountContent(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // --- Stats row ---
-            StatsRow(user = user)
+            // --- Stats row: Member Since / Trails Completed / Longest Trail ---
+            StatsRow(user = user, longestTrailKm = longestTrailKm)
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // --- XP Progress ---
-            XpProgressSection(user = user)
-
-            Spacer(modifier = Modifier.height(32.dp))
+            // --- Completed Hikes ---
+            if (completedHikes.isNotEmpty()) {
+                CompletedHikesSection(
+                    hikes = completedHikes,
+                    onHikeClick = onHikeClick,
+                    onViewAllClick = { showAllTrailsSheet = true },
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+            }
 
             // --- Settings menu ---
             SettingsSection(onEditProfile = onEditProfile)
@@ -165,10 +179,22 @@ private fun AccountContent(
 
         Spacer(modifier = Modifier.height(32.dp))
     }
+
+    // --- "View All Trails" bottom sheet ---
+    if (showAllTrailsSheet && completedHikes.isNotEmpty()) {
+        AllTrailsBottomSheet(
+            hikes = completedHikes,
+            onHikeClick = { hikeId ->
+                showAllTrailsSheet = false
+                onHikeClick(hikeId)
+            },
+            onDismiss = { showAllTrailsSheet = false },
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Avatar
+// Avatar with white border
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -177,6 +203,8 @@ private fun ProfileAvatar(
     avatarUrl: String?,
     modifier: Modifier = Modifier,
 ) {
+    val borderWidth = 3.dp
+
     if (!avatarUrl.isNullOrBlank()) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -187,6 +215,8 @@ private fun ProfileAvatar(
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(120.dp)
+                .border(borderWidth, Color.White, CircleShape)
+                .padding(borderWidth)
                 .clip(CircleShape),
         )
     } else {
@@ -194,6 +224,8 @@ private fun ProfileAvatar(
             contentAlignment = Alignment.Center,
             modifier = modifier
                 .size(120.dp)
+                .border(borderWidth, Color.White, CircleShape)
+                .padding(borderWidth)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
         ) {
@@ -209,12 +241,13 @@ private fun ProfileAvatar(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats Row
+// Stats Row — Member Since / Trails Completed / Longest Trail
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun StatsRow(
     user: User,
+    longestTrailKm: Double,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -228,16 +261,8 @@ private fun StatsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatItem(
-            value = "${user.level}",
-            label = "LEVEL",
-            modifier = Modifier.weight(1f),
-        )
-
-        VerticalStatDivider()
-
-        StatItem(
-            value = "${user.xp}",
-            label = "XP",
+            value = AccountViewModel.formatMemberSince(user.createdAt),
+            label = "MEMBER SINCE",
             modifier = Modifier.weight(1f),
         )
 
@@ -245,7 +270,15 @@ private fun StatsRow(
 
         StatItem(
             value = "${user.hikesCompleted}",
-            label = "HIKES",
+            label = "TRAILS COMPLETED",
+            modifier = Modifier.weight(1f),
+        )
+
+        VerticalStatDivider()
+
+        StatItem(
+            value = if (longestTrailKm > 0) "${"%.1f".format(longestTrailKm)} KM" else "—",
+            label = "LONGEST TRAIL",
             modifier = Modifier.weight(1f),
         )
     }
@@ -270,7 +303,7 @@ private fun StatItem(
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -288,69 +321,219 @@ private fun VerticalStatDivider(modifier: Modifier = Modifier) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// XP Progress
+// Completed Hikes Section
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun XpProgressSection(
-    user: User,
+private fun CompletedHikesSection(
+    hikes: List<Hike>,
+    onHikeClick: (String) -> Unit,
+    onViewAllClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val targetFraction = AccountViewModel.xpFraction(user)
-    var animationPlayed by remember { mutableStateOf(false) }
-    val animatedFraction by animateFloatAsState(
-        targetValue = if (animationPlayed) targetFraction else 0f,
-        animationSpec = tween(durationMillis = 800, delayMillis = 200),
-        label = "xp_progress",
-    )
-    LaunchedEffect(Unit) { animationPlayed = true }
-
-    val (currentXp, totalXp) = AccountViewModel.xpProgress(user)
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(20.dp),
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Header row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Progression",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                text = "COMPLETED TRAILS",
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(
-                text = "Niveau ${user.level}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            if (hikes.size > 3) {
+                Text(
+                    text = "View All Trails",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onViewAllClick),
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        LinearProgressIndicator(
-            progress = { animatedFraction },
+        // Show up to 3 hike cards
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            hikes.take(3).forEach { hike ->
+                CompletedHikeCard(
+                    hike = hike,
+                    onClick = { onHikeClick(hike.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletedHikeCard(
+    hike: Hike,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val cardShape = RoundedCornerShape(16.dp)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .clip(cardShape)
+            .clickable(onClick = onClick),
+    ) {
+        // Background image or gradient
+        if (hike.imageUrl != null) {
+            AsyncImage(
+                model = hike.imageUrl,
+                contentDescription = hike.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to OverlayDark.copy(alpha = 0.15f),
+                                0.5f to OverlayDark.copy(alpha = 0.30f),
+                                1.0f to OverlayDark.copy(alpha = 0.75f),
+                            ),
+                        ),
+                    ),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                                0.5f to MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                                1.0f to OverlayDark.copy(alpha = 0.75f),
+                            ),
+                        ),
+                    ),
+            )
+        }
+
+        // Title + stats overlay at bottom
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(14.dp),
+        ) {
+            Text(
+                text = hike.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CompletedHikeStatChip(
+                    icon = Icons.Outlined.Route,
+                    text = hike.formattedDistance,
+                )
+                CompletedHikeStatChip(
+                    icon = Icons.Outlined.Schedule,
+                    text = hike.formattedDuration,
+                )
+                CompletedHikeStatChip(
+                    icon = Icons.Outlined.StarBorder,
+                    text = hike.difficulty.label,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletedHikeStatChip(
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.75f),
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.85f),
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// "View All Trails" Bottom Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AllTrailsBottomSheet(
+    hikes: List<Hike>,
+    onHikeClick: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        modifier = modifier,
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = StrokeCap.Round,
-        )
+                .padding(horizontal = 24.dp),
+        ) {
+            Text(
+                text = "All Completed Trails",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${hikes.size} trails completed",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "$currentXp / $totalXp XP",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        LazyColumn(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 24.dp,
+                end = 24.dp,
+                bottom = 40.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(hikes, key = { it.id }) { hike ->
+                CompletedHikeCard(
+                    hike = hike,
+                    onClick = { onHikeClick(hike.id) },
+                )
+            }
+        }
     }
 }
 
@@ -468,18 +651,6 @@ private fun SignOutButton(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-private fun buildLocationString(user: User): String = buildString {
-    user.city?.let { append(it) }
-    user.country?.let {
-        if (isNotEmpty()) append(", ")
-        append(it)
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Preview
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -489,8 +660,11 @@ fun AccountScreenPreview() {
     KairnTheme {
         AccountContent(
             user = User.preview,
+            completedHikes = Hike.previewList.take(4),
+            longestTrailKm = 21.4,
             onSignOut = {},
             onEditProfile = {},
+            onHikeClick = {},
         )
     }
 }

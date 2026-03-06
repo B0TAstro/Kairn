@@ -37,9 +37,8 @@ class ProfileRepositoryImpl @Inject constructor(
                     username = dto.username ?: currentUser.username,
                     avatarUrl = dto.avatarUrl ?: currentUser.avatarUrl,
                     bio = dto.bio ?: currentUser.bio,
-                    city = dto.city ?: currentUser.city,
-                    region = dto.region ?: currentUser.region,
-                    country = dto.country ?: currentUser.country,
+                    country = dto.countryCode ?: currentUser.country,
+                    createdAt = dto.createdAt ?: currentUser.createdAt,
                 )
             } else {
                 currentUser
@@ -56,7 +55,6 @@ class ProfileRepositoryImpl @Inject constructor(
         val update = ProfileUpdateDto(
             username = pseudo,
             bio = bio,
-            city = city,
             avatarUrl = avatarUrl,
         )
         postgrest
