@@ -132,10 +132,11 @@ private fun AccountContent(
             )
 
             // --- Bio ---
-            if (!user.bio.isNullOrBlank()) {
+            val bio = user.bio
+            if (!bio.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = user.bio,
+                    text = bio,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
