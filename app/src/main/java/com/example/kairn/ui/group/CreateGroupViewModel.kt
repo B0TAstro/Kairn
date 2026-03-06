@@ -31,7 +31,9 @@ class CreateGroupViewModel @Inject constructor(
     private fun loadFriends() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            
+            friendshipRepository.refreshFriends()
+        }
+        viewModelScope.launch {
             friendshipRepository.getFriends().collect { friendships ->
                 Log.d(TAG, "loadFriends: Loaded ${friendships.size} friendships")
                 _uiState.update {
