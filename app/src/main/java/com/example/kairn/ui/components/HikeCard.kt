@@ -140,7 +140,7 @@ fun HikeCardCompact(
                         modifier = Modifier.size(11.dp),
                     )
                     Text(
-                        text = hike.location,
+                        text = hike.location ?: "Unknown location",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

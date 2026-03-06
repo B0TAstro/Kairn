@@ -20,6 +20,11 @@ import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
 import com.example.kairn.ui.explore.StandaloneHikeDetailScreenWithCta
 import com.example.kairn.ui.home.HomeScreen
+import com.example.kairn.ui.chat.ChatListScreen
+import com.example.kairn.ui.chat.ChatScreen
+import com.example.kairn.ui.friends.FriendListScreen
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -51,7 +56,14 @@ fun KairnNavHost(
             }
 
             composable(Screen.CHAT.name) {
-                HomeScreen() // TODO: Replace with ChatScreen
+                ChatListScreen(
+                    onNavigateToChat = { conversationId, conversationName ->
+                        navController.navigate(NavRoutes.chat(conversationId, conversationName))
+                    },
+                    onNavigateToNewChat = {
+                        navController.navigate(NavRoutes.FRIEND_LIST)
+                    }
+                )
             }
 
             composable(Screen.PROFILE.name) { backStackEntry ->
@@ -125,6 +137,38 @@ fun KairnNavHost(
                     hike = hike,
                     onBack = { navController.popBackStack() },
                     onStartTrip = { navController.popBackStack() },
+                )
+            }
+
+            // Chat detail screen
+            composable(
+                route = NavRoutes.CHAT,
+                arguments = listOf(
+                    navArgument("conversationId") { type = NavType.StringType },
+                    navArgument("conversationName") { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
+                val conversationNameEncoded =
+                    backStackEntry.arguments?.getString("conversationName") ?: return@composable
+                val conversationName = URLDecoder.decode(conversationNameEncoded, StandardCharsets.UTF_8.toString())
+
+                ChatScreen(
+                    conversationId = conversationId,
+                    conversationName = conversationName,
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
+            // Friend list screen
+            composable(NavRoutes.FRIEND_LIST) {
+                FriendListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { conversationId, conversationName ->
+                        navController.navigate(NavRoutes.chat(conversationId, conversationName)) {
+                            popUpTo(Screen.CHAT.name)
+                        }
+                    },
                 )
             }
         }
