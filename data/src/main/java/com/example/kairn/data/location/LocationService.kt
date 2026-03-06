@@ -164,7 +164,7 @@ class LocationService @Inject constructor(
     @Suppress("DEPRECATION")
     private fun resolveGeo(latitude: Double, longitude: Double): GeoResult {
         return try {
-            val addresses = Geocoder(context, Locale.getDefault())
+            val addresses = Geocoder(context, Locale.FRANCE)
                 .getFromLocation(latitude, longitude, 1)
             if (!addresses.isNullOrEmpty()) {
                 val addr = addresses[0]

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.ui.util.localizedLabel
 import com.example.kairn.ui.theme.DifficultyEasy
 import com.example.kairn.ui.theme.DifficultyExpert
 import com.example.kairn.ui.theme.DifficultyHard
@@ -77,7 +78,7 @@ fun DifficultyBadge(
             .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         Text(
-            text = difficulty.label,
+            text = difficulty.localizedLabel(),
             style = MaterialTheme.typography.labelMedium,
             color = color,
         )

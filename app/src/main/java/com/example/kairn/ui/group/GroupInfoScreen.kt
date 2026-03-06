@@ -45,11 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.domain.model.GroupMember
 import com.example.kairn.domain.model.GroupRole
 import com.example.kairn.ui.components.UserAvatar
@@ -88,7 +90,7 @@ fun GroupInfoScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Group Info",
+                        text = stringResource(R.string.group_info_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -97,7 +99,7 @@ fun GroupInfoScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -106,7 +108,7 @@ fun GroupInfoScreen(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.cd_more_options)
                             )
                         }
                         DropdownMenu(
@@ -114,7 +116,7 @@ fun GroupInfoScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Leave Group") },
+                                text = { Text(stringResource(R.string.menu_leave_group)) },
                                 onClick = {
                                     showMenu = false
                                     viewModel.leaveGroup(onNavigateBack)
@@ -128,7 +130,7 @@ fun GroupInfoScreen(
                             )
                             if (uiState.canDelete) {
                                 DropdownMenuItem(
-                                    text = { Text("Delete Group") },
+                                    text = { Text(stringResource(R.string.menu_delete_group)) },
                                     onClick = {
                                         showMenu = false
                                         viewModel.deleteGroup(onNavigateBack)
@@ -180,7 +182,7 @@ fun GroupInfoScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Group not found",
+                        text = stringResource(R.string.group_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary,
                     )
@@ -223,7 +225,11 @@ fun GroupInfoScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "${uiState.members.size} members • ${uiState.group!!.visibility}",
+                                text = stringResource(
+                                    R.string.members_count_visibility,
+                                    uiState.members.size,
+                                    uiState.group!!.visibility,
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                             )
@@ -233,7 +239,7 @@ fun GroupInfoScreen(
                     // Members section
                     item {
                         Text(
-                            text = "Members",
+                            text = stringResource(R.string.members_section_header),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium,
                             color = TextPrimary,
@@ -281,7 +287,7 @@ private fun MemberItem(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = member.user?.username ?: "Unknown",
+                text = member.user?.username ?: stringResource(R.string.unknown_member),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -301,7 +307,7 @@ private fun MemberItem(
                     contentColor = Accent,
                 )
             ) {
-                Text("Remove")
+                Text(stringResource(R.string.remove_member_button))
             }
         }
     }

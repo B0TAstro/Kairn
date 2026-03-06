@@ -16,7 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 
 @Composable
 fun UserProfileBanner(
@@ -69,13 +71,13 @@ fun HomeGreetingHeader(
     ) {
         Column {
             Text(
-                text = "Hello, $username",
+                text = stringResource(R.string.greeting, username),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Where would you like to go?",
+                text = stringResource(R.string.greeting_where_to_go),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

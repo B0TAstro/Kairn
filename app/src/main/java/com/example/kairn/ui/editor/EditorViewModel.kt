@@ -1,13 +1,16 @@
 package com.example.kairn.ui.editor
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.R
 import com.example.kairn.data.repository.GpxPointPayload
 import com.example.kairn.data.repository.GpxRoutePointPayload
 import com.example.kairn.data.repository.GpxStorageService
 import com.example.kairn.ui.editor.model.EditorPoint
 import com.example.kairn.ui.editor.routing.OsrmService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +27,7 @@ class EditorViewModel @Inject constructor(
     private val gpxStorageService: GpxStorageService,
     private val osrmService: OsrmService,
     private val dispatcher: CoroutineDispatcher,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<EditorUiState>(EditorUiState.Ready())
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
@@ -155,7 +159,12 @@ class EditorViewModel @Inject constructor(
                     _uiState.update { oldState ->
                         when (oldState) {
                             is EditorUiState.Ready -> oldState.copy(
-                                error = "Failed to calculate route between points ${i + 1} and ${i + 2}: ${e.message}",
+                                error = context.getString(
+                                    R.string.editor_route_error,
+                                    i + 1,
+                                    i + 2,
+                                    e.message.orEmpty(),
+                                ),
                             )
                             else -> oldState
                         }
@@ -271,14 +280,14 @@ class EditorViewModel @Inject constructor(
         val message = throwable?.message.orEmpty()
         return when {
             message.contains("row-level security", ignoreCase = true) -> {
-                "Upload blocked by Supabase policy. Check Storage RLS rules for GPX uploads."
+                context.getString(R.string.editor_upload_blocked)
             }
             message.contains("authorization", ignoreCase = true) ||
                 message.contains("jwt", ignoreCase = true) ||
                 message.contains("not authenticated", ignoreCase = true) -> {
-                "Authentication error while uploading GPX. Please sign in again."
+                context.getString(R.string.editor_auth_error)
             }
-            message.isBlank() -> "Failed to save GPX"
+            message.isBlank() -> context.getString(R.string.editor_save_failed)
             else -> message.lineSequence().first().take(140)
         }
     }

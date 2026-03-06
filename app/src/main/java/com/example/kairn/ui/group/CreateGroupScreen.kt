@@ -44,12 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.domain.model.User
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Accent
@@ -86,7 +88,7 @@ fun CreateGroupScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Create Group",
+                        text = stringResource(R.string.create_group_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -95,7 +97,7 @@ fun CreateGroupScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -113,7 +115,7 @@ fun CreateGroupScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Create",
+                                contentDescription = stringResource(R.string.cd_create),
                                 tint = if (uiState.isValid) Accent else TextSecondary,
                             )
                         }
@@ -145,7 +147,7 @@ fun CreateGroupScreen(
             // Group name input
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Group Name",
+                text = stringResource(R.string.group_name_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -160,13 +162,13 @@ fun CreateGroupScreen(
             // Member selection
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Add Members (min. 2)",
+                text = stringResource(R.string.add_members_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
             )
             Text(
-                text = "${uiState.selectedMemberIds.size} selected",
+                text = stringResource(R.string.members_selected, uiState.selectedMemberIds.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
@@ -188,7 +190,7 @@ fun CreateGroupScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No friends to add",
+                            text = stringResource(R.string.no_friends_to_add),
                             style = MaterialTheme.typography.bodyLarge,
                             color = TextSecondary,
                         )
@@ -239,7 +241,7 @@ private fun GroupNameTextField(
             ) {
                 if (value.isEmpty()) {
                     Text(
-                        text = "Enter group name...",
+                        text = stringResource(R.string.group_name_placeholder),
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary,
                     )

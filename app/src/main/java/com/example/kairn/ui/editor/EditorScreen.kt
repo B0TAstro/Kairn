@@ -25,10 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairn.BuildConfig
+import com.example.kairn.R
 import com.example.kairn.ui.editor.components.EditorMap
 import com.example.kairn.ui.editor.components.PointsListOverlay
 import com.example.kairn.ui.editor.map.MapProvider
@@ -42,6 +45,7 @@ fun EditorScreen(
     val bottomOverlayOffset = 96.dp
     var isPointsPanelExpanded by rememberSaveable { mutableStateOf(true) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val mapProvider: MapProvider = remember {
         if (BuildConfig.MAPBOX_ACCESS_TOKEN.isBlank()) {
             OsmMapProvider()
@@ -55,11 +59,15 @@ fun EditorScreen(
         val readyState = uiState as? EditorUiState.Ready ?: return@LaunchedEffect
         when {
             readyState.saveSuccess -> {
-                snackbarHostState.showSnackbar("GPX saved successfully!")
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.editor_save_success),
+                )
                 viewModel.clearSaveStatus()
             }
             readyState.saveError != null -> {
-                snackbarHostState.showSnackbar("Failed to save GPX: ${readyState.saveError}")
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.editor_save_error, readyState.saveError),
+                )
                 viewModel.clearSaveStatus()
             }
         }
@@ -101,7 +109,7 @@ fun EditorScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Menu,
-                        contentDescription = "Show points",
+                        contentDescription = stringResource(R.string.cd_show_points),
                     )
                 }
             }
@@ -125,13 +133,19 @@ fun EditorScreen(
                     } else {
                         Icon(
                             imageVector = Icons.Default.CloudUpload,
-                            contentDescription = "Save GPX to Supabase",
+                            contentDescription = stringResource(R.string.cd_save_gpx),
                             modifier = Modifier.size(24.dp),
                         )
                     }
                 },
                 text = {
-                    Text(text = if (isSaving) "Saving..." else "Save GPX")
+                    Text(
+                        text = if (isSaving) {
+                            stringResource(R.string.editor_saving)
+                        } else {
+                            stringResource(R.string.editor_save_gpx)
+                        },
+                    )
                 },
             )
         }

@@ -48,12 +48,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.kairn.R
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.components.KairnButton
 import com.example.kairn.ui.components.KairnTabRow
+import com.example.kairn.ui.util.localizedLabel
 import com.example.kairn.ui.theme.OverlayAccent
 import com.example.kairn.ui.theme.OverlayDark
 
@@ -107,12 +110,12 @@ fun HikeDetailScreen(
             ) {
                 ActionButton(
                     icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     onClick = onBack,
                 )
                 ActionButton(
                     icon = Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Save",
+                    contentDescription = stringResource(R.string.cd_save),
                     onClick = {},
                 )
             }
@@ -226,15 +229,19 @@ private fun DetailPanel(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration", Modifier.weight(1f))
-            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance", Modifier.weight(1f))
-            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, stringResource(R.string.stat_duration), Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, stringResource(R.string.stat_distance), Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.localizedLabel(), stringResource(R.string.stat_level), Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
         KairnTabRow(
-            tabs = listOf("Details", "Route List", "Reviews"),
+            tabs = listOf(
+                stringResource(R.string.tab_details),
+                stringResource(R.string.tab_route_list),
+                stringResource(R.string.tab_reviews),
+            ),
             selectedIndex = selectedTab,
             onTabSelected = { selectedTab = it },
         )
@@ -243,8 +250,8 @@ private fun DetailPanel(
 
         when (selectedTab) {
             0 -> DetailsTabContent(hike = hike)
-            1 -> PlaceholderTabContent(text = "Route waypoints coming soon.")
-            2 -> PlaceholderTabContent(text = "Reviews coming soon.")
+            1 -> PlaceholderTabContent(text = stringResource(R.string.route_waypoints_soon))
+            2 -> PlaceholderTabContent(text = stringResource(R.string.reviews_soon))
         }
     }
 }
@@ -255,14 +262,14 @@ private fun DetailPanel(
 private fun DetailsTabContent(hike: Hike, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
-            text = "Hiking to ${hike.title}",
+            text = stringResource(R.string.hike_detail_section_title, hike.title),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = hike.description.orEmpty().ifEmpty {
-                "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery that will leave you speechless."
+                stringResource(R.string.hike_detail_fallback_description)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
@@ -355,7 +362,7 @@ fun HikeDetailCta(
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .padding(bottom = 20.dp),
     ) {
-        KairnButton(text = "Start your trip", onClick = onStartTrip, modifier = Modifier.fillMaxWidth())
+        KairnButton(text = stringResource(R.string.start_trip_button), onClick = onStartTrip, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -428,12 +435,12 @@ fun StandaloneHikeDetailScreenWithCta(
             ) {
                 ActionButton(
                     icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     onClick = onBack,
                 )
                 ActionButton(
                     icon = Icons.Outlined.BookmarkBorder,
-                    contentDescription = "Save",
+                    contentDescription = stringResource(R.string.cd_save),
                     onClick = {},
                 )
             }
@@ -494,15 +501,19 @@ private fun StandaloneDetailPanel(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration", Modifier.weight(1f))
-            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance", Modifier.weight(1f))
-            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level", Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Schedule, hike.formattedDuration, stringResource(R.string.stat_duration), Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.Route, hike.formattedDistance, stringResource(R.string.stat_distance), Modifier.weight(1f))
+            DetailStatItem(Icons.Outlined.StarBorder, hike.difficulty.localizedLabel(), stringResource(R.string.stat_level), Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
         KairnTabRow(
-            tabs = listOf("Details", "Route List", "Reviews"),
+            tabs = listOf(
+                stringResource(R.string.tab_details),
+                stringResource(R.string.tab_route_list),
+                stringResource(R.string.tab_reviews),
+            ),
             selectedIndex = selectedTab,
             onTabSelected = { selectedTab = it },
         )
@@ -511,8 +522,8 @@ private fun StandaloneDetailPanel(
 
         when (selectedTab) {
             0 -> DetailsTabContent(hike = hike)
-            1 -> PlaceholderTabContent(text = "Route waypoints coming soon.")
-            2 -> PlaceholderTabContent(text = "Reviews coming soon.")
+            1 -> PlaceholderTabContent(text = stringResource(R.string.route_waypoints_soon))
+            2 -> PlaceholderTabContent(text = stringResource(R.string.reviews_soon))
         }
     }
 }

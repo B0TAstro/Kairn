@@ -24,7 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 import com.example.kairn.domain.model.Hike
 
 @Composable
@@ -140,7 +142,7 @@ fun HikeCardCompact(
                         modifier = Modifier.size(11.dp),
                     )
                     Text(
-                        text = hike.location ?: "Unknown location",
+                        text = hike.location ?: stringResource(R.string.unknown_location),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

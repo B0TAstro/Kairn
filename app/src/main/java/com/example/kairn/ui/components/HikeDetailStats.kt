@@ -18,7 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 
 @Composable
 fun HikeDetailStatCard(
@@ -77,13 +79,13 @@ fun HikeDetailStatsRow(
     ) {
         HikeDetailStatCard(
             icon = durationIcon,
-            label = "Duration",
+            label = stringResource(R.string.stat_duration),
             value = durationFormatted,
             modifier = Modifier.weight(1f),
         )
         HikeDetailStatCard(
             icon = distanceIcon,
-            label = "Distance",
+            label = stringResource(R.string.stat_distance),
             value = distanceFormatted,
             modifier = Modifier.weight(1f),
         )

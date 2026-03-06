@@ -37,10 +37,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.kairn.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -133,7 +135,7 @@ private fun EditProfileContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Changer la photo *",
+            text = stringResource(R.string.change_photo_link),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.clickable(onClick = onAvatarClick),
@@ -145,7 +147,7 @@ private fun EditProfileContent(
         ProfileTextField(
             value = editState.pseudo,
             onValueChange = onPseudoChange,
-            label = "Pseudo",
+            label = stringResource(R.string.field_pseudo),
             isRequired = true,
         )
 
@@ -154,7 +156,7 @@ private fun EditProfileContent(
         ProfileTextField(
             value = editState.bio,
             onValueChange = onBioChange,
-            label = "Bio",
+            label = stringResource(R.string.field_bio),
             singleLine = false,
             minLines = 3,
         )
@@ -199,12 +201,12 @@ private fun TopBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Retour",
+                contentDescription = stringResource(R.string.retour),
                 tint = MaterialTheme.colorScheme.onBackground,
             )
         }
         Text(
-            text = "Modifier le profil",
+            text = stringResource(R.string.edit_profile_title),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.align(Alignment.Center),
@@ -236,7 +238,7 @@ private fun AvatarEditor(
                     .data(avatarUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = "Avatar",
+                contentDescription = stringResource(R.string.cd_avatar),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(120.dp)
@@ -271,7 +273,7 @@ private fun AvatarEditor(
         ) {
             Icon(
                 imageVector = Icons.Filled.CameraAlt,
-                contentDescription = "Changer la photo",
+                contentDescription = stringResource(R.string.cd_change_photo),
                 tint = Color.White,
                 modifier = Modifier.size(28.dp),
             )
@@ -349,7 +351,7 @@ private fun SaveButton(
             )
         } else {
             Text(
-                text = "Enregistrer",
+                text = stringResource(R.string.save_button),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onPrimary,
             )

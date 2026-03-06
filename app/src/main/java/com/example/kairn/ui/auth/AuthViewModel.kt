@@ -1,11 +1,14 @@
 package com.example.kairn.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.R
 import com.example.kairn.domain.model.SessionState
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -33,7 +37,8 @@ class AuthViewModel @Inject constructor(
                 AuthUiState.Success
             } else {
                 AuthUiState.Error(
-                    result.exceptionOrNull()?.message ?: "Authentication failed",
+                    result.exceptionOrNull()?.message
+                        ?: context.getString(R.string.error_auth_failed),
                 )
             }
         }
@@ -53,7 +58,8 @@ class AuthViewModel @Inject constructor(
                 AuthUiState.Success
             } else {
                 AuthUiState.Error(
-                    result.exceptionOrNull()?.message ?: "Registration failed",
+                    result.exceptionOrNull()?.message
+                        ?: context.getString(R.string.error_registration_failed),
                 )
             }
         }

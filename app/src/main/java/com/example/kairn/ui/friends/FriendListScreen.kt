@@ -40,11 +40,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.domain.model.Friendship
 import com.example.kairn.domain.model.User
 import com.example.kairn.ui.components.UserAvatar
@@ -68,6 +70,7 @@ fun FriendListScreen(
 ) {
     val friendListState by viewModel.friendListUiState.collectAsStateWithLifecycle()
     val searchState by viewModel.searchUiState.collectAsStateWithLifecycle()
+    val unknownMember = stringResource(R.string.unknown_member)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -76,7 +79,7 @@ fun FriendListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Friends",
+                        text = stringResource(R.string.friends_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -85,7 +88,7 @@ fun FriendListScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -151,7 +154,10 @@ fun FriendListScreen(
                                     Log.d(TAG, "onStartChat: friend.id=${friend.id}, username=${friend.username}")
                                     viewModel.startConversationWith(friend.id) { conversationId ->
                                         Log.d(TAG, "onStartChat: Navigating to chat - conversationId=$conversationId")
-                                        onNavigateToChat(conversationId, friend.username ?: "User")
+                                        onNavigateToChat(
+                                            conversationId,
+                                            friend.username ?: unknownMember,
+                                        )
                                     }
                                 },
                                 modifier = Modifier.fillMaxSize()
@@ -190,7 +196,7 @@ private fun SearchBar(
     ) {
         Icon(
             imageVector = Icons.Default.Search,
-            contentDescription = "Search",
+            contentDescription = stringResource(R.string.search_cd),
             tint = TextSecondary,
             modifier = Modifier.size(20.dp)
         )
@@ -207,7 +213,7 @@ private fun SearchBar(
             decorationBox = { innerTextField ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search for friends...",
+                        text = stringResource(R.string.search_friends_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         fontSize = 16.sp,
@@ -231,7 +237,7 @@ private fun SearchResults(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No users found",
+                text = stringResource(R.string.no_users_found),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
@@ -270,7 +276,7 @@ private fun FriendList(
         if (pendingRequests.isNotEmpty()) {
             item {
                 Text(
-                    text = "Pending Requests",
+                    text = stringResource(R.string.pending_requests_header),
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
@@ -291,7 +297,7 @@ private fun FriendList(
         if (friends.isNotEmpty()) {
             item {
                 Text(
-                    text = "Friends",
+                    text = stringResource(R.string.friends_section_header),
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
@@ -315,7 +321,7 @@ private fun FriendList(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No friends yet\nSearch for users to add friends",
+                        text = stringResource(R.string.no_friends_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -365,7 +371,7 @@ private fun UserCard(
             onClick = onSendRequest,
             colors = ButtonDefaults.buttonColors(containerColor = Accent)
         ) {
-            Text("Add", color = Background)
+            Text(stringResource(R.string.add_friend_button), color = Background)
         }
     }
 }
@@ -398,17 +404,17 @@ private fun PendingRequestCard(
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = "wants to be friends",
+                text = stringResource(R.string.wants_to_be_friends),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 fontSize = 12.sp,
             )
         }
         IconButton(onClick = onAccept) {
-            Icon(Icons.Default.Check, contentDescription = "Accept", tint = Primary)
+            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.cd_accept), tint = Primary)
         }
         IconButton(onClick = onDecline) {
-            Icon(Icons.Default.Close, contentDescription = "Decline", tint = TextSecondary)
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_decline), tint = TextSecondary)
         }
     }
 }
@@ -441,7 +447,7 @@ private fun FriendCard(
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = "Tap to chat",
+                text = stringResource(R.string.tap_to_chat),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 fontSize = 12.sp,
