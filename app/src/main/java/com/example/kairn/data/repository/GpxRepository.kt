@@ -2,6 +2,9 @@ package com.example.kairn.data.repository
 
 import android.util.Log
 import com.example.kairn.BuildConfig
+import com.example.kairn.data.remote.HikeDto
+import com.example.kairn.domain.model.GpxRoute
+import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,7 @@ data class GpxFileInfo(
 class GpxRepository @Inject constructor(
     private val storage: Storage,
     private val auth: Auth,
+    private val postgrest: Postgrest,
 ) {
     private val bucketName = "GPX_FILES"
     private val httpClient = OkHttpClient.Builder()
@@ -112,6 +116,52 @@ class GpxRepository @Inject constructor(
             Result.success(responseBody)
         } catch (e: Exception) {
             Log.e(TAG, "downloadGpxContent: error downloading", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun saveGpxToHikes(gpxRoute: GpxRoute, creatorId: String): Result<String> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Log.d(TAG, "saveGpxToHikes: saving ${gpxRoute.name} to hikes table")
+
+            val distanceMeters = gpxRoute.distanceMeters?.toInt() ?: 0
+
+            val hikeData = mapOf(
+                "creator_id" to creatorId,
+                "title" to gpxRoute.name,
+                "distance_m" to distanceMeters,
+                "gpx_filename" to gpxRoute.fileName,
+                "status" to "draft",
+            )
+
+            val result = postgrest["hikes"].insert(hikeData)
+            Log.d(TAG, "saveGpxToHikes: saved successfully")
+            Result.success("Saved successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "saveGpxToHikes: error", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getHikesMetadata(): Result<Map<String, HikeDto>> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Log.d(TAG, "getHikesMetadata: fetching hikes from Supabase")
+
+            val hikes = postgrest["hikes"]
+                .select()
+                .decodeList<HikeDto>()
+
+            Log.d(TAG, "getHikesMetadata: found ${hikes.size} hikes")
+
+            // Filtrer les hikes qui ont un gpx_filename et créer une map
+            val hikesMap = hikes
+                .filter { it.gpxFilename != null }
+                .associateBy { it.gpxFilename!! }  // safe car filtré
+
+            Log.d(TAG, "getHikesMetadata: ${hikesMap.size} hikes with gpx_filename")
+            Result.success(hikesMap)
+        } catch (e: Exception) {
+            Log.e(TAG, "getHikesMetadata: error", e)
             Result.failure(e)
         }
     }

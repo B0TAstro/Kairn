@@ -20,9 +20,21 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.kairn.BuildConfig
 import androidx.compose.material3.Text
 import com.mapbox.common.MapboxOptions
+import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
+import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotation
+import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationManager
+import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
+import com.mapbox.maps.plugin.gestures.OnMapClickListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.example.kairn.domain.model.GpxRoute
+import android.util.Log
+
+private const val TAG = "MapboxPocMapView"
 
 @Composable
 fun MapboxPocMapView(
@@ -30,11 +42,16 @@ fun MapboxPocMapView(
     userLatitude: Double? = null,
     userLongitude: Double? = null,
     selectedCity: MapCity? = null,
+    gpxRoutes: List<GpxRoute> = emptyList(),
+    selectedGpxRoute: GpxRoute? = null,
+    onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val token = BuildConfig.MAPBOX_ACCESS_TOKEN.trim()
     var mapInitError by remember { mutableStateOf<String?>(null) }
+    var polylineManager by remember { mutableStateOf<PolylineAnnotationManager?>(null) }
+    val polylines = remember { mutableMapOf<String, PolylineAnnotation>() }
 
     if (token.isBlank()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -46,8 +63,8 @@ fun MapboxPocMapView(
     val mapView = remember {
         MapboxOptions.accessToken = token
         runCatching {
-            createMapboxMapView(context) {
-                Unit
+            createMapboxMapView(context) { manager ->
+                polylineManager = manager
             }
         }
             .onFailure { mapInitError = it.message ?: "Mapbox initialization failed" }
@@ -65,7 +82,7 @@ fun MapboxPocMapView(
         if (selectedCity != null) {
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
-                    .center(com.mapbox.geojson.Point.fromLngLat(selectedCity.longitude, selectedCity.latitude))
+                    .center(Point.fromLngLat(selectedCity.longitude, selectedCity.latitude))
                     .zoom(13.6)
                     .pitch(68.0)
                     .bearing(25.0)
@@ -77,13 +94,67 @@ fun MapboxPocMapView(
         if (userLatitude != null && userLongitude != null) {
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
-                    .center(com.mapbox.geojson.Point.fromLngLat(userLongitude, userLatitude))
+                    .center(Point.fromLngLat(userLongitude, userLatitude))
                     .zoom(14.8)
                     .pitch(68.0)
                     .bearing(20.0)
                     .build(),
             )
         }
+    }
+
+    LaunchedEffect(gpxRoutes, polylineManager, mapView, selectedGpxRoute) {
+        if (polylineManager == null || mapView == null) return@LaunchedEffect
+        
+        Log.d(TAG, "GPX routes updated: ${gpxRoutes.size} routes, selected: ${selectedGpxRoute?.fileName}")
+        
+        polylines.values.forEach { polylineManager!!.delete(it) }
+        polylines.clear()
+        
+        for ((index, route) in gpxRoutes.withIndex()) {
+            if (route.points.size >= 2) {
+                val isSelected = selectedGpxRoute?.fileName == route.fileName
+                val key = route.fileName ?: "route_$index"
+                val polyline = polylineManager!!.create(
+                    PolylineAnnotationOptions()
+                        .withPoints(route.points.map { Point.fromLngLat(it.longitude, it.latitude) })
+                        .withLineColor(if (isSelected) "#BA8C5E" else "#587B6C")
+                        .withLineWidth(if (isSelected) 8.0 else 5.0),
+                )
+                polylines[key] = polyline
+                Log.d(TAG, "Added polyline for ${route.name} with ${route.points.size} points, selected: $isSelected")
+            }
+        }
+    }
+
+    LaunchedEffect(polylineManager, mapView, gpxRoutes) {
+        if (polylineManager == null || mapView == null) return@LaunchedEffect
+        
+        val clickListener = OnMapClickListener { point ->
+            val clickLng = point.longitude()
+            val clickLat = point.latitude()
+            val threshold = 0.001
+            
+            for ((fileName, _) in polylines) {
+                val route = gpxRoutes.find { it.fileName == fileName }
+                if (route != null) {
+                    val isClose = route.points.any { p ->
+                        Math.abs(p.longitude - clickLng) < threshold && 
+                        Math.abs(p.latitude - clickLat) < threshold
+                    }
+                    if (isClose) {
+                        Log.d(TAG, "Clicked on route: $fileName")
+                        onGpxRouteClick(route)
+                        return@OnMapClickListener true
+                    }
+                }
+            }
+            
+            Log.d(TAG, "Clicked but no route found at point: $point")
+            false
+        }
+        
+        mapView.gestures.addOnMapClickListener(clickListener)
     }
 
     DisposableEffect(lifecycle, mapView) {
@@ -111,14 +182,15 @@ fun MapboxPocMapView(
 
 private fun createMapboxMapView(
     context: Context,
-    onStyleReady: () -> Unit,
+    onStyleReady: (PolylineAnnotationManager) -> Unit,
 ): MapView {
     return MapView(context).apply {
         mapboxMap.loadStyle("mapbox://styles/mapbox/outdoors-v12") {
-            onStyleReady()
+            val manager = this@apply.annotations.createPolylineAnnotationManager()
+            onStyleReady(manager)
             mapboxMap.setCamera(
                 CameraOptions.Builder()
-                    .center(com.mapbox.geojson.Point.fromLngLat(6.9850, 45.8900))
+                    .center(Point.fromLngLat(6.9850, 45.8900))
                     .zoom(12.8)
                     .pitch(68.0)
                     .bearing(28.0)

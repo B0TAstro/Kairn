@@ -28,6 +28,8 @@ data class HomeUiState(
     val gpxRoutes: List<GpxRoute> = emptyList(),
     val isLoadingGpx: Boolean = false,
     val gpxError: String? = null,
+    val selectedGpxRoute: GpxRoute? = null,
+    val isGpxBottomSheetExpanded: Boolean = false,
 ) {
     val filteredHikes: List<Hike>
         get() {
