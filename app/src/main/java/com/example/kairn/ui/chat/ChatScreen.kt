@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.domain.model.ConversationType
 import com.example.kairn.domain.model.Message
 import com.example.kairn.ui.components.ChatBubble
 import com.example.kairn.ui.theme.Accent
@@ -58,6 +60,7 @@ fun ChatScreen(
     conversationId: String,
     conversationName: String,
     onNavigateBack: () -> Unit,
+    onNavigateToGroupInfo: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
@@ -105,6 +108,19 @@ fun ChatScreen(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                     )
+                }
+            },
+            actions = {
+                // Show Group Info button for GROUP conversations
+                if (uiState.conversation?.type == ConversationType.GROUP && uiState.conversation?.groupId != null) {
+                    IconButton(
+                        onClick = { onNavigateToGroupInfo(uiState.conversation!!.groupId!!) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Group Info"
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

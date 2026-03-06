@@ -19,7 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +31,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,10 +59,12 @@ import kotlinx.datetime.toLocalDateTime
 fun ChatListScreen(
     onNavigateToChat: (String, String) -> Unit,
     onNavigateToNewChat: () -> Unit,
+    onNavigateToCreateGroup: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.chatListUiState.collectAsStateWithLifecycle()
+    var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -65,13 +74,44 @@ fun ChatListScreen(
                 modifier = Modifier.padding(bottom = 80.dp) // Space for bottom nav
             ) {
                 FloatingActionButton(
-                    onClick = onNavigateToNewChat,
+                    onClick = { showMenu = true },
                     containerColor = Accent,
                     contentColor = Background,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "New conversation"
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("New Direct Message") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToNewChat()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("New Group") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToCreateGroup()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Group,
+                                contentDescription = null
+                            )
+                        }
                     )
                 }
             }

@@ -20,6 +20,8 @@ import com.example.kairn.ui.home.HomeScreen
 import com.example.kairn.ui.chat.ChatListScreen
 import com.example.kairn.ui.chat.ChatScreen
 import com.example.kairn.ui.friends.FriendListScreen
+import com.example.kairn.ui.group.CreateGroupScreen
+import com.example.kairn.ui.group.GroupInfoScreen
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -59,6 +61,9 @@ fun KairnNavHost(
                     },
                     onNavigateToNewChat = {
                         navController.navigate(NavRoutes.FRIEND_LIST)
+                    },
+                    onNavigateToCreateGroup = {
+                        navController.navigate(NavRoutes.CREATE_GROUP)
                     }
                 )
             }
@@ -110,7 +115,10 @@ fun KairnNavHost(
                 ChatScreen(
                     conversationId = conversationId,
                     conversationName = conversationName,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToGroupInfo = { groupId ->
+                        navController.navigate(NavRoutes.groupInfo(groupId))
+                    }
                 )
             }
             
@@ -123,6 +131,32 @@ fun KairnNavHost(
                             popUpTo(Screen.CHAT.name)
                         }
                     }
+                )
+            }
+            
+            // Create group screen
+            composable(NavRoutes.CREATE_GROUP) {
+                CreateGroupScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onGroupCreated = { conversationId ->
+                        navController.navigate(NavRoutes.chat(conversationId, "Group")) {
+                            popUpTo(Screen.CHAT.name)
+                        }
+                    }
+                )
+            }
+            
+            // Group info screen
+            composable(
+                route = NavRoutes.GROUP_INFO,
+                arguments = listOf(
+                    navArgument("groupId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString("groupId") ?: return@composable
+                
+                GroupInfoScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }
