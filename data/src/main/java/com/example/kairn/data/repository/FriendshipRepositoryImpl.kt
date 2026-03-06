@@ -8,6 +8,7 @@ import com.example.kairn.domain.repository.FriendshipRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Instant
@@ -25,7 +26,7 @@ private const val TAG = "FriendshipRepo"
  * This avoids crashes caused by Realtime channel reuse when re-entering screens.
  */
 @Singleton
-class FriendshipRepositoryImpl @Inject constructor(
+internal class FriendshipRepositoryImpl @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
 ) : FriendshipRepository {
@@ -65,7 +66,7 @@ class FriendshipRepositoryImpl @Inject constructor(
                         }
                         eq("status", "ACCEPTED")
                     }
-                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    order("created_at", order = Order.DESCENDING)
                 }
                 .decodeList<FriendshipDto>()
 
@@ -102,7 +103,7 @@ class FriendshipRepositoryImpl @Inject constructor(
                         eq("addressee_id", userId)
                         eq("status", "PENDING")
                     }
-                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    order("created_at", order = Order.DESCENDING)
                 }
                 .decodeList<FriendshipDto>()
 

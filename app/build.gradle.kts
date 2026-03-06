@@ -30,8 +30,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPBOX_ACCESS_TOKEN"] = localProperties.getProperty("MAPBOX_ACCESS_TOKEN", "")
 
-        buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL", "")}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\"")
         buildConfigField("String", "MAPBOX_ACCESS_TOKEN", "\"${localProperties.getProperty("MAPBOX_ACCESS_TOKEN", "")}\"")
     }
 
@@ -84,15 +82,9 @@ dependencies {
     implementation(libs.mapbox.maps.android)
     implementation(libs.haze)
     implementation(libs.coil.compose)
-
-    implementation(platform(libs.supabase.bom))
-    implementation(libs.supabase.auth)
-    implementation(libs.supabase.postgrest)
-    implementation(libs.supabase.realtime)
-    implementation(libs.supabase.storage)
-    implementation(libs.ktor.client.okhttp)
+    implementation(project(":data"))
     implementation(libs.kotlinx.serialization.json)
-
+    implementation(libs.kotlinx.datetime)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)

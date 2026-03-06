@@ -25,4 +25,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Kairn"
 include(":app")
- 
+include(":data")
+include(":data")

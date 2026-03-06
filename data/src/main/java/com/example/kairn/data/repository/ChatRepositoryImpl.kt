@@ -10,12 +10,12 @@ import com.example.kairn.domain.repository.ChatRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
-import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -46,7 +47,7 @@ private const val TAG = "ChatRepository"
  * 4. Proper handling of current user ID for message alignment
  */
 @Singleton
-class ChatRepositoryImpl @Inject constructor(
+internal class ChatRepositoryImpl @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
     private val realtime: Realtime,
@@ -93,7 +94,7 @@ class ChatRepositoryImpl @Inject constructor(
                     filter {
                         eq("conversation_members.user_id", userId)
                     }
-                    order("updated_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    order("updated_at", order = Order.DESCENDING)
                 }
                 .decodeList<ConversationListDto>()
 
@@ -121,7 +122,7 @@ class ChatRepositoryImpl @Inject constructor(
                 val allMessages = postgrest.from("messages")
                     .select(Columns.raw("id, conversation_id, sender_id, body, message_type, created_at")) {
                         filter { isIn("conversation_id", conversationIds) }
-                        order("created_at", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                        order("created_at", order = Order.DESCENDING)
                     }
                     .decodeList<SimpleMessageDto>()
                 
@@ -252,7 +253,7 @@ class ChatRepositoryImpl @Inject constructor(
                     """.trimIndent())
                 ) {
                     filter { eq("conversation_id", conversationId) }
-                    order("created_at", order = io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+                    order("created_at", order = Order.ASCENDING)
                 }
                 .decodeList<MessageDto>()
 
@@ -295,7 +296,7 @@ class ChatRepositoryImpl @Inject constructor(
             senderInitials = (myProfile.username ?: "Me").take(2).uppercase(),
             body = body,
             messageType = MessageType.TEXT,
-            createdAt = kotlinx.datetime.Clock.System.now(),
+            createdAt = Clock.System.now(),
             isCurrentUser = true,
         )
 
@@ -330,7 +331,7 @@ class ChatRepositoryImpl @Inject constructor(
         // Update conversation's updated_at
         postgrest.from("conversations")
             .update({
-                set("updated_at", kotlinx.datetime.Clock.System.now().toString())
+                set("updated_at", Clock.System.now().toString())
             }) {
                 filter { eq("id", conversationId) }
             }

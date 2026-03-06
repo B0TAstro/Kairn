@@ -57,7 +57,7 @@ fun HikeBottomSheetContent(
                     modifier = Modifier.size(13.dp),
                 )
                 Text(
-                    text = hike.location,
+                    text = hike.location ?: "Unknown location",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
