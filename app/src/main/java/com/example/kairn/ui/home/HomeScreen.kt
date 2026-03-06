@@ -95,11 +95,14 @@ fun HomeScreen(
     Box(modifier = modifier.fillMaxSize()) {
 
         // ── Mapbox 3D POC map fills entire screen ─────────────────────────
-        MapboxPocMapView(
+        StrategyMapView(
+            provider = MapProvider.MAPBOX,
+            cameraState = MapCameraState(
+                userLatitude = uiState.userLatitude,
+                userLongitude = uiState.userLongitude,
+                selectedCity = uiState.selectedCity,
+            ),
             modifier = Modifier.fillMaxSize(),
-            userLatitude = uiState.userLatitude,
-            userLongitude = uiState.userLongitude,
-            selectedCity = uiState.selectedCity,
         )
 
         // ── Liquid glass panel overlay ────────────────────────────────────

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +72,9 @@ private const val TERRAIN_STYLE_JSON = """
 @Composable
 fun MapLibrePocMapView(
     modifier: Modifier = Modifier,
+    userLatitude: Double? = null,
+    userLongitude: Double? = null,
+    selectedCity: MapCity? = null,
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -92,6 +96,22 @@ fun MapLibrePocMapView(
                 }
             }
         }
+    }
+
+    LaunchedEffect(map, userLatitude, userLongitude, selectedCity) {
+        val mapLibreMap = map ?: return@LaunchedEffect
+        val target = when {
+            selectedCity != null -> LatLng(selectedCity.latitude, selectedCity.longitude)
+            userLatitude != null && userLongitude != null -> LatLng(userLatitude, userLongitude)
+            else -> null
+        } ?: return@LaunchedEffect
+
+        mapLibreMap.cameraPosition = CameraPosition.Builder()
+            .target(target)
+            .zoom(13.6)
+            .tilt(72.0)
+            .bearing(25.0)
+            .build()
     }
 
     DisposableEffect(lifecycle, mapView) {
