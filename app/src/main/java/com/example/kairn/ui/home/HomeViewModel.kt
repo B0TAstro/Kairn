@@ -8,12 +8,15 @@ import com.example.kairn.data.parser.GpxParser
 import com.example.kairn.data.repository.GpxRepository
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.User
+import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,6 +29,7 @@ class HomeViewModel @Inject constructor(
     private val locationService: LocationService,
     private val gpxRepository: GpxRepository,
     private val gpxParser: GpxParser,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val supportedCities = listOf(
@@ -36,16 +40,26 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-    private var locationCollectionJob: kotlinx.coroutines.Job? = null
+    private var locationCollectionJob: Job? = null
 
     /** Whether the device currently has fine-location permission. */
     val hasLocationPermission: Boolean
         get() = locationService.hasLocationPermission()
 
     init {
+        observeCurrentUser()
         loadHikes()
         loadGpxRoutes()
         collectLocation()
+    }
+
+    private fun observeCurrentUser() {
+        viewModelScope.launch {
+            authRepository.currentUser.collectLatest { user ->
+                val name = user?.displayName().orEmpty().ifBlank { "Hiker" }
+                _uiState.update { it.copy(username = name) }
+            }
+        }
     }
 
     private fun loadHikes() {
@@ -71,7 +85,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-private fun loadGpxRoutes() {
+    private fun loadGpxRoutes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingGpx = true, gpxError = null) }
             Log.d(TAG, "loadGpxRoutes: starting")
@@ -93,17 +107,17 @@ private fun loadGpxRoutes() {
                             val parseResult = gpxParser.parse(content, file.name)
                             parseResult.onSuccess { gpxRoute ->
                                 Log.d(TAG, "loadGpxRoutes: parsed ${gpxRoute.name} with ${gpxRoute.points.size} points")
-                                
+
                                 // 2. Chercher les métadonnées du hike correspondant
                                 val hikeDto = hikesMetadata[file.name]
-                                
+
                                 // 3. Créer un GpxRoute avec les métadonnées mergées
                                 val mergedRoute = gpxRoute.copy(
                                     id = hikeDto?.id,
                                     creatorId = hikeDto?.creatorId,
                                     createdAt = hikeDto?.createdAt ?: gpxRoute.createdAt,
                                 )
-                                
+
                                 routes.add(mergedRoute)
                                 Log.d(TAG, "loadGpxRoutes: merged route ${gpxRoute.name} with hike metadata: ${hikeDto != null}")
                             }.onFailure { e ->
@@ -203,5 +217,15 @@ private fun loadGpxRoutes() {
         val normalized = query.trim().lowercase()
         if (normalized.isBlank()) return emptyList()
         return supportedCities.filter { it.name.lowercase().contains(normalized) }
+    }
+
+    private fun User.displayName(): String {
+        return pseudo
+            ?: username
+            ?: listOfNotNull(firstName, lastName)
+                .joinToString(" ")
+                .trim()
+                .ifBlank { null }
+            ?: email.substringBefore('@')
     }
 }

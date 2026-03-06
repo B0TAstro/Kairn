@@ -59,7 +59,6 @@ import com.example.kairn.domain.model.GpxRoute
 import com.example.kairn.domain.model.HikeDifficulty
 import android.util.Log
 import com.example.kairn.ui.components.HikeBottomSheetContent
-import com.example.kairn.ui.components.UserAvatar
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -116,7 +115,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f))
+                .background(MaterialTheme.colorScheme.background)
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 20.dp),
@@ -124,7 +123,6 @@ fun HomeScreen(
             HomeHeader(
                 username = uiState.username,
                 location = uiState.location,
-                initials = uiState.initials,
             )
             Spacer(modifier = Modifier.size(14.dp))
             HomeSearchBar(
@@ -233,7 +231,6 @@ private fun SearchResultsPanel(
 private fun HomeHeader(
     username: String,
     location: String,
-    initials: String,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -264,7 +261,6 @@ private fun HomeHeader(
                 )
             }
         }
-        UserAvatar(initials = initials, size = 44.dp)
     }
 }
 
