@@ -21,8 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 import com.example.kairn.domain.model.Hike
+import com.example.kairn.ui.util.localizedLabel
 
 @Composable
 fun HikeBottomSheetContent(
@@ -57,7 +60,7 @@ fun HikeBottomSheetContent(
                     modifier = Modifier.size(13.dp),
                 )
                 Text(
-                    text = hike.location ?: "Unknown location",
+                    text = hike.location ?: stringResource(R.string.unknown_location),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -71,9 +74,9 @@ fun HikeBottomSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            StatColumn(value = hike.formattedDuration, label = "Duration")
-            StatColumn(value = hike.formattedDistance, label = "Distance")
-            StatColumn(value = hike.formattedElevation, label = "Elevation")
+            StatColumn(value = hike.formattedDuration, label = stringResource(R.string.stat_duration))
+            StatColumn(value = hike.formattedDistance, label = stringResource(R.string.stat_distance))
+            StatColumn(value = hike.formattedElevation, label = stringResource(R.string.stat_elevation))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = Icons.Filled.Star,
@@ -82,12 +85,12 @@ fun HikeBottomSheetContent(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = hike.difficulty.label,
+                    text = hike.difficulty.localizedLabel(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Level",
+                    text = stringResource(R.string.stat_level),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -98,7 +101,11 @@ fun HikeBottomSheetContent(
 
         // Tabs
         KairnTabRow(
-            tabs = listOf("Details", "Road List", "Reviews"),
+            tabs = listOf(
+                stringResource(R.string.tab_details),
+                stringResource(R.string.road_list_tab),
+                stringResource(R.string.tab_reviews),
+            ),
             selectedIndex = selectedTab,
             onTabSelected = { selectedTab = it },
         )
@@ -109,26 +116,26 @@ fun HikeBottomSheetContent(
         when (selectedTab) {
             0 -> {
                 Text(
-                    text = "Hiking to ${hike.title}",
+                    text = stringResource(R.string.hike_detail_section_title, hike.title),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = hike.description.orEmpty().ifEmpty {
-                        "Experience one of the most breathtaking adventures as you hike toward the iconic summit. This trail offers unparalleled views of the surrounding peaks, glaciers, and majestic scenery."
+                        stringResource(R.string.hike_detail_fallback_description)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             1 -> Text(
-                text = "Route waypoints coming soon.",
+                text = stringResource(R.string.route_waypoints_soon),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             2 -> Text(
-                text = "Reviews coming soon.",
+                text = stringResource(R.string.reviews_soon),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -137,7 +144,7 @@ fun HikeBottomSheetContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         KairnButton(
-            text = "Start your trip",
+            text = stringResource(R.string.start_trip_button),
             onClick = onStartTrip,
             modifier = Modifier.fillMaxWidth(),
         )

@@ -2,4 +2,217 @@
     <string name="app_name">Kairn</string>
     <!-- Replace with your Google Maps API key from https://console.cloud.google.com -->
     <string name="google_maps_key">YOUR_GOOGLE_MAPS_KEY_HERE</string>
+
+    <!-- ── Common ──────────────────────────────────────────────────────────── -->
+    <string name="retour">Retour</string>
+    <string name="separator_or">ou</string>
+
+    <!-- ── Auth — Login ───────────────────────────────────────────────────── -->
+    <string name="login_title_line1">Bon retour</string>
+    <string name="login_title_line2">PARMI NOUS !</string>
+    <string name="field_email">Email</string>
+    <string name="field_password">Mot de passe</string>
+    <string name="remember_me">Se souvenir de moi</string>
+    <string name="forgot_password">Mot de passe oublié ?</string>
+    <string name="error_email_required">Veuillez entrer votre email</string>
+    <string name="error_password_required">Veuillez entrer votre mot de passe</string>
+    <string name="login_button">Se connecter</string>
+    <string name="no_account">Pas encore de compte ? </string>
+    <string name="register_link">S\'inscrire</string>
+
+    <!-- ── Auth — Sign Up ─────────────────────────────────────────────────── -->
+    <string name="signup_title_line1">Créer un</string>
+    <string name="signup_title_line2">COMPTE</string>
+    <string name="field_firstname">Prénom</string>
+    <string name="field_lastname">Nom</string>
+    <string name="field_pseudo">Pseudo</string>
+    <string name="field_confirm_password">Confirmer le mot de passe</string>
+    <string name="terms_of_service">En continuant, j\'accepte les Conditions d\'utilisation et la Politique de confidentialité de Kairn</string>
+    <string name="error_firstname_required">Veuillez entrer votre prénom</string>
+    <string name="error_lastname_required">Veuillez entrer votre nom</string>
+    <string name="error_pseudo_required">Veuillez entrer un pseudo</string>
+    <string name="error_password_weak">Veuillez entrer un mot de passe</string>
+    <string name="error_passwords_mismatch">Les mots de passe ne correspondent pas</string>
+    <string name="already_account">Déjà un compte ? </string>
+    <string name="login_link">Se connecter</string>
+    <string name="signup_button">S\'inscrire</string>
+
+    <!-- ── Auth — Errors (ViewModel) ──────────────────────────────────────── -->
+    <string name="error_auth_failed">Authentification échouée</string>
+    <string name="error_registration_failed">Inscription échouée</string>
+
+    <!-- ── Onboarding ─────────────────────────────────────────────────────── -->
+    <string name="onboarding_welcome_to">bienvenue sur</string>
+    <string name="onboarding_tagline">Échappez à votre routine, découvrez des sentiers à couper le souffle</string>
+    <string name="onboarding_sub_tagline">Bougez, respirez, et racontez votre aventure</string>
+    <string name="onboarding_go">GO</string>
+    <string name="onboarding_cta_description">Explorez, partagez et vivez l\'aventure ensemble</string>
+    <string name="onboarding_already_account">Déjà un compte ? </string>
+    <string name="onboarding_login_link">Connectez-vous</string>
+
+    <!-- ── Home ───────────────────────────────────────────────────────────── -->
+    <string name="search_empty_hint">Essayez Annecy, Chamonix ou Lyon</string>
+    <string name="search_placeholder">Rechercher une ville : Annecy, Chamonix, Lyon</string>
+    <string name="search_cd">Rechercher</string>
+    <!-- %s = city name -->
+    <string name="show_hikes_around">Voir les randos autour de %s</string>
+    <!-- %s = username -->
+    <string name="greeting">Bonjour, %s</string>
+
+    <!-- ── GPX Route Bottom Sheet ─────────────────────────────────────────── -->
+    <string name="gpx_creator">Créateur</string>
+    <string name="gpx_distance">Distance</string>
+    <string name="gpx_date">Date</string>
+    <string name="gpx_start">Démarrer</string>
+    <string name="gpx_edit_in_editor">Modifier dans l\'éditeur</string>
+
+    <!-- ── Explore ─────────────────────────────────────────────────────────── -->
+    <string name="explore_title">Explorer</string>
+    <!-- %d = count -->
+    <string name="explore_hikes_count">%d randonnées disponibles</string>
+    <string name="filter_all">Toutes</string>
+    <string name="stat_duration">Durée</string>
+    <string name="stat_distance">Distance</string>
+    <string name="stat_level">Niveau</string>
+    <string name="difficulty_easy">Facile</string>
+    <string name="difficulty_moderate">Modéré</string>
+    <string name="difficulty_hard">Difficile</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="category_mountain">Montagne</string>
+    <string name="category_forest">Forêt</string>
+    <string name="category_lake">Lac</string>
+    <string name="category_cave">Grotte</string>
+
+    <!-- ── Hike Detail ────────────────────────────────────────────────────── -->
+    <string name="cd_back">Retour</string>
+    <string name="cd_save">Sauvegarder</string>
+    <string name="tab_details">Détails</string>
+    <string name="tab_route_list">Itinéraire</string>
+    <string name="tab_reviews">Avis</string>
+    <!-- %s = hike title -->
+    <string name="hike_detail_section_title">Randonnée vers %s</string>
+    <string name="hike_detail_fallback_description">Vivez une aventure inoubliable sur ce sentier exceptionnel. Ce chemin offre des panoramas incomparables sur les sommets environnants, les glaciers et des paysages à couper le souffle.</string>
+    <string name="route_waypoints_soon">Points de passage bientôt disponibles.</string>
+    <string name="reviews_soon">Avis bientôt disponibles.</string>
+    <string name="start_trip_button">Démarrer la randonnée</string>
+
+    <!-- ── Account ────────────────────────────────────────────────────────── -->
+    <string name="cd_avatar">Avatar</string>
+    <string name="anonymous_user">Anonyme</string>
+    <string name="not_connected">Non connecté</string>
+    <string name="stat_member_since">MEMBRE DEPUIS</string>
+    <string name="stat_hikes_done">RANDOS FAITES</string>
+    <string name="stat_best_hike">RECORD RANDO</string>
+    <string name="completed_hikes_header">SENTIERS COMPLÉTÉS</string>
+    <string name="view_all_trails">Voir tous les sentiers</string>
+    <string name="all_trails_sheet_title">Tous les sentiers complétés</string>
+    <!-- %d = count -->
+    <string name="all_trails_sheet_subtitle">%d sentiers complétés</string>
+    <string name="leaderboard_header">CLASSEMENT</string>
+    <string name="leaderboard_tab_regional">Régional</string>
+    <string name="leaderboard_tab_national">National</string>
+    <string name="leaderboard_tab_global">Mondial</string>
+    <string name="leaderboard_no_geo">Activez la localisation pour voir votre classement</string>
+    <string name="leaderboard_empty">Aucun classement disponible</string>
+    <!-- %1$d = level, %2$d = xp -->
+    <string name="leaderboard_entry_subtitle">Niv. %1$d — %2$d XP</string>
+    <string name="settings_edit_profile">Modifier le profil</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_privacy">Confidentialité</string>
+    <string name="settings_about">À propos</string>
+    <string name="sign_out">Se déconnecter</string>
+
+    <!-- ── Edit Profile ───────────────────────────────────────────────────── -->
+    <string name="cd_change_photo">Changer la photo</string>
+    <string name="change_photo_link">Changer la photo *</string>
+    <string name="field_bio">Bio</string>
+    <string name="edit_profile_title">Modifier le profil</string>
+    <string name="save_button">Enregistrer</string>
+
+    <!-- ── Editor ─────────────────────────────────────────────────────────── -->
+    <string name="cd_show_points">Afficher les points</string>
+    <string name="cd_save_gpx">Sauvegarder le GPX sur Supabase</string>
+    <string name="editor_save_success">GPX sauvegardé avec succès !</string>
+    <!-- %s = error message -->
+    <string name="editor_save_error">Échec de la sauvegarde : %s</string>
+    <string name="editor_saving">Sauvegarde…</string>
+    <string name="editor_save_gpx">Sauvegarder le GPX</string>
+    <!-- %1$d = point index start, %2$d = point index end, %3$s = error message -->
+    <string name="editor_route_error">Impossible de calculer l\'itinéraire entre les points %1$d et %2$d : %3$s</string>
+    <string name="editor_upload_blocked">Upload bloqué par la politique Supabase. Vérifiez les règles RLS du bucket GPX.</string>
+    <string name="editor_auth_error">Erreur d\'authentification lors de l\'upload GPX. Veuillez vous reconnecter.</string>
+    <string name="editor_save_failed">Échec de la sauvegarde du GPX</string>
+
+    <!-- ── Points List Overlay ────────────────────────────────────────────── -->
+    <string name="cd_collapse_panel">Réduire le panneau des points</string>
+    <string name="cd_drag_reorder">Maintenir pour réordonner</string>
+    <string name="cd_remove_point">Supprimer le point</string>
+    <!-- %d = count -->
+    <string name="points_panel_title">Points (%d)</string>
+    <string name="points_reorder_hint">Maintenir appuyé sur les poignées pour réordonner les points</string>
+
+    <!-- ── Chat List ───────────────────────────────────────────────────────── -->
+    <string name="cd_new_conversation">Nouvelle conversation</string>
+    <string name="menu_new_dm">Nouveau message direct</string>
+    <string name="menu_new_group">Nouveau groupe</string>
+    <string name="messages_header">Messages</string>
+    <string name="unread_overflow">9+</string>
+    <string name="no_conversations_title">Aucune conversation</string>
+    <string name="no_conversations_subtitle">Démarrez une conversation avec un ami</string>
+    <string name="error_title">Erreur</string>
+
+    <!-- ── Chat Screen ────────────────────────────────────────────────────── -->
+    <string name="cd_group_info">Infos du groupe</string>
+    <string name="cd_send">Envoyer</string>
+    <string name="no_messages">Aucun message\nEnvoyez un message pour démarrer la conversation</string>
+    <string name="message_placeholder">Écrire un message…</string>
+
+    <!-- ── Friends ────────────────────────────────────────────────────────── -->
+    <string name="friends_title">Amis</string>
+    <string name="search_friends_placeholder">Rechercher des amis…</string>
+    <string name="no_users_found">Aucun utilisateur trouvé</string>
+    <string name="pending_requests_header">Demandes en attente</string>
+    <string name="wants_to_be_friends">veut devenir ami</string>
+    <string name="add_friend_button">Ajouter</string>
+    <string name="no_friends_empty">Aucun ami pour l\'instant\nRecherchez des utilisateurs pour vous connecter</string>
+    <string name="tap_to_chat">Appuyer pour discuter</string>
+    <string name="cd_accept">Accepter</string>
+    <string name="cd_decline">Refuser</string>
+    <string name="friends_section_header">Amis</string>
+
+    <!-- ── Group ──────────────────────────────────────────────────────────── -->
+    <string name="create_group_title">Créer un groupe</string>
+    <string name="group_name_label">Nom du groupe</string>
+    <string name="add_members_label">Ajouter des membres (min. 2)</string>
+    <!-- %d = count -->
+    <string name="members_selected">%d sélectionné(s)</string>
+    <string name="group_name_placeholder">Entrer le nom du groupe…</string>
+    <string name="no_friends_to_add">Aucun ami à ajouter</string>
+    <string name="cd_create">Créer</string>
+    <string name="group_info_title">Infos du groupe</string>
+    <string name="menu_leave_group">Quitter le groupe</string>
+    <string name="menu_delete_group">Supprimer le groupe</string>
+    <string name="group_not_found">Groupe introuvable</string>
+    <string name="members_section_header">Membres</string>
+    <!-- %1$d = count, %2$s = visibility -->
+    <string name="members_count_visibility">%1$d membres · %2$s</string>
+    <string name="unknown_member">Inconnu</string>
+    <string name="remove_member_button">Retirer</string>
+    <string name="cd_more_options">Plus d\'options</string>
+
+    <!-- ── Shared Components ──────────────────────────────────────────────── -->
+    <string name="unknown_location">Localisation inconnue</string>
+    <string name="stat_elevation">Dénivelé</string>
+    <string name="road_list_tab">Parcours</string>
+    <string name="emergency_alert_cd">Urgence</string>
+    <string name="emergency_alert_label">Alerte d\'urgence</string>
+    <string name="greeting_where_to_go">Où voulez-vous aller ?</string>
+
+    <!-- ── Navigation (bottom bar) ────────────────────────────────────────── -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_explore">Explorer</string>
+    <string name="nav_create">Créer</string>
+    <string name="nav_chat">Messagerie</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_default_group_name">Groupe</string>
 </resources>

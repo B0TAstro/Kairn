@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -27,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.kairn.R
 import com.example.kairn.domain.model.SessionState
 import com.example.kairn.ui.auth.AuthUiState
 import com.example.kairn.ui.auth.AuthViewModel
@@ -187,11 +189,11 @@ private fun MainScreen(
     }
 
     val navBarItems = listOf(
-        NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
-        NavBarItem(Screen.EXPLORE.name, "Explore", Icons.Outlined.Explore),
-        NavBarItem(Screen.EDITOR.name, "Create", Icons.Outlined.Edit),
-        NavBarItem(Screen.CHAT.name, "Chat", Icons.AutoMirrored.Outlined.Chat),
-        NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
+        NavBarItem(Screen.HOME.name, stringResource(R.string.nav_home), Icons.Outlined.Home),
+        NavBarItem(Screen.EXPLORE.name, stringResource(R.string.nav_explore), Icons.Outlined.Explore),
+        NavBarItem(Screen.EDITOR.name, stringResource(R.string.nav_create), Icons.Outlined.Edit),
+        NavBarItem(Screen.CHAT.name, stringResource(R.string.nav_chat), Icons.AutoMirrored.Outlined.Chat),
+        NavBarItem(Screen.PROFILE.name, stringResource(R.string.nav_profile), Icons.Outlined.Person),
     )
 
     Box(modifier = modifier.fillMaxSize()) {

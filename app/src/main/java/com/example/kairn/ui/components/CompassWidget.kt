@@ -133,7 +133,7 @@ fun CompassWidget(
                 .padding(end = 12.dp),
         )
         Text(
-            text = "W",
+            text = "O",
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.Bold,
             ),

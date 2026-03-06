@@ -43,10 +43,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 import coil.compose.AsyncImage
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeCategory
+import com.example.kairn.ui.util.localizedLabel
 import com.example.kairn.ui.theme.OverlayDark
 import com.example.kairn.ui.theme.OverlayMedium
 import dev.chrisbanes.haze.HazeState
@@ -80,12 +83,12 @@ fun ExploreScreen(
                 .padding(top = 20.dp, bottom = 12.dp),
         ) {
             Text(
-                text = "Explore",
+                text = stringResource(R.string.explore_title),
                 style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = "${uiState.filteredHikes.size} hikes available",
+                text = stringResource(R.string.explore_hikes_count, uiState.filteredHikes.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -101,14 +104,14 @@ fun ExploreScreen(
         ) {
             item {
                 ExploreChip(
-                    label = "All",
+                    label = stringResource(R.string.filter_all),
                     isSelected = uiState.selectedCategory == null,
                     onClick = { viewModel.onCategorySelected(null) },
                 )
             }
             items(HikeCategory.entries) { category ->
                 ExploreChip(
-                    label = category.label,
+                    label = category.localizedLabel(),
                     isSelected = uiState.selectedCategory == category,
                     onClick = { viewModel.onCategorySelected(category) },
                 )
@@ -301,9 +304,9 @@ fun ExploreHikeCard(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CardStatItem(Icons.Outlined.Schedule, hike.formattedDuration, "Duration")
-                CardStatItem(Icons.Outlined.Route, hike.formattedDistance, "Distance")
-                CardStatItem(Icons.Outlined.StarBorder, hike.difficulty.label, "Level")
+                CardStatItem(Icons.Outlined.Schedule, hike.formattedDuration, stringResource(R.string.stat_duration))
+                CardStatItem(Icons.Outlined.Route, hike.formattedDistance, stringResource(R.string.stat_distance))
+                CardStatItem(Icons.Outlined.StarBorder, hike.difficulty.localizedLabel(), stringResource(R.string.stat_level))
             }
         }
     }

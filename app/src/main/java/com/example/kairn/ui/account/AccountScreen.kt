@@ -56,10 +56,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.kairn.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -67,6 +69,7 @@ import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.LeaderboardEntry
 import com.example.kairn.domain.model.User
 import com.example.kairn.ui.components.KairnTabRow
+import com.example.kairn.ui.util.localizedLabel
 import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.OverlayDark
 
@@ -135,7 +138,7 @@ private fun AccountContent(
             // --- Name ---
             Text(
                 text = user.pseudo ?: "${user.firstName.orEmpty()} ${user.lastName.orEmpty()}".trim()
-                    .ifEmpty { "Anonymous" },
+                    .ifEmpty { stringResource(R.string.anonymous_user) },
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -188,7 +191,7 @@ private fun AccountContent(
         } else {
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Non connecte",
+                text = stringResource(R.string.not_connected),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -229,7 +232,7 @@ private fun ProfileAvatar(
                 .data(avatarUrl)
                 .crossfade(true)
                 .build(),
-            contentDescription = "Avatar",
+            contentDescription = stringResource(R.string.cd_avatar),
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(120.dp)
@@ -280,7 +283,7 @@ private fun StatsRow(
     ) {
         StatItem(
             value = AccountViewModel.formatMemberSince(user.createdAt),
-            label = "MEMBRE DEPUIS",
+            label = stringResource(R.string.stat_member_since),
             modifier = Modifier.weight(1f),
         )
 
@@ -288,7 +291,7 @@ private fun StatsRow(
 
         StatItem(
             value = "${user.hikesCompleted}",
-            label = "RANDOS FAITES",
+            label = stringResource(R.string.stat_hikes_done),
             modifier = Modifier.weight(1f),
         )
 
@@ -296,7 +299,7 @@ private fun StatsRow(
 
         StatItem(
             value = if (longestTrailKm > 0) "${"%.1f".format(longestTrailKm)} KM" else "—",
-            label = "RECORD RANDO",
+            label = stringResource(R.string.stat_best_hike),
             modifier = Modifier.weight(1f),
         )
     }
@@ -357,13 +360,13 @@ private fun CompletedHikesSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "SENTIERS COMPLETES",
+                text = stringResource(R.string.completed_hikes_header),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             if (hikes.size > 3) {
                 Text(
-                    text = "Voir tous les sentiers",
+                    text = stringResource(R.string.view_all_trails),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable(onClick = onViewAllClick),
@@ -465,7 +468,7 @@ private fun CompletedHikeCard(
                 )
                 CompletedHikeStatChip(
                     icon = Icons.Outlined.StarBorder,
-                    text = hike.difficulty.label,
+                    text = hike.difficulty.localizedLabel(),
                 )
             }
         }
@@ -524,13 +527,13 @@ private fun AllTrailsBottomSheet(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "Tous les sentiers completes",
+                text = stringResource(R.string.all_trails_sheet_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${hikes.size} sentiers completes",
+                text = stringResource(R.string.all_trails_sheet_subtitle, hikes.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -559,7 +562,7 @@ private fun AllTrailsBottomSheet(
 // Leaderboard Section
 // ─────────────────────────────────────────────────────────────────────────────
 
-private val leaderboardTabs = listOf("Regional", "National", "Mondial")
+// leaderboard tabs are now composed dynamically via stringResource
 
 @Composable
 private fun LeaderboardSection(
@@ -575,7 +578,7 @@ private fun LeaderboardSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "CLASSEMENT",
+                text = stringResource(R.string.leaderboard_header),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -590,6 +593,11 @@ private fun LeaderboardSection(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Tab row
+        val leaderboardTabs = listOf(
+            stringResource(R.string.leaderboard_tab_regional),
+            stringResource(R.string.leaderboard_tab_national),
+            stringResource(R.string.leaderboard_tab_global),
+        )
         KairnTabRow(
             tabs = leaderboardTabs,
             selectedIndex = state.selectedScope.ordinal,
@@ -633,7 +641,7 @@ private fun LeaderboardSection(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "Activez la localisation pour voir votre classement",
+                                text = stringResource(R.string.leaderboard_no_geo),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -656,7 +664,7 @@ private fun LeaderboardSection(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "Aucun classement disponible",
+                                text = stringResource(R.string.leaderboard_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -760,7 +768,7 @@ private fun LeaderboardEntryRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "Niv. ${entry.level} — ${entry.xp} XP",
+                text = stringResource(R.string.leaderboard_entry_subtitle, entry.level, entry.xp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -785,25 +793,25 @@ private fun SettingsSection(
     ) {
         SettingsItem(
             icon = Icons.Outlined.Person,
-            label = "Modifier le profil",
+            label = stringResource(R.string.settings_edit_profile),
             onClick = onEditProfile,
         )
         SettingsDivider()
         SettingsItem(
             icon = Icons.Outlined.Notifications,
-            label = "Notifications",
+            label = stringResource(R.string.settings_notifications),
             onClick = { /* TODO */ },
         )
         SettingsDivider()
         SettingsItem(
             icon = Icons.Outlined.Lock,
-            label = "Confidentialite",
+            label = stringResource(R.string.settings_privacy),
             onClick = { /* TODO */ },
         )
         SettingsDivider()
         SettingsItem(
             icon = Icons.Outlined.Info,
-            label = "A propos",
+            label = stringResource(R.string.settings_about),
             onClick = { /* TODO */ },
         )
     }
@@ -874,7 +882,7 @@ private fun SignOutButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Se deconnecter",
+            text = stringResource(R.string.sign_out),
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.error,
         )

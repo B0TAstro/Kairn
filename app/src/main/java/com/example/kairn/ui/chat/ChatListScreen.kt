@@ -37,12 +37,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.domain.model.Conversation
 import com.example.kairn.ui.components.UserAvatar
 import com.example.kairn.ui.theme.Accent
@@ -80,7 +82,7 @@ fun ChatListScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "New conversation"
+                        contentDescription = stringResource(R.string.cd_new_conversation)
                     )
                 }
                 DropdownMenu(
@@ -88,7 +90,7 @@ fun ChatListScreen(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("New Direct Message") },
+                        text = { Text(stringResource(R.string.menu_new_dm)) },
                         onClick = {
                             showMenu = false
                             onNavigateToNewChat()
@@ -101,7 +103,7 @@ fun ChatListScreen(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("New Group") },
+                        text = { Text(stringResource(R.string.menu_new_group)) },
                         onClick = {
                             showMenu = false
                             onNavigateToCreateGroup()
@@ -175,7 +177,7 @@ private fun ConversationList(
     ) {
         item {
             Text(
-                text = "Messages",
+                text = stringResource(R.string.messages_header),
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
@@ -230,7 +232,11 @@ private fun ConversationCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (conversation.unreadCount > 9) "9+" else conversation.unreadCount.toString(),
+                        text = if (conversation.unreadCount > 9) {
+                            stringResource(R.string.unread_overflow)
+                        } else {
+                            conversation.unreadCount.toString()
+                        },
                         color = Background,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -302,14 +308,14 @@ private fun EmptyConversationsView(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "No conversations yet",
+                text = stringResource(R.string.no_conversations_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Start a new conversation with a friend",
+                text = stringResource(R.string.no_conversations_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
@@ -330,7 +336,7 @@ private fun ErrorView(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Error",
+                text = stringResource(R.string.error_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,

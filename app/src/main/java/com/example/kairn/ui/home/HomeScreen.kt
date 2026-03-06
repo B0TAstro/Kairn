@@ -48,8 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.kairn.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -58,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairn.domain.model.GpxRoute
 import com.example.kairn.domain.model.HikeDifficulty
 import android.util.Log
+import com.example.kairn.ui.util.localizedLabel
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -192,7 +195,7 @@ private fun SearchResultsPanel(
     ) {
         if (cities.isEmpty()) {
             Text(
-                text = "Try Annecy, Chamonix or Lyon",
+                text = stringResource(R.string.search_empty_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -214,7 +217,7 @@ private fun SearchResultsPanel(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "Show hikes around ${city.name}",
+                        text = stringResource(R.string.show_hikes_around, city.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -239,7 +242,7 @@ private fun HomeHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Hello, $username",
+                text = stringResource(R.string.greeting, username),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -283,7 +286,7 @@ private fun HomeSearchBar(
     ) {
         Icon(
             imageVector = Icons.Filled.Search,
-            contentDescription = "Search",
+            contentDescription = stringResource(R.string.search_cd),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
         )
@@ -300,7 +303,7 @@ private fun HomeSearchBar(
             decorationBox = { inner ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search city: Annecy, Chamonix, Lyon",
+                        text = stringResource(R.string.search_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -343,7 +346,7 @@ private fun DifficultyChipsRow(
                     .padding(horizontal = 18.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = difficulty.label,
+                    text = difficulty.localizedLabel(),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isSelected) MaterialTheme.colorScheme.onTertiaryContainer
                     else MaterialTheme.colorScheme.onBackground,

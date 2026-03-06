@@ -38,12 +38,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.domain.model.ConversationType
 import com.example.kairn.domain.model.Message
 import com.example.kairn.ui.components.ChatBubble
@@ -106,7 +108,7 @@ fun ChatScreen(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.cd_back),
                     )
                 }
             },
@@ -118,7 +120,7 @@ fun ChatScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
-                            contentDescription = "Group Info"
+                            contentDescription = stringResource(R.string.cd_group_info)
                         )
                     }
                 }
@@ -172,7 +174,7 @@ private fun MessageList(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No messages yet\nSend a message to start the conversation",
+                text = stringResource(R.string.no_messages),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -230,7 +232,7 @@ private fun MessageInput(
             decorationBox = { innerTextField ->
                 if (messageInput.isEmpty()) {
                     Text(
-                        text = "Type a message...",
+                        text = stringResource(R.string.message_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         fontSize = 16.sp,
@@ -263,7 +265,7 @@ private fun MessageInput(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
+                        contentDescription = stringResource(R.string.cd_send),
                         tint = if (messageInput.isNotBlank()) Background else TextSecondary,
                         modifier = Modifier.size(20.dp),
                     )

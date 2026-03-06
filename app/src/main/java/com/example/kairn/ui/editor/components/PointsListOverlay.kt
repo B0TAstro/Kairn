@@ -40,11 +40,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 import com.example.kairn.ui.editor.EditorViewModel
 import com.example.kairn.ui.editor.EditorUiState
 import com.example.kairn.ui.editor.model.EditorPoint
@@ -89,7 +91,7 @@ fun PointsListOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Points (${points.size})",
+                    text = stringResource(R.string.points_panel_title, points.size),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -99,7 +101,7 @@ fun PointsListOverlay(
                 IconButton(onClick = onCollapse, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Collapse points panel",
+                        contentDescription = stringResource(R.string.cd_collapse_panel),
                         tint = TextPrimary.copy(alpha = 0.8f),
                     )
                 }
@@ -125,7 +127,7 @@ fun PointsListOverlay(
 
             if (points.size >= 2) {
                 Text(
-                    text = "Long press and drag handles to reorder points",
+                    text = stringResource(R.string.points_reorder_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextPrimary.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp),
@@ -219,7 +221,7 @@ private fun PointListItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.DragHandle,
-                    contentDescription = "Drag to reorder",
+                    contentDescription = stringResource(R.string.cd_drag_reorder),
                     tint = TextPrimary.copy(alpha = 0.5f),
                 )
             }
@@ -230,7 +232,7 @@ private fun PointListItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Remove point",
+                    contentDescription = stringResource(R.string.cd_remove_point),
                     tint = Color.Red.copy(alpha = 0.8f),
                 )
             }

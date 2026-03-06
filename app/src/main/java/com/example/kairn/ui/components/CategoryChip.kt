@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.ui.util.localizedLabel
 
 @Composable
 fun CategoryChip(
@@ -62,7 +63,7 @@ fun DifficultyChipRow(
     ) {
         difficulties.forEach { difficulty ->
             CategoryChip(
-                label = difficulty.label,
+                label = difficulty.localizedLabel(),
                 isSelected = difficulty == selectedDifficulty,
                 onClick = { onDifficultySelected(difficulty) },
             )

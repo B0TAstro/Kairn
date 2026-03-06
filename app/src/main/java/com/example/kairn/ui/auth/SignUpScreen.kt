@@ -35,11 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.R
 
 @Composable
 fun SignUpScreen(
@@ -58,6 +60,13 @@ fun SignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val errorFirstnameRequired = stringResource(R.string.error_firstname_required)
+    val errorLastnameRequired = stringResource(R.string.error_lastname_required)
+    val errorPseudoRequired = stringResource(R.string.error_pseudo_required)
+    val errorEmailRequired = stringResource(R.string.error_email_required)
+    val errorPasswordWeak = stringResource(R.string.error_password_weak)
+    val errorPasswordsMismatch = stringResource(R.string.error_passwords_mismatch)
 
     val passwordsMatch = password == confirmPassword
     val canSignUp = firstName.isNotBlank() &&
@@ -90,7 +99,7 @@ fun SignUpScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Retour",
+                    contentDescription = stringResource(R.string.retour),
                     tint = Color.White,
                     modifier = Modifier.size(28.dp),
                 )
@@ -103,14 +112,14 @@ fun SignUpScreen(
                     .padding(top = 16.dp),
             ) {
                 Text(
-                    text = "Creer un",
+                    text = stringResource(R.string.signup_title_line1),
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Medium,
                     ),
                     color = Color.White,
                 )
                 Text(
-                    text = "COMPTE",
+                    text = stringResource(R.string.signup_title_line2),
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontWeight = FontWeight.Bold,
                     ),
@@ -152,14 +161,14 @@ fun SignUpScreen(
                         AuthTextField(
                             value = firstName,
                             onValueChange = { firstName = it },
-                            placeholder = "Prenom",
+                            placeholder = stringResource(R.string.field_firstname),
                             enabled = uiState !is AuthUiState.Loading,
                             modifier = Modifier.weight(1f),
                         )
                         AuthTextField(
                             value = lastName,
                             onValueChange = { lastName = it },
-                            placeholder = "Nom",
+                            placeholder = stringResource(R.string.field_lastname),
                             enabled = uiState !is AuthUiState.Loading,
                             modifier = Modifier.weight(1f),
                         )
@@ -168,21 +177,21 @@ fun SignUpScreen(
                     AuthTextField(
                         value = pseudo,
                         onValueChange = { pseudo = it },
-                        placeholder = "Pseudo",
+                        placeholder = stringResource(R.string.field_pseudo),
                         enabled = uiState !is AuthUiState.Loading,
                     )
 
                     AuthTextField(
                         value = email,
                         onValueChange = { email = it },
-                        placeholder = "Email",
+                        placeholder = stringResource(R.string.field_email),
                         enabled = uiState !is AuthUiState.Loading,
                     )
 
                     AuthTextField(
                         value = password,
                         onValueChange = { password = it },
-                        placeholder = "Mot de passe",
+                        placeholder = stringResource(R.string.field_password),
                         visualTransformation = PasswordVisualTransformation(),
                         enabled = uiState !is AuthUiState.Loading,
                     )
@@ -190,7 +199,7 @@ fun SignUpScreen(
                     AuthTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        placeholder = "Confirmer le mot de passe",
+                        placeholder = stringResource(R.string.field_confirm_password),
                         visualTransformation = PasswordVisualTransformation(),
                         enabled = uiState !is AuthUiState.Loading,
                     )
@@ -198,7 +207,7 @@ fun SignUpScreen(
 
                 // Terms of service
                 Text(
-                    text = "En continuant, j'accepte les Conditions d'utilisation et la Politique de confidentialite de Kairn",
+                    text = stringResource(R.string.terms_of_service),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 6.dp),
@@ -223,12 +232,12 @@ fun SignUpScreen(
                     Button(
                         onClick = {
                             when {
-                                firstName.isBlank() -> validationError = "Veuillez entrer votre prenom"
-                                lastName.isBlank() -> validationError = "Veuillez entrer votre nom"
-                                pseudo.isBlank() -> validationError = "Veuillez entrer un pseudo"
-                                email.isBlank() -> validationError = "Veuillez entrer votre email"
-                                password.isBlank() -> validationError = "Veuillez entrer un mot de passe"
-                                !passwordsMatch -> validationError = "Les mots de passe ne correspondent pas"
+                                firstName.isBlank() -> validationError = errorFirstnameRequired
+                                lastName.isBlank() -> validationError = errorLastnameRequired
+                                pseudo.isBlank() -> validationError = errorPseudoRequired
+                                email.isBlank() -> validationError = errorEmailRequired
+                                password.isBlank() -> validationError = errorPasswordWeak
+                                !passwordsMatch -> validationError = errorPasswordsMismatch
                                 else -> {
                                     validationError = null
                                     viewModel.signUp(
@@ -251,7 +260,7 @@ fun SignUpScreen(
                         ),
                     ) {
                         Text(
-                            text = "S'inscrire",
+                            text = stringResource(R.string.signup_button),
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
@@ -272,7 +281,7 @@ fun SignUpScreen(
                             .background(Color.White.copy(alpha = 0.3f)),
                     )
                     Text(
-                        text = "ou",
+                        text = stringResource(R.string.separator_or),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.6f),
                     )
@@ -293,12 +302,12 @@ fun SignUpScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "Deja un compte ? ",
+                        text = stringResource(R.string.already_account),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f),
                     )
                     Text(
-                        text = "Se connecter",
+                        text = stringResource(R.string.login_link),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                         ),

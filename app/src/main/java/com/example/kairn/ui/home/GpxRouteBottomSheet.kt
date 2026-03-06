@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.kairn.domain.model.GpxRoute
+import androidx.compose.ui.res.stringResource
+import com.example.kairn.R
 import com.example.kairn.ui.components.KairnButton
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -60,7 +62,7 @@ fun GpxRouteBottomSheet(
                 InfoColumn(
                     icon = Icons.Filled.Person,
                     value = it.take(8) + "...",
-                    label = "Creator",
+                    label = stringResource(R.string.gpx_creator),
                 )
             }
 
@@ -68,7 +70,7 @@ fun GpxRouteBottomSheet(
                 InfoColumn(
                     icon = Icons.Filled.Route,
                     value = formatDistance(it),
-                    label = "Distance",
+                    label = stringResource(R.string.gpx_distance),
                 )
             }
 
@@ -76,7 +78,7 @@ fun GpxRouteBottomSheet(
                 InfoColumn(
                     icon = Icons.Filled.CalendarMonth,
                     value = formatDate(it),
-                    label = "Date",
+                    label = stringResource(R.string.gpx_date),
                 )
             }
         }
@@ -84,7 +86,7 @@ fun GpxRouteBottomSheet(
         Spacer(modifier = Modifier.height(24.dp))
 
         KairnButton(
-            text = "Start",
+            text = stringResource(R.string.gpx_start),
             onClick = onStartTrip,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -106,7 +108,7 @@ fun GpxRouteBottomSheet(
             horizontalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Edit in Editor",
+                text = stringResource(R.string.gpx_edit_in_editor),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
                 ),

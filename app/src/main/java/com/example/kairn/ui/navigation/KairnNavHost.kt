@@ -5,12 +5,14 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.kairn.R
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.account.AccountScreen
 import com.example.kairn.ui.account.AccountViewModel
@@ -36,6 +38,8 @@ fun KairnNavHost(
     modifier: Modifier = Modifier,
     startDestination: Screen = Screen.HOME,
 ) {
+    val defaultGroupName = stringResource(R.string.nav_default_group_name)
+
     SharedTransitionLayout {
         NavHost(
             navController = navController,
@@ -190,7 +194,7 @@ fun KairnNavHost(
                 CreateGroupScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onGroupCreated = { conversationId ->
-                        navController.navigate(NavRoutes.chat(conversationId, "Group")) {
+                        navController.navigate(NavRoutes.chat(conversationId, defaultGroupName)) {
                             popUpTo(Screen.CHAT.name)
                         }
                     }

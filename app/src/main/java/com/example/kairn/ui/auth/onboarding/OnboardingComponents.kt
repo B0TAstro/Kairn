@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairn.R
 
 @Composable
 internal fun IntroContent(
@@ -61,7 +63,7 @@ internal fun IntroContent(
                 .fillMaxWidth(),
         ) {
             Text(
-                text = "welcome to",
+                text = stringResource(R.string.onboarding_welcome_to),
                 style = TextStyle(
                     fontFamily = MaterialTheme.typography.headlineMedium.fontFamily,
                     fontWeight = FontWeight.Medium,
@@ -90,7 +92,7 @@ internal fun IntroContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Echappez a votre routine, decouvrez des sentiers a couper le souffle",
+                text = stringResource(R.string.onboarding_tagline),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
@@ -99,7 +101,7 @@ internal fun IntroContent(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Bougez, respirez, et racontez votre aventure",
+                text = stringResource(R.string.onboarding_sub_tagline),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.85f),
@@ -172,7 +174,7 @@ internal fun GoPrompt(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "GO",
+                        text = stringResource(R.string.onboarding_go),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
                         ),
@@ -193,9 +195,11 @@ internal fun CtaContent(
     modifier: Modifier = Modifier,
 ) {
     val lightTextColor = MaterialTheme.colorScheme.onPrimary
-    val signInText = remember {
+    val alreadyAccount = stringResource(R.string.onboarding_already_account)
+    val loginLink = stringResource(R.string.onboarding_login_link)
+    val signInText = remember(alreadyAccount, loginLink) {
         buildAnnotatedString {
-            append("Deja un compte ? ")
+            append(alreadyAccount)
             pushStringAnnotation(tag = LoginAnnotationTag, annotation = LoginAnnotationTag)
             withStyle(
                 SpanStyle(
@@ -203,7 +207,7 @@ internal fun CtaContent(
                     textDecoration = TextDecoration.Underline,
                 ),
             ) {
-                append("Connectez-vous")
+                append(loginLink)
             }
             pop()
         }
@@ -216,7 +220,7 @@ internal fun CtaContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Explorez, partagez et vivez l'aventure ensemble",
+            text = stringResource(R.string.onboarding_cta_description),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Normal,
@@ -236,7 +240,7 @@ internal fun CtaContent(
             ),
         ) {
             Text(
-                text = "S'inscrire",
+                text = stringResource(R.string.signup_button),
                 style = MaterialTheme.typography.titleSmall,
             )
         }

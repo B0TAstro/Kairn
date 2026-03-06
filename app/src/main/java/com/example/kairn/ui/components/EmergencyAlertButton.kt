@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.kairn.R
 
 @Composable
 fun EmergencyAlertButton(
@@ -39,13 +41,13 @@ fun EmergencyAlertButton(
     ) {
         Icon(
             imageVector = Icons.Filled.Warning,
-            contentDescription = "Emergency",
+            contentDescription = stringResource(R.string.emergency_alert_cd),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Emergency alert",
+            text = stringResource(R.string.emergency_alert_label),
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontWeight = FontWeight.Medium,
             ),
