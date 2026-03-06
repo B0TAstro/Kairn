@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -188,6 +189,7 @@ private fun MainScreen(
     val navBarItems = listOf(
         NavBarItem(Screen.HOME.name, "Home", Icons.Outlined.Home),
         NavBarItem(Screen.EXPLORE.name, "Explore", Icons.Outlined.Explore),
+        NavBarItem(Screen.EDITOR.name, "Create", Icons.Outlined.Edit),
         NavBarItem(Screen.CHAT.name, "Chat", Icons.AutoMirrored.Outlined.Chat),
         NavBarItem(Screen.PROFILE.name, "Profile", Icons.Outlined.Person),
     )

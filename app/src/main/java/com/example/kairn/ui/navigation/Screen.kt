@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets
 enum class Screen {
     HOME,
     EXPLORE,
+    EDITOR,
     CHAT,
     PROFILE,
 }

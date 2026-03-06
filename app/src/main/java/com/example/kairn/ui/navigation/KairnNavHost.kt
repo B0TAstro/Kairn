@@ -15,6 +15,7 @@ import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.account.AccountScreen
 import com.example.kairn.ui.account.AccountViewModel
 import com.example.kairn.ui.account.EditProfileScreen
+import com.example.kairn.ui.editor.EditorScreen
 import com.example.kairn.ui.explore.ExploreScreen
 import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
@@ -53,6 +54,10 @@ fun KairnNavHost(
                     animatedVisibilityScope = this@composable,
                     viewModel = exploreViewModel,
                 )
+            }
+
+            composable(Screen.EDITOR.name) {
+                EditorScreen()
             }
 
             composable(Screen.CHAT.name) {

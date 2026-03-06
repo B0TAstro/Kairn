@@ -1,5 +1,6 @@
 package com.example.kairn.ui.home
 
+import com.example.kairn.domain.model.GpxRoute
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
 
@@ -23,6 +24,11 @@ data class HomeUiState(
     val citySuggestions: List<MapCity> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
+    val gpxRoutes: List<GpxRoute> = emptyList(),
+    val isLoadingGpx: Boolean = false,
+    val gpxError: String? = null,
+    val selectedGpxRoute: GpxRoute? = null,
+    val isGpxBottomSheetExpanded: Boolean = false,
 ) {
     val filteredHikes: List<Hike>
         get() {

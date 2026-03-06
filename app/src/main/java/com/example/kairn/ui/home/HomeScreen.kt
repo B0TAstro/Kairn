@@ -55,7 +55,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairn.domain.model.GpxRoute
 import com.example.kairn.domain.model.HikeDifficulty
+import android.util.Log
 import com.example.kairn.ui.components.HikeBottomSheetContent
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -100,8 +102,11 @@ fun HomeScreen(
                 userLatitude = uiState.userLatitude,
                 userLongitude = uiState.userLongitude,
                 selectedCity = uiState.selectedCity,
+                gpxRoutes = uiState.gpxRoutes,
+                selectedGpxRoute = uiState.selectedGpxRoute,
             ),
             modifier = Modifier.fillMaxSize(),
+            onGpxRouteClick = viewModel::onGpxRouteSelected,
         )
 
         // ── Liquid glass panel overlay ────────────────────────────────────
@@ -150,6 +155,21 @@ fun HomeScreen(
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
                 onStartTrip = { viewModel.onBottomSheetDismissed() },
+            )
+        }
+    }
+
+    if (uiState.isGpxBottomSheetExpanded && uiState.selectedGpxRoute != null) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.onGpxBottomSheetDismissed() },
+            sheetState = bottomSheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        ) {
+            GpxRouteBottomSheet(
+                gpxRoute = uiState.selectedGpxRoute!!,
+                onStartTrip = { /* TODO: Implement start feature */ },
+                onEditInEditor = { /* TODO: Implement edit feature */ },
             )
         }
     }
@@ -341,11 +361,16 @@ private fun OsmMapView(
     locationPermissionGranted: Boolean = false,
     userLatitude: Double? = null,
     userLongitude: Double? = null,
+    gpxRoutes: List<GpxRoute> = emptyList(),
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    val mapView = remember { buildOsmMapView(context, locationPermissionGranted) }
+    val mapView = remember { buildOsmMapView(context, locationPermissionGranted, gpxRoutes) }
+
+    LaunchedEffect(gpxRoutes) {
+        updateGpxOverlays(mapView, gpxRoutes)
+    }
 
     // Center map on user's real position as soon as it becomes available
     LaunchedEffect(userLatitude, userLongitude) {
@@ -372,9 +397,31 @@ private fun OsmMapView(
     )
 }
 
+private const val TAG = "HomeScreen"
+
+private fun updateGpxOverlays(mapView: MapView, gpxRoutes: List<GpxRoute>) {
+    Log.d(TAG, "updateGpxOverlays: received ${gpxRoutes.size} routes")
+    mapView.overlays.removeAll { it is org.osmdroid.views.overlay.Polyline }
+
+    for (route in gpxRoutes) {
+        Log.d(TAG, "updateGpxOverlays: adding route ${route.name} with ${route.points.size} points")
+        if (route.points.size >= 2) {
+            val polyline = org.osmdroid.views.overlay.Polyline().apply {
+                setPoints(route.points)
+                outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
+                outlinePaint.strokeWidth = 8f
+            }
+            mapView.overlays.add(polyline)
+        }
+    }
+
+    mapView.invalidate()
+}
+
 private fun buildOsmMapView(
     context: Context,
     locationPermissionGranted: Boolean,
+    gpxRoutes: List<GpxRoute> = emptyList(),
 ): MapView {
     Configuration.getInstance().userAgentValue = context.packageName
     return MapView(context).apply {
@@ -388,6 +435,17 @@ private fun buildOsmMapView(
             val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), this)
             locationOverlay.enableMyLocation()
             overlays.add(locationOverlay)
+        }
+
+        for (route in gpxRoutes) {
+            if (route.points.size >= 2) {
+                val polyline = org.osmdroid.views.overlay.Polyline().apply {
+                    setPoints(route.points)
+                    outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
+                    outlinePaint.strokeWidth = 8f
+                }
+                overlays.add(polyline)
+            }
         }
     }
 }
