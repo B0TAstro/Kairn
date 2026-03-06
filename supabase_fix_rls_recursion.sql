@@ -1,29 +1,23 @@
 -- =============================================================
--- Fix RLS infinite recursion between profiles & conversation_members
+-- Fix RLS infinite recursion across all chat & group tables
 -- =============================================================
 --
 -- PROBLEM:
---   profiles SELECT policy "Users can view profiles in their conversations"
---   does a subquery on conversation_members, which triggers conversation_members
---   SELECT policy "Users can view members of their conversations", which does
---   a subquery back on conversation_members itself → infinite recursion.
+--   Several RLS SELECT policies do subqueries on their own table
+--   (e.g. conversation_members policy queries conversation_members,
+--   group_members policy queries group_members), causing PostgreSQL
+--   to re-evaluate the same policy → infinite recursion.
 --
 -- FIX:
---   1. Create a SECURITY DEFINER function that returns the conversation IDs
---      for a given user. Because it runs as the function owner (superuser),
---      it bypasses RLS on conversation_members, breaking the cycle.
---   2. Replace ALL SELECT policies on conversation_members with ONE that
---      calls this helper function instead of a raw subquery.
---   3. Replace the profiles "in their conversations" policy to also use
---      the helper function.
+--   Create SECURITY DEFINER helper functions that bypass RLS for
+--   the inner lookups, breaking every recursion cycle.
 --
 -- This script is idempotent — safe to run multiple times.
 -- =============================================================
 
--- ==================== HELPER FUNCTION ====================
+-- ==================== HELPER FUNCTIONS ====================
 
 -- Returns all conversation_ids that a user belongs to.
--- SECURITY DEFINER = runs as the function owner, bypassing RLS.
 CREATE OR REPLACE FUNCTION get_user_conversation_ids(p_user_id uuid)
 RETURNS SETOF uuid
 LANGUAGE sql
@@ -36,9 +30,48 @@ AS $$
   WHERE user_id = p_user_id;
 $$;
 
+-- Returns all group_ids that a user belongs to.
+CREATE OR REPLACE FUNCTION get_user_group_ids(p_user_id uuid)
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT group_id
+  FROM group_members
+  WHERE user_id = p_user_id;
+$$;
+
+-- Returns all group_ids where a user has OWNER or ADMIN role.
+CREATE OR REPLACE FUNCTION get_user_admin_group_ids(p_user_id uuid)
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT group_id
+  FROM group_members
+  WHERE user_id = p_user_id AND role IN ('OWNER', 'ADMIN');
+$$;
+
+-- Returns all group_ids where a user has OWNER role.
+CREATE OR REPLACE FUNCTION get_user_owner_group_ids(p_user_id uuid)
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT group_id
+  FROM group_members
+  WHERE user_id = p_user_id AND role = 'OWNER';
+$$;
+
 DO $$
 BEGIN
-    RAISE NOTICE 'Helper function get_user_conversation_ids created';
+    RAISE NOTICE 'Helper functions created';
 END $$;
 
 -- ==================== CONVERSATION_MEMBERS POLICIES ====================
@@ -195,6 +228,93 @@ BEGIN
     RAISE NOTICE 'messages policies applied';
 END $$;
 
+-- ==================== GROUPS POLICIES ====================
+
+ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can view their groups" ON groups;
+DROP POLICY IF EXISTS "Users can create groups" ON groups;
+DROP POLICY IF EXISTS "Owners and admins can update groups" ON groups;
+DROP POLICY IF EXISTS "Owners can delete groups" ON groups;
+
+-- SELECT: See groups you belong to (uses helper to avoid recursion via group_members)
+CREATE POLICY "Members can view their groups"
+  ON groups FOR SELECT
+  USING (
+    id IN (SELECT get_user_group_ids(auth.uid()))
+  );
+
+-- INSERT: Authenticated users can create groups (must be owner)
+CREATE POLICY "Users can create groups"
+  ON groups FOR INSERT
+  WITH CHECK (owner_id = auth.uid());
+
+-- UPDATE: Only owners and admins can update group details
+CREATE POLICY "Owners and admins can update groups"
+  ON groups FOR UPDATE
+  USING (
+    id IN (SELECT get_user_admin_group_ids(auth.uid()))
+  )
+  WITH CHECK (
+    id IN (SELECT get_user_admin_group_ids(auth.uid()))
+  );
+
+-- DELETE: Only owners can delete groups
+CREATE POLICY "Owners can delete groups"
+  ON groups FOR DELETE
+  USING (
+    id IN (SELECT get_user_owner_group_ids(auth.uid()))
+  );
+
+DO $$
+BEGIN
+    RAISE NOTICE 'groups policies applied (no recursion)';
+END $$;
+
+-- ==================== GROUP_MEMBERS POLICIES ====================
+
+ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can view group members" ON group_members;
+DROP POLICY IF EXISTS "Owners and admins can add members" ON group_members;
+DROP POLICY IF EXISTS "Owners and admins can remove members" ON group_members;
+DROP POLICY IF EXISTS "Members can leave groups" ON group_members;
+
+-- SELECT: See all members of groups you belong to (uses helper to avoid recursion)
+CREATE POLICY "Members can view group members"
+  ON group_members FOR SELECT
+  USING (
+    group_id IN (SELECT get_user_group_ids(auth.uid()))
+  );
+
+-- INSERT: Owner of the group or existing admins can add members.
+-- On first creation, the user is the group owner (groups.owner_id) but not yet
+-- in group_members, so we check both group_members role AND groups.owner_id.
+CREATE POLICY "Owners and admins can add members"
+  ON group_members FOR INSERT
+  WITH CHECK (
+    group_id IN (SELECT get_user_admin_group_ids(auth.uid()))
+    OR group_id IN (SELECT id FROM groups WHERE owner_id = auth.uid())
+  );
+
+-- DELETE (admin removal): Owners and admins can remove non-owner members
+CREATE POLICY "Owners and admins can remove members"
+  ON group_members FOR DELETE
+  USING (
+    group_id IN (SELECT get_user_admin_group_ids(auth.uid()))
+    AND role != 'OWNER'
+  );
+
+-- DELETE (self-leave): Users can remove their own membership
+CREATE POLICY "Members can leave groups"
+  ON group_members FOR DELETE
+  USING (user_id = auth.uid());
+
+DO $$
+BEGIN
+    RAISE NOTICE 'group_members policies applied (no recursion)';
+END $$;
+
 -- ==================== VERIFICATION ====================
 
 SELECT 
@@ -202,7 +322,7 @@ SELECT
     policyname,
     cmd
 FROM pg_policies 
-WHERE tablename IN ('profiles', 'conversations', 'conversation_members', 'messages')
+WHERE tablename IN ('profiles', 'conversations', 'conversation_members', 'messages', 'groups', 'group_members')
 ORDER BY tablename, policyname;
 
 DO $$
