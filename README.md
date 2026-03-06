@@ -132,7 +132,9 @@ Backend:
 - [ ] Show route quick details on map cards (name, time, difficulty, distance, elevation, level)
 - [ ] Start a route and track GPS progression
 - [ ] Ensure core flow works offline and syncs later
-- [x] Build Home map screen with OSM map rendering and real GPS location centering
+- [x] Build Home map screen with 3D map rendering and real GPS location centering
+- [x] Add city search and camera recentering on Home map
+- [x] Introduce map rendering strategy pattern (Mapbox/MapLibre)
 - [x] Add Explore catalog with filters, hike cards, and detail navigation
 - [x] Implement hike detail screen with shared element transition and CTA
 
@@ -146,6 +148,7 @@ Backend:
 - [ ] Add group chat and hike sharing
 - [ ] Add comments and creator/community photos on hike detail pages
 - [x] Add social navigation shell (Chat tab routing placeholder)
+- [x] Add friend search/requests and direct message flows (chat list + chat detail)
 
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
