@@ -11,12 +11,12 @@ FROM profiles;
 -- 2. Check specific user profiles with username
 SELECT 
     id,
-    email,
     username,
-    first_name,
-    last_name,
-    pseudo,
     avatar_url,
+    bio,
+    city_id,
+    region_id,
+    country_code,
     created_at
 FROM profiles
 ORDER BY created_at DESC
@@ -50,10 +50,11 @@ SELECT
     c.created_at,
     cm.user_id,
     p.username,
-    p.email
+    au.email
 FROM conversations c
 JOIN conversation_members cm ON c.id = cm.conversation_id
 LEFT JOIN profiles p ON cm.user_id = p.id
+LEFT JOIN auth.users au ON cm.user_id = au.id
 ORDER BY c.created_at DESC
 LIMIT 20;
 
@@ -84,11 +85,14 @@ ORDER BY au.created_at DESC;
 -- ============================================
 -- Uncomment and run this if users are missing profiles:
 /*
-INSERT INTO profiles (id, email, username, created_at, updated_at)
+INSERT INTO profiles (id, username, created_at, updated_at)
 SELECT 
     au.id,
-    au.email,
-    SPLIT_PART(au.email, '@', 1) as username, -- Use email prefix as username
+    COALESCE(
+      au.raw_user_meta_data->>'username',
+      au.raw_user_meta_data->>'pseudo',
+      SPLIT_PART(au.email, '@', 1)
+    ) as username,
     NOW(),
     NOW()
 FROM auth.users au

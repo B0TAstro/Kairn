@@ -167,10 +167,9 @@ DROP FUNCTION IF EXISTS public.handle_new_user();
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, username, created_at, updated_at)
+  INSERT INTO public.profiles (id, username, created_at, updated_at)
   VALUES (
     NEW.id,
-    NEW.email,
     COALESCE(
       NEW.raw_user_meta_data->>'username',
       NEW.raw_user_meta_data->>'pseudo',
@@ -191,10 +190,9 @@ CREATE TRIGGER on_auth_user_created
 
 -- ==================== 6. BACKFILL MISSING PROFILES ====================
 
-INSERT INTO public.profiles (id, email, username, created_at, updated_at)
+INSERT INTO public.profiles (id, username, created_at, updated_at)
 SELECT 
     au.id,
-    au.email,
     COALESCE(
       au.raw_user_meta_data->>'username',
       au.raw_user_meta_data->>'pseudo',
