@@ -76,12 +76,10 @@ internal class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshConversations() {
-        Log.d(TAG, "refreshConversations: Starting refresh")
         val userId = currentUserId ?: run {
             Log.e(TAG, "refreshConversations: User not authenticated")
             return
         }
-
         try {
             // Step 1: Fetch conversations with members (no messages to avoid parsing issues)
             val conversationDtos = postgrest.from("conversations")
@@ -102,8 +100,6 @@ internal class ChatRepositoryImpl @Inject constructor(
                 }
                 .decodeList<ConversationListDto>()
 
-            Log.d(TAG, "refreshConversations: Fetched ${conversationDtos.size} conversations")
-
             // Step 2: For DIRECT conversations, fetch ALL members (the !inner filter above
             // only returns the current user's member row, so we need a separate query to find
             // the other user in each DIRECT conversation)
@@ -113,15 +109,16 @@ internal class ChatRepositoryImpl @Inject constructor(
 
             val directConversationMembersMap: Map<String, List<ConversationMemberDto>> =
                 if (directConversationIds.isNotEmpty()) {
-                    postgrest.from("conversation_members")
+                    val rawMembers = postgrest.from("conversation_members")
                         .select(Columns.raw("conversation_id, user_id, last_read_message_id")) {
                             filter { isIn("conversation_id", directConversationIds) }
                         }
                         .decodeList<ConversationMemberWithConvIdDto>()
-                        .groupBy(
-                            { it.conversationId },
-                            { ConversationMemberDto(userId = it.userId, lastReadMessageId = it.lastReadMessageId) },
-                        )
+
+                    rawMembers.groupBy(
+                        { it.conversationId },
+                        { ConversationMemberDto(userId = it.userId, lastReadMessageId = it.lastReadMessageId) },
+                    )
                 } else emptyMap()
 
             val otherUserIds = directConversationMembersMap.values.flatten()
@@ -137,7 +134,9 @@ internal class ChatRepositoryImpl @Inject constructor(
                     }
                     .decodeList<ProfileDto>()
                     .associateBy { it.id }
-            } else emptyMap()
+            } else {
+                emptyMap()
+            }
 
             // Step 4: Fetch group names for GROUP conversations
             val groupIds = conversationDtos.mapNotNull { it.groupId }.distinct()
@@ -180,7 +179,7 @@ internal class ChatRepositoryImpl @Inject constructor(
                     otherUserProfile = otherProfile,
                     lastMessage = lastMessage,
                     groupName = groupName,
-                    groupMembers = null, // Don't load members in list view for performance
+                    groupMembers = null,
                 )
             }
 
