@@ -3,6 +3,10 @@ package com.example.kairn.data.repository
 import android.util.Log
 import com.example.kairn.domain.model.Conversation
 import com.example.kairn.domain.model.ConversationType
+import com.example.kairn.domain.model.Group
+import com.example.kairn.domain.model.GroupMember
+import com.example.kairn.domain.model.GroupRole
+import com.example.kairn.domain.model.GroupVisibility
 import com.example.kairn.domain.model.Message
 import com.example.kairn.domain.model.MessageType
 import com.example.kairn.domain.model.User
@@ -72,12 +76,10 @@ internal class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshConversations() {
-        Log.d(TAG, "refreshConversations: Starting refresh")
         val userId = currentUserId ?: run {
             Log.e(TAG, "refreshConversations: User not authenticated")
             return
         }
-
         try {
             // Step 1: Fetch conversations with members (no messages to avoid parsing issues)
             val conversationDtos = postgrest.from("conversations")
@@ -98,12 +100,31 @@ internal class ChatRepositoryImpl @Inject constructor(
                 }
                 .decodeList<ConversationListDto>()
 
-            Log.d(TAG, "refreshConversations: Fetched ${conversationDtos.size} conversations")
+            // Step 2: For DIRECT conversations, fetch ALL members (the !inner filter above
+            // only returns the current user's member row, so we need a separate query to find
+            // the other user in each DIRECT conversation)
+            val directConversationIds = conversationDtos
+                .filter { it.type.uppercase() == "DIRECT" }
+                .map { it.id }
 
-            // Step 2: Get all other user IDs for profile fetching
-            val otherUserIds = conversationDtos.flatMap { conv ->
-                conv.members.map { it.userId }
-            }.filter { it != userId }.distinct()
+            val directConversationMembersMap: Map<String, List<ConversationMemberDto>> =
+                if (directConversationIds.isNotEmpty()) {
+                    val rawMembers = postgrest.from("conversation_members")
+                        .select(Columns.raw("conversation_id, user_id, last_read_message_id")) {
+                            filter { isIn("conversation_id", directConversationIds) }
+                        }
+                        .decodeList<ConversationMemberWithConvIdDto>()
+
+                    rawMembers.groupBy(
+                        { it.conversationId },
+                        { ConversationMemberDto(userId = it.userId, lastReadMessageId = it.lastReadMessageId) },
+                    )
+                } else emptyMap()
+
+            val otherUserIds = directConversationMembersMap.values.flatten()
+                .map { it.userId }
+                .filter { it != userId }
+                .distinct()
 
             // Step 3: Fetch profiles for other users
             val profilesMap = if (otherUserIds.isNotEmpty()) {
@@ -113,9 +134,22 @@ internal class ChatRepositoryImpl @Inject constructor(
                     }
                     .decodeList<ProfileDto>()
                     .associateBy { it.id }
+            } else {
+                emptyMap()
+            }
+
+            // Step 4: Fetch group names for GROUP conversations
+            val groupIds = conversationDtos.mapNotNull { it.groupId }.distinct()
+            val groupNamesMap = if (groupIds.isNotEmpty()) {
+                postgrest.from("groups")
+                    .select(Columns.raw("id, name")) {
+                        filter { isIn("id", groupIds) }
+                    }
+                    .decodeList<GroupIdNameDto>()
+                    .associateBy({ it.id }, { it.name })
             } else emptyMap()
 
-            // Step 4: Fetch last message for each conversation
+            // Step 5: Fetch last message for each conversation
             val conversationIds = conversationDtos.map { it.id }
             val lastMessagesMap = if (conversationIds.isNotEmpty()) {
                 // Get the last message for each conversation
@@ -131,16 +165,21 @@ internal class ChatRepositoryImpl @Inject constructor(
                     .mapValues { (_, messages) -> messages.first() }
             } else emptyMap()
 
-            // Step 5: Convert to domain models
+            // Step 6: Convert to domain models
             _conversations.value = conversationDtos.map { dto ->
-                val otherUserId = dto.members.firstOrNull { it.userId != userId }?.userId
+                // Use the full members list from the separate query for DIRECT conversations
+                val allMembers = directConversationMembersMap[dto.id] ?: dto.members
+                val otherUserId = allMembers.firstOrNull { it.userId != userId }?.userId
                 val otherProfile = otherUserId?.let { profilesMap[it] }
                 val lastMessage = lastMessagesMap[dto.id]
+                val groupName = dto.groupId?.let { groupNamesMap[it] }
 
                 dto.toDomain(
                     currentUserId = userId,
                     otherUserProfile = otherProfile,
-                    lastMessage = lastMessage
+                    lastMessage = lastMessage,
+                    groupName = groupName,
+                    groupMembers = null,
                 )
             }
 
@@ -204,10 +243,10 @@ internal class ChatRepositoryImpl @Inject constructor(
             }
             .decodeSingle<ConversationListDto>()
 
-        // Find other user and fetch their profile
+        // For DIRECT conversations, find other user and fetch their profile
         val otherUserId = dto.members.firstOrNull { it.userId != myUserId }?.userId
         
-        val otherProfile = if (otherUserId != null) {
+        val otherProfile = if (dto.type.uppercase() == "DIRECT" && otherUserId != null) {
             try {
                 postgrest.from("profiles")
                     .select(Columns.raw("id, username, avatar_url")) {
@@ -220,7 +259,30 @@ internal class ChatRepositoryImpl @Inject constructor(
             }
         } else null
 
-        return dto.toDomain(myUserId, otherProfile, null)
+        // For GROUP conversations, fetch group details and members
+        val groupName: String?
+        val groupMembers: List<GroupMember>?
+        
+        if (dto.type.uppercase() == "GROUP" && dto.groupId != null) {
+            val groupDetails = try {
+                postgrest.from("groups")
+                    .select(Columns.raw("name")) {
+                        filter { eq("id", dto.groupId) }
+                    }
+                    .decodeSingle<GroupNameDto>()
+            } catch (e: Exception) {
+                Log.w(TAG, "fetchConversationById: Could not fetch group details", e)
+                null
+            }
+            
+            groupName = groupDetails?.name
+            groupMembers = getGroupMembers(dto.groupId).getOrNull()
+        } else {
+            groupName = null
+            groupMembers = null
+        }
+
+        return dto.toDomain(myUserId, otherProfile, null, groupName, groupMembers)
     }
 
     // ==================== MESSAGES ====================
@@ -425,6 +487,400 @@ internal class ChatRepositoryImpl @Inject constructor(
         }
     }
     
+    // ==================== GROUP MANAGEMENT ====================
+
+    override suspend fun createGroup(
+        name: String,
+        memberUserIds: List<String>,
+        description: String?,
+        visibility: GroupVisibility,
+    ): Result<Conversation> = runCatching {
+        Log.d(TAG, "createGroup: name=$name, members=${memberUserIds.size}")
+        
+        val myUserId = currentUserId 
+            ?: throw IllegalStateException("User not authenticated")
+
+        // Step 1: Create the group
+        val groupInsertDto = GroupInsertDto(
+            ownerId = myUserId,
+            name = name,
+            description = description,
+            visibility = visibility.name,
+        )
+
+        val groupDto = postgrest.from("groups")
+            .insert(groupInsertDto) {
+                select()
+            }
+            .decodeSingle<GroupDto>()
+
+        Log.d(TAG, "createGroup: Created group with id=${groupDto.id}")
+
+        // Step 2: Create a conversation for the group
+        val conversationInsertDto = buildJsonObject {
+            put("type", "GROUP")
+            put("group_id", groupDto.id)
+        }
+
+        val conversationDto = postgrest.from("conversations")
+            .insert(conversationInsertDto) {
+                select(Columns.raw("id, type, group_id, created_at, updated_at"))
+            }
+            .decodeSingle<ConversationListDto>()
+
+        Log.d(TAG, "createGroup: Created conversation with id=${conversationDto.id}")
+
+        // Step 3: Add group members (owner + members)
+        val allMemberIds = listOf(myUserId) + memberUserIds
+        val memberInserts = allMemberIds.map { userId ->
+            GroupMemberInsertDto(
+                groupId = groupDto.id,
+                userId = userId,
+                role = if (userId == myUserId) "OWNER" else "MEMBER",
+            )
+        }
+
+        postgrest.from("group_members")
+            .insert(memberInserts)
+
+        Log.d(TAG, "createGroup: Added ${allMemberIds.size} members")
+
+        // Step 4: Add conversation members
+        val conversationMemberInserts = allMemberIds.map { userId ->
+            buildJsonObject {
+                put("conversation_id", conversationDto.id)
+                put("user_id", userId)
+            }
+        }
+
+        postgrest.from("conversation_members")
+            .insert(conversationMemberInserts)
+
+        Log.d(TAG, "createGroup: Added ${allMemberIds.size} conversation members")
+
+        // Step 5: Create system message: "User created the group"
+        val myProfile = try {
+            postgrest.from("profiles")
+                .select(Columns.raw("username")) {
+                    filter { eq("id", myUserId) }
+                }
+                .decodeSingle<ProfileDto>()
+        } catch (e: Exception) {
+            ProfileDto(id = myUserId, username = "Someone")
+        }
+
+        val systemMessageBody = "${myProfile.username ?: "Someone"} created the group"
+        val systemMessageInsert = MessageInsertDto(
+            conversationId = conversationDto.id,
+            senderId = myUserId,
+            body = systemMessageBody,
+            messageType = "SYSTEM",
+        )
+
+        postgrest.from("messages")
+            .insert(systemMessageInsert)
+
+        Log.d(TAG, "createGroup: Created system message")
+
+        // Step 6: Fetch the complete conversation
+        val conversation = fetchConversationById(conversationDto.id, myUserId)
+        
+        // Refresh conversations list
+        refreshConversations()
+        
+        Log.d(TAG, "createGroup: SUCCESS - ${conversation.displayName}")
+        conversation
+    }
+
+    override suspend fun getGroupDetails(groupId: String): Result<Group> = runCatching {
+        Log.d(TAG, "getGroupDetails: groupId=$groupId")
+        
+        val groupDto = postgrest.from("groups")
+            .select() {
+                filter { eq("id", groupId) }
+            }
+            .decodeSingle<GroupDto>()
+
+        Group(
+            id = groupDto.id,
+            ownerId = groupDto.ownerId,
+            name = groupDto.name,
+            description = groupDto.description,
+            visibility = GroupVisibility.valueOf(groupDto.visibility.uppercase()),
+            createdAt = Instant.parse(groupDto.createdAt),
+            updatedAt = Instant.parse(groupDto.updatedAt),
+        )
+    }
+
+    override suspend fun getGroupMembers(groupId: String): Result<List<GroupMember>> = runCatching {
+        Log.d(TAG, "getGroupMembers: groupId=$groupId")
+        
+        val memberDtos = postgrest.from("group_members")
+            .select(
+                Columns.raw("""
+                    group_id,
+                    user_id,
+                    role,
+                    joined_at,
+                    profiles:user_id(id, username, avatar_url)
+                """.trimIndent())
+            ) {
+                filter { eq("group_id", groupId) }
+                order("joined_at", order = Order.ASCENDING)
+            }
+            .decodeList<GroupMemberWithProfileDto>()
+
+        memberDtos.map { dto ->
+            GroupMember(
+                groupId = dto.groupId,
+                userId = dto.userId,
+                role = GroupRole.valueOf(dto.role.uppercase()),
+                user = dto.profiles?.toDomain(),
+                joinedAt = Instant.parse(dto.joinedAt),
+            )
+        }
+    }
+
+    override suspend fun addGroupMembers(groupId: String, userIds: List<String>): Result<Unit> = runCatching {
+        Log.d(TAG, "addGroupMembers: groupId=$groupId, userIds=$userIds")
+        
+        val myUserId = currentUserId 
+            ?: throw IllegalStateException("User not authenticated")
+
+        // Get conversation ID for this group
+        val conversationDto = postgrest.from("conversations")
+            .select(Columns.raw("id")) {
+                filter { eq("group_id", groupId) }
+            }
+            .decodeSingle<ConversationIdDto>()
+
+        // Add group members
+        val memberInserts = userIds.map { userId ->
+            GroupMemberInsertDto(
+                groupId = groupId,
+                userId = userId,
+                role = "MEMBER",
+            )
+        }
+
+        postgrest.from("group_members")
+            .insert(memberInserts)
+
+        // Add conversation members
+        val conversationMemberInserts = userIds.map { userId ->
+            buildJsonObject {
+                put("conversation_id", conversationDto.id)
+                put("user_id", userId)
+            }
+        }
+
+        postgrest.from("conversation_members")
+            .insert(conversationMemberInserts)
+
+        // Create system messages for each added user
+        val profiles = postgrest.from("profiles")
+            .select(Columns.raw("id, username")) {
+                filter { isIn("id", userIds) }
+            }
+            .decodeList<ProfileDto>()
+            .associateBy { it.id }
+
+        val systemMessages = userIds.map { userId ->
+            val username = profiles[userId]?.username ?: "Someone"
+            MessageInsertDto(
+                conversationId = conversationDto.id,
+                senderId = myUserId,
+                body = "$username joined the group",
+                messageType = "SYSTEM",
+            )
+        }
+
+        postgrest.from("messages")
+            .insert(systemMessages)
+
+        Log.d(TAG, "addGroupMembers: SUCCESS")
+    }
+
+    override suspend fun removeGroupMember(groupId: String, userId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "removeGroupMember: groupId=$groupId, userId=$userId")
+        
+        val myUserId = currentUserId 
+            ?: throw IllegalStateException("User not authenticated")
+
+        // Get conversation ID for this group
+        val conversationDto = postgrest.from("conversations")
+            .select(Columns.raw("id")) {
+                filter { eq("group_id", groupId) }
+            }
+            .decodeSingle<ConversationIdDto>()
+
+        // Get username before removing
+        val profile = try {
+            postgrest.from("profiles")
+                .select(Columns.raw("username")) {
+                    filter { eq("id", userId) }
+                }
+                .decodeSingle<ProfileDto>()
+        } catch (e: Exception) {
+            ProfileDto(id = userId, username = "Someone")
+        }
+
+        // Remove from group_members
+        postgrest.from("group_members")
+            .delete {
+                filter {
+                    eq("group_id", groupId)
+                    eq("user_id", userId)
+                }
+            }
+
+        // Remove from conversation_members
+        postgrest.from("conversation_members")
+            .delete {
+                filter {
+                    eq("conversation_id", conversationDto.id)
+                    eq("user_id", userId)
+                }
+            }
+
+        // Create system message
+        val systemMessageBody = "${profile.username ?: "Someone"} was removed from the group"
+        val systemMessageInsert = MessageInsertDto(
+            conversationId = conversationDto.id,
+            senderId = myUserId,
+            body = systemMessageBody,
+            messageType = "SYSTEM",
+        )
+
+        postgrest.from("messages")
+            .insert(systemMessageInsert)
+
+        Log.d(TAG, "removeGroupMember: SUCCESS")
+    }
+
+    override suspend fun leaveGroup(groupId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "leaveGroup: groupId=$groupId")
+        
+        val myUserId = currentUserId 
+            ?: throw IllegalStateException("User not authenticated")
+
+        // Get conversation ID for this group
+        val conversationDto = postgrest.from("conversations")
+            .select(Columns.raw("id")) {
+                filter { eq("group_id", groupId) }
+            }
+            .decodeSingle<ConversationIdDto>()
+
+        // Get my username
+        val myProfile = try {
+            postgrest.from("profiles")
+                .select(Columns.raw("username")) {
+                    filter { eq("id", myUserId) }
+                }
+                .decodeSingle<ProfileDto>()
+        } catch (e: Exception) {
+            ProfileDto(id = myUserId, username = "Someone")
+        }
+
+        // Create system message before leaving
+        val systemMessageBody = "${myProfile.username ?: "Someone"} left the group"
+        val systemMessageInsert = MessageInsertDto(
+            conversationId = conversationDto.id,
+            senderId = myUserId,
+            body = systemMessageBody,
+            messageType = "SYSTEM",
+        )
+
+        postgrest.from("messages")
+            .insert(systemMessageInsert)
+
+        // Remove from group_members
+        postgrest.from("group_members")
+            .delete {
+                filter {
+                    eq("group_id", groupId)
+                    eq("user_id", myUserId)
+                }
+            }
+
+        // Remove from conversation_members
+        postgrest.from("conversation_members")
+            .delete {
+                filter {
+                    eq("conversation_id", conversationDto.id)
+                    eq("user_id", myUserId)
+                }
+            }
+
+        Log.d(TAG, "leaveGroup: SUCCESS")
+    }
+
+    override suspend fun updateGroup(
+        groupId: String,
+        name: String?,
+        description: String?,
+        visibility: GroupVisibility?,
+    ): Result<Unit> = runCatching {
+        Log.d(TAG, "updateGroup: groupId=$groupId")
+        
+        val updates = buildJsonObject {
+            name?.let { put("name", it) }
+            description?.let { put("description", it) }
+            visibility?.let { put("visibility", it.name) }
+            put("updated_at", Clock.System.now().toString())
+        }
+
+        postgrest.from("groups")
+            .update(updates) {
+                filter { eq("id", groupId) }
+            }
+
+        Log.d(TAG, "updateGroup: SUCCESS")
+    }
+
+    override suspend fun deleteGroup(groupId: String): Result<Unit> = runCatching {
+        Log.d(TAG, "deleteGroup: groupId=$groupId")
+        
+        // Get conversation ID for this group
+        val conversationDto = postgrest.from("conversations")
+            .select(Columns.raw("id")) {
+                filter { eq("group_id", groupId) }
+            }
+            .decodeSingle<ConversationIdDto>()
+
+        // Delete messages (cascade should handle this, but being explicit)
+        postgrest.from("messages")
+            .delete {
+                filter { eq("conversation_id", conversationDto.id) }
+            }
+
+        // Delete conversation_members
+        postgrest.from("conversation_members")
+            .delete {
+                filter { eq("conversation_id", conversationDto.id) }
+            }
+
+        // Delete conversation
+        postgrest.from("conversations")
+            .delete {
+                filter { eq("id", conversationDto.id) }
+            }
+
+        // Delete group_members
+        postgrest.from("group_members")
+            .delete {
+                filter { eq("group_id", groupId) }
+            }
+
+        // Delete group
+        postgrest.from("groups")
+            .delete {
+                filter { eq("id", groupId) }
+            }
+
+        Log.d(TAG, "deleteGroup: SUCCESS")
+    }
+
     // Clean up all channels when repository is destroyed (shouldn't happen with Singleton, but safe)
     fun cleanup() {
         Log.d(TAG, "cleanup: Cleaning up ${realtimeChannels.size} Realtime channels")
@@ -454,7 +910,9 @@ private data class ConversationListDto(
     fun toDomain(
         currentUserId: String,
         otherUserProfile: ProfileDto?,
-        lastMessage: SimpleMessageDto?
+        lastMessage: SimpleMessageDto?,
+        groupName: String? = null,
+        groupMembers: List<GroupMember>? = null,
     ): Conversation {
         return Conversation(
             id = id,
@@ -463,7 +921,9 @@ private data class ConversationListDto(
             lastMessage = lastMessage?.toDomain(currentUserId),
             unreadCount = 0, // TODO: Calculate from last_read_message_id
             otherUser = otherUserProfile?.toDomain(),
-            groupName = null,
+            groupName = groupName,
+            groupMembers = groupMembers,
+            groupAvatar = null, // TODO: Implement group avatars later
             createdAt = Instant.parse(createdAt),
             updatedAt = Instant.parse(updatedAt),
         )
@@ -472,6 +932,16 @@ private data class ConversationListDto(
 
 @Serializable
 private data class ConversationMemberDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("last_read_message_id") val lastReadMessageId: String? = null,
+)
+
+/**
+ * DTO for conversation_members with conversation_id included (for standalone queries)
+ */
+@Serializable
+private data class ConversationMemberWithConvIdDto(
+    @SerialName("conversation_id") val conversationId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("last_read_message_id") val lastReadMessageId: String? = null,
 )
@@ -560,3 +1030,64 @@ private data class ProfileDto(
         country = null,
     )
 }
+
+// ==================== GROUP DTOs ====================
+
+@Serializable
+private data class GroupDto(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    val name: String,
+    val description: String? = null,
+    val visibility: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+private data class GroupInsertDto(
+    @SerialName("owner_id") val ownerId: String,
+    val name: String,
+    val description: String? = null,
+    val visibility: String,
+)
+
+@Serializable
+private data class GroupMemberDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("user_id") val userId: String,
+    val role: String,
+    @SerialName("joined_at") val joinedAt: String,
+)
+
+@Serializable
+private data class GroupMemberInsertDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("user_id") val userId: String,
+    val role: String,
+)
+
+@Serializable
+private data class GroupMemberWithProfileDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("user_id") val userId: String,
+    val role: String,
+    @SerialName("joined_at") val joinedAt: String,
+    val profiles: ProfileDto? = null,
+)
+
+@Serializable
+private data class ConversationIdDto(
+    val id: String,
+)
+
+@Serializable
+private data class GroupNameDto(
+    val name: String,
+)
+
+@Serializable
+private data class GroupIdNameDto(
+    val id: String,
+    val name: String,
+)

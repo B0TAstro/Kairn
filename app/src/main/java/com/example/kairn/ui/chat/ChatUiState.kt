@@ -11,6 +11,7 @@ sealed interface ChatListUiState {
 
 data class ChatUiState(
     val conversationId: String = "",
+    val conversation: Conversation? = null,
     val messages: List<Message> = emptyList(),
     val messageInput: String = "",
     val isLoading: Boolean = false,

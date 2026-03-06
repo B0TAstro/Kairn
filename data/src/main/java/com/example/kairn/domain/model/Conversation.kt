@@ -10,6 +10,8 @@ data class Conversation(
     val unreadCount: Int = 0,
     val otherUser: User? = null, // For DIRECT conversations
     val groupName: String? = null, // For GROUP conversations
+    val groupMembers: List<GroupMember>? = null, // For GROUP conversations
+    val groupAvatar: String? = null, // For GROUP conversations
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {

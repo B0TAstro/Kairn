@@ -2,6 +2,7 @@ package com.example.kairn.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairn.domain.model.MessageType
 import com.example.kairn.ui.theme.CardBackground
 import com.example.kairn.ui.theme.Primary
 import com.example.kairn.ui.theme.TextPrimary
@@ -27,15 +30,35 @@ import com.example.kairn.ui.theme.TextSecondary
  * Instagram-style chat bubble
  * - Current user's messages: Right-aligned, primary color background
  * - Other user's messages: Left-aligned, card background, with avatar
+ * - System messages: Centered, small text
  */
 @Composable
 fun ChatBubble(
     senderName: String,
     senderInitials: String,
     message: String,
+    messageType: MessageType = MessageType.TEXT,
     modifier: Modifier = Modifier,
     isCurrentUser: Boolean = false,
 ) {
+    // System messages are centered and styled differently
+    if (messageType == MessageType.SYSTEM) {
+        Box(
+            modifier = modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = message,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center,
+            )
+        }
+        return
+    }
+
+    // Regular message bubbles
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start,

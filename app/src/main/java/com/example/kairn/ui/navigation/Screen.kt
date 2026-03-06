@@ -24,7 +24,11 @@ object NavRoutes {
     const val CHAT_LIST = "chat_list"
     const val CHAT = "chat/{conversationId}/{conversationName}"
     const val FRIEND_LIST = "friend_list"
+    const val CREATE_GROUP = "create_group"
+    const val GROUP_INFO = "group_info/{groupId}"
 
     fun chat(conversationId: String, conversationName: String) =
         "chat/$conversationId/${URLEncoder.encode(conversationName, StandardCharsets.UTF_8.toString())}"
+
+    fun groupInfo(groupId: String) = "group_info/$groupId"
 }

@@ -88,6 +88,13 @@ class ChatViewModel @Inject constructor(
             )
         }
 
+        // Fetch conversation details
+        viewModelScope.launch {
+            chatRepository.getConversation(conversationId).onSuccess { conversation ->
+                _chatUiState.update { it.copy(conversation = conversation) }
+            }
+        }
+        
         // Start collecting messages
         messagesJob = viewModelScope.launch {
             // Subscribe to Realtime updates (also does initial refresh)
