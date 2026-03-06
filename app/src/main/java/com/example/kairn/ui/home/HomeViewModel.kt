@@ -5,12 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.example.kairn.data.location.LocationService
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
+import com.example.kairn.domain.model.User
+import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,6 +22,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val hikeRepository: HikeRepository,
     private val locationService: LocationService,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val supportedCities = listOf(
@@ -36,8 +40,18 @@ class HomeViewModel @Inject constructor(
         get() = locationService.hasLocationPermission()
 
     init {
+        observeCurrentUser()
         loadHikes()
         collectLocation()
+    }
+
+    private fun observeCurrentUser() {
+        viewModelScope.launch {
+            authRepository.currentUser.collectLatest { user ->
+                val name = user?.displayName().orEmpty().ifBlank { "Hiker" }
+                _uiState.update { it.copy(username = name) }
+            }
+        }
     }
 
     private fun loadHikes() {
@@ -130,5 +144,15 @@ class HomeViewModel @Inject constructor(
         val normalized = query.trim().lowercase()
         if (normalized.isBlank()) return emptyList()
         return supportedCities.filter { it.name.lowercase().contains(normalized) }
+    }
+
+    private fun User.displayName(): String {
+        return pseudo
+            ?: username
+            ?: listOfNotNull(firstName, lastName)
+                .joinToString(" ")
+                .trim()
+                .ifBlank { null }
+            ?: email.substringBefore('@')
     }
 }

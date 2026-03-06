@@ -10,9 +10,8 @@ data class MapCity(
 )
 
 data class HomeUiState(
-    val username: String = "Agnes",
+    val username: String = "Hiker",
     val location: String = "Localisation...",
-    val initials: String = "AG",
     val searchQuery: String = "",
     val selectedDifficulty: HikeDifficulty? = null,
     val nearbyHikes: List<Hike> = emptyList(),
