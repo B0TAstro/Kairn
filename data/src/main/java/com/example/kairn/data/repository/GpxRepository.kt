@@ -23,6 +23,12 @@ data class GpxFileInfo(
     val publicUrl: String,
 )
 
+data class GpxHikeMetadata(
+    val id: String,
+    val creatorId: String?,
+    val createdAt: String,
+)
+
 @Singleton
 class GpxRepository @Inject constructor(
     private val storage: Storage,
@@ -143,7 +149,7 @@ class GpxRepository @Inject constructor(
         }
     }
 
-    suspend fun getHikesMetadata(): Result<Map<String, HikeDto>> = withContext(Dispatchers.IO) {
+    suspend fun getHikesMetadata(): Result<Map<String, GpxHikeMetadata>> = withContext(Dispatchers.IO) {
         return@withContext try {
             Log.d(TAG, "getHikesMetadata: fetching hikes from Supabase")
 
@@ -156,7 +162,13 @@ class GpxRepository @Inject constructor(
             // Filtrer les hikes qui ont un gpx_filename et créer une map
             val hikesMap = hikes
                 .filter { it.gpxFilename != null }
-                .associateBy { it.gpxFilename!! }  // safe car filtré
+                .associate { dto ->
+                    dto.gpxFilename!! to GpxHikeMetadata(
+                        id = dto.id,
+                        creatorId = dto.creatorId,
+                        createdAt = dto.createdAt,
+                    )
+                }
 
             Log.d(TAG, "getHikesMetadata: ${hikesMap.size} hikes with gpx_filename")
             Result.success(hikesMap)
