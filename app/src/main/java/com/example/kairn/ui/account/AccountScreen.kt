@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -62,7 +64,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.kairn.domain.model.Hike
+import com.example.kairn.domain.model.LeaderboardEntry
 import com.example.kairn.domain.model.User
+import com.example.kairn.ui.components.KairnTabRow
 import com.example.kairn.ui.theme.KairnTheme
 import com.example.kairn.ui.theme.OverlayDark
 
@@ -76,11 +80,14 @@ fun AccountScreen(
 ) {
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val completedHikes by viewModel.completedHikes.collectAsStateWithLifecycle()
+    val leaderboardState by viewModel.leaderboardState.collectAsStateWithLifecycle()
 
     AccountContent(
         user = currentUser,
         completedHikes = completedHikes,
         longestTrailKm = viewModel.longestTrailKm(),
+        leaderboardState = leaderboardState,
+        onLeaderboardScopeChange = viewModel::onLeaderboardScopeChange,
         onSignOut = {
             viewModel.signOut()
             onSignOut()
@@ -97,6 +104,8 @@ private fun AccountContent(
     user: User?,
     completedHikes: List<Hike>,
     longestTrailKm: Double,
+    leaderboardState: LeaderboardUiState,
+    onLeaderboardScopeChange: (LeaderboardScope) -> Unit,
     onSignOut: () -> Unit,
     onEditProfile: () -> Unit,
     onHikeClick: (String) -> Unit,
@@ -148,6 +157,14 @@ private fun AccountContent(
 
             // --- Stats row: Member Since / Trails Completed / Longest Trail ---
             StatsRow(user = user, longestTrailKm = longestTrailKm)
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // --- Leaderboard ---
+            LeaderboardSection(
+                state = leaderboardState,
+                onScopeChange = onLeaderboardScopeChange,
+            )
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -539,6 +556,219 @@ private fun AllTrailsBottomSheet(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Leaderboard Section
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val leaderboardTabs = listOf("Regional", "National", "Mondial")
+
+@Composable
+private fun LeaderboardSection(
+    state: LeaderboardUiState,
+    onScopeChange: (LeaderboardScope) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "CLASSEMENT",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Icon(
+                imageVector = Icons.Outlined.EmojiEvents,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Tab row
+        KairnTabRow(
+            tabs = leaderboardTabs,
+            selectedIndex = state.selectedScope.ordinal,
+            onTabSelected = { index ->
+                onScopeChange(LeaderboardScope.entries[index])
+            },
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Content
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(vertical = 12.dp),
+        ) {
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                }
+
+                // No geo data for regional/national
+                !state.hasGeoData && state.selectedScope != LeaderboardScope.GLOBAL -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Activez la localisation pour voir votre classement",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+
+                else -> {
+                    val entries = when (state.selectedScope) {
+                        LeaderboardScope.REGIONAL -> state.regionalEntries
+                        LeaderboardScope.NATIONAL -> state.nationalEntries
+                        LeaderboardScope.GLOBAL -> state.globalEntries
+                    }
+
+                    if (entries.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "Aucun classement disponible",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    } else {
+                        val windowed = AccountViewModel.windowedLeaderboard(entries)
+                        windowed.forEachIndexed { index, entry ->
+                            LeaderboardEntryRow(entry = entry)
+                            if (index < windowed.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardEntryRow(
+    entry: LeaderboardEntry,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = if (entry.isCurrentUser) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    } else {
+        Color.Transparent
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(backgroundColor)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Rank
+        Text(
+            text = "${entry.rank}.",
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = if (entry.isCurrentUser) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onBackground
+            },
+            modifier = Modifier.width(32.dp),
+        )
+
+        // Avatar
+        if (!entry.avatarUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(entry.avatarUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape),
+            )
+        } else {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            ) {
+                Text(
+                    text = entry.username.take(2).uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Name + stats
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.username,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (entry.isCurrentUser) FontWeight.Bold else FontWeight.Medium,
+                ),
+                color = if (entry.isCurrentUser) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onBackground
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "Niv. ${entry.level} — ${entry.xp} XP",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Settings Section
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -663,6 +893,14 @@ fun AccountScreenPreview() {
             user = User.preview,
             completedHikes = Hike.previewList.take(4),
             longestTrailKm = 21.4,
+            leaderboardState = LeaderboardUiState(
+                selectedScope = LeaderboardScope.REGIONAL,
+                regionalEntries = LeaderboardEntry.previewList,
+                nationalEntries = LeaderboardEntry.previewList,
+                globalEntries = LeaderboardEntry.previewList,
+                hasGeoData = true,
+            ),
+            onLeaderboardScopeChange = {},
             onSignOut = {},
             onEditProfile = {},
             onHikeClick = {},
