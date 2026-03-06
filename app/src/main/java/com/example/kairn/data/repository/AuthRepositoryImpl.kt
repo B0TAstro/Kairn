@@ -1,5 +1,6 @@
 package com.example.kairn.data.repository
 
+import com.example.kairn.data.remote.ProfileDto
 import com.example.kairn.domain.model.SessionState
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
@@ -7,6 +8,8 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +28,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val auth: Auth,
+    private val postgrest: Postgrest,
 ) : AuthRepository {
 
     /**
@@ -48,8 +52,45 @@ class AuthRepositoryImpl @Inject constructor(
     init {
         scope.launch {
             auth.sessionStatus.collect { status ->
-                _sessionState.value = status.toDomain()
+                val domainState = status.toDomain()
+                // Enrich with profile data from the profiles table
+                _sessionState.value = if (domainState is SessionState.Authenticated) {
+                    val enriched = enrichWithProfile(domainState.user)
+                    SessionState.Authenticated(enriched)
+                } else {
+                    domainState
+                }
             }
+        }
+    }
+
+    /**
+     * Fetches additional profile data (avatar, bio, city, etc.) from the `profiles` table
+     * and merges it into the [User] built from auth metadata.
+     * Falls back silently to the original user if the query fails.
+     */
+    private suspend fun enrichWithProfile(user: User): User {
+        return try {
+            val profile = postgrest
+                .from("profiles")
+                .select { filter { eq("id", user.id) } }
+                .decodeSingleOrNull<ProfileDto>()
+            if (profile != null) {
+                user.copy(
+                    pseudo = profile.username ?: user.pseudo,
+                    username = profile.username ?: user.username,
+                    avatarUrl = profile.avatarUrl ?: user.avatarUrl,
+                    bio = profile.bio ?: user.bio,
+                    city = profile.city ?: user.city,
+                    region = profile.region ?: user.region,
+                    country = profile.country ?: user.country,
+                )
+            } else {
+                user
+            }
+        } catch (_: Exception) {
+            // Profile table might not exist yet or network failure — not critical
+            user
         }
     }
 
@@ -84,6 +125,14 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signOut(): Result<Unit> = runCatching {
         auth.signOut()
         // Session state will be updated automatically via the sessionStatus flow
+    }
+
+    override suspend fun refreshProfile() {
+        val current = _sessionState.value
+        if (current is SessionState.Authenticated) {
+            val enriched = enrichWithProfile(current.user)
+            _sessionState.value = SessionState.Authenticated(enriched)
+        }
     }
 
     // ---------------------------------------------------------------------------

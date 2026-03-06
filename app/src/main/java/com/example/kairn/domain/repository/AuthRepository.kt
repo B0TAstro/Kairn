@@ -20,4 +20,10 @@ interface AuthRepository {
         pseudo: String,
     ): Result<Unit>
     suspend fun signOut(): Result<Unit>
+
+    /**
+     * Re-fetches the profile from the `profiles` table and updates
+     * [sessionState] / [currentUser] in place. Useful after an edit-profile save.
+     */
+    suspend fun refreshProfile()
 }
