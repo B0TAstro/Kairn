@@ -13,7 +13,7 @@ internal fun Modifier.onboardingVerticalGestures(
         detectVerticalDragGestures { _, dragAmount ->
             if (!expanded && dragAmount < VerticalSwipeThreshold) {
                 onExpand()
-            } else if (expanded && dragAmount < VerticalSwipeThreshold) {
+            } else if (expanded && dragAmount > -VerticalSwipeThreshold) {
                 onCollapse()
             }
         }

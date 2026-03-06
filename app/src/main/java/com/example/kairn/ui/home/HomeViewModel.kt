@@ -10,6 +10,7 @@ import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,12 @@ class HomeViewModel @Inject constructor(
     private val gpxRepository: GpxRepository,
     private val gpxParser: GpxParser,
 ) : ViewModel() {
+
+    private val supportedCities = listOf(
+        MapCity(name = "Annecy", latitude = 45.899247, longitude = 6.129384),
+        MapCity(name = "Chamonix", latitude = 45.923697, longitude = 6.869433),
+        MapCity(name = "Lyon", latitude = 45.764043, longitude = 4.835659),
+    )
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -46,7 +53,15 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             hikeRepository.getHikes()
                 .onSuccess { hikes ->
-                    _uiState.update { it.copy(nearbyHikes = hikes, isLoading = false) }
+                    _uiState.update { current ->
+                        val selectedCity = current.selectedCity ?: supportedCities.first { it.name == "Chamonix" }
+                        current.copy(
+                            nearbyHikes = hikes,
+                            selectedCity = selectedCity,
+                            citySuggestions = citySuggestionsForQuery(current.searchQuery),
+                            isLoading = false,
+                        )
+                    }
                 }
                 .onFailure { error ->
                     _uiState.update {
@@ -123,7 +138,24 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSearchQueryChange(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                citySuggestions = citySuggestionsForQuery(query),
+            )
+        }
+    }
+
+    fun onCitySelected(cityName: String) {
+        val city = supportedCities.firstOrNull { it.name.equals(cityName, ignoreCase = true) } ?: return
+        _uiState.update { current ->
+            current.copy(
+                searchQuery = city.name,
+                location = city.name,
+                selectedCity = city,
+                citySuggestions = emptyList(),
+            )
+        }
     }
 
     fun onDifficultySelected(difficulty: HikeDifficulty?) {
@@ -140,5 +172,11 @@ class HomeViewModel @Inject constructor(
 
     fun retry() {
         loadHikes()
+    }
+
+    private fun citySuggestionsForQuery(query: String): List<MapCity> {
+        val normalized = query.trim().lowercase()
+        if (normalized.isBlank()) return emptyList()
+        return supportedCities.filter { it.name.lowercase().contains(normalized) }
     }
 }

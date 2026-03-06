@@ -1,14 +1,18 @@
 package com.example.kairn.ui.auth.onboarding
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
@@ -25,59 +29,82 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 internal fun IntroContent(
     alpha: Float,
     modifier: Modifier = Modifier,
 ) {
-    val lightTextColor = MaterialTheme.colorScheme.onPrimary
+    val titleTextColor = Color.White
 
-    Column(
+    Box(
         modifier = modifier
-            .alpha(alpha)
-            .padding(start = 32.dp, top = 80.dp),
-    ) {
-        Text(
-            text = "Welcome to",
-            style = MaterialTheme.typography.bodyLarge,
-            color = lightTextColor,
-        )
-        Text(
-            text = "KAIRN",
-            style = MaterialTheme.typography.displayLarge,
-            color = lightTextColor,
-        )
-    }
-
-    Column(
-        modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp)
             .alpha(alpha),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = "Echappez a votre routine et decouvrez des sentiers a couper le souffle pres de chez vous.",
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge,
-            color = lightTextColor,
-        )
-        Text(
-            text = "Bougez, respirez, et racontez ensuite votre aventure.",
-            modifier = Modifier.padding(top = 8.dp),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge,
-            color = lightTextColor,
-        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 32.dp, end = 32.dp, top = 100.dp)
+                .fillMaxWidth(),
+        ) {
+            Text(
+                text = "welcome to",
+                style = TextStyle(
+                    fontFamily = MaterialTheme.typography.headlineMedium.fontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 22.sp,
+                    letterSpacing = 0.sp,
+                ),
+                color = titleTextColor,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "KAIRN",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = titleTextColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 28.dp)
+                .offset(y = 80.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Echappez a votre routine, decouvrez des sentiers a couper le souffle",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color.White,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Bougez, respirez, et racontez votre aventure",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White.copy(alpha = 0.85f),
+            )
+        }
     }
 }
 
@@ -88,50 +115,70 @@ internal fun GoPrompt(
     onGo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val lightTextColor = MaterialTheme.colorScheme.onPrimary
-
-    Column(
+    Box(
+        contentAlignment = Alignment.BottomCenter,
         modifier = modifier
             .alpha(alpha)
             .offset(y = bounceOffsetDp.dp)
             .clickable(enabled = alpha > 0f, onClick = onGo),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowUp,
-            contentDescription = null,
-            tint = lightTextColor,
-            modifier = Modifier.height(16.dp),
-        )
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowUp,
-            contentDescription = null,
-            tint = lightTextColor,
+        Box(
             modifier = Modifier
-                .height(16.dp)
-                .offset(y = (-8).dp),
+                .width(56.dp)
+                .height(90.dp)
+                .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 28.dp, bottomEnd = 28.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color.Transparent,
+                            0.35f to Color.White.copy(alpha = 0.08f),
+                            0.6f to Color.White.copy(alpha = 0.15f),
+                            1.0f to Color.White.copy(alpha = 0.22f),
+                        ),
+                    ),
+                ),
         )
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 4.dp,
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .height(56.dp)
-                .fillMaxWidth(0.16f),
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 6.dp),
         ) {
-            Box(
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowUp,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.4f),
+                modifier = Modifier.size(14.dp),
+            )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowUp,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(enabled = alpha > 0f, onClick = onGo),
-                contentAlignment = Alignment.Center,
+                    .size(14.dp)
+                    .offset(y = (-4).dp),
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Surface(
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 6.dp,
+                modifier = Modifier.size(44.dp),
             ) {
-                Text(
-                    text = "GO",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(enabled = alpha > 0f, onClick = onGo),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "GO",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
         }
     }
@@ -169,31 +216,33 @@ internal fun CtaContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Rejoignez une communaute qui partage ses randonnees et ses balades.",
+            text = "Explorez, partagez et vivez l'aventure ensemble",
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Normal,
+            ),
             color = lightTextColor,
         )
         Button(
             onClick = onNavigateToSignUp,
             modifier = Modifier
-                .padding(top = 20.dp)
+                .padding(top = 40.dp)
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onTertiary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
             Text(
                 text = "S'inscrire",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleSmall,
             )
         }
         ClickableText(
             text = signInText,
-            modifier = Modifier.padding(top = 14.dp),
+            modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = lightTextColor,
                 textAlign = TextAlign.Center,
