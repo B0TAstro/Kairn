@@ -20,7 +20,6 @@ import javax.inject.Inject
 data class EditProfileUiState(
     val pseudo: String = "",
     val bio: String = "",
-    val city: String = "",
     val avatarUrl: String? = null,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
@@ -47,7 +46,6 @@ class AccountViewModel @Inject constructor(
         _editState.value = EditProfileUiState(
             pseudo = user.pseudo.orEmpty(),
             bio = user.bio.orEmpty(),
-            city = user.city.orEmpty(),
             avatarUrl = user.avatarUrl,
         )
     }
@@ -58,10 +56,6 @@ class AccountViewModel @Inject constructor(
 
     fun onBioChange(value: String) {
         _editState.update { it.copy(bio = value) }
-    }
-
-    fun onCityChange(value: String) {
-        _editState.update { it.copy(city = value) }
     }
 
     /**
@@ -100,7 +94,7 @@ class AccountViewModel @Inject constructor(
                 userId = userId,
                 pseudo = state.pseudo.ifBlank { null },
                 bio = state.bio.ifBlank { null },
-                city = state.city.ifBlank { null },
+                city = null,
                 avatarUrl = state.avatarUrl,
             ).onSuccess {
                 // Refresh the session user so AccountScreen picks up changes

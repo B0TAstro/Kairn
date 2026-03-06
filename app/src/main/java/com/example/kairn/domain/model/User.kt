@@ -11,6 +11,7 @@ data class User(
     val bio: String? = null,
     val level: Int = 1,
     val xp: Int = 0,
+    val hikesCompleted: Int = 0,
     val city: String? = null,
     val region: String? = null,
     val country: String? = null,

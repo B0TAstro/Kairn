@@ -91,7 +91,6 @@ fun EditProfileScreen(
         onBack = onBack,
         onPseudoChange = viewModel::onPseudoChange,
         onBioChange = viewModel::onBioChange,
-        onCityChange = viewModel::onCityChange,
         onAvatarClick = { imagePickerLauncher.launch("image/*") },
         onSave = viewModel::saveProfile,
         modifier = modifier,
@@ -105,7 +104,6 @@ private fun EditProfileContent(
     onBack: () -> Unit,
     onPseudoChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
-    onCityChange: (String) -> Unit,
     onAvatarClick: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -135,7 +133,7 @@ private fun EditProfileContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Changer la photo",
+            text = "Changer la photo *",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.clickable(onClick = onAvatarClick),
@@ -148,6 +146,7 @@ private fun EditProfileContent(
             value = editState.pseudo,
             onValueChange = onPseudoChange,
             label = "Pseudo",
+            isRequired = true,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -158,14 +157,6 @@ private fun EditProfileContent(
             label = "Bio",
             singleLine = false,
             minLines = 3,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        ProfileTextField(
-            value = editState.city,
-            onValueChange = onCityChange,
-            label = "Ville",
         )
 
         // --- Error message ---
@@ -298,12 +289,13 @@ private fun ProfileTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    isRequired: Boolean = false,
     singleLine: Boolean = true,
     minLines: Int = 1,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = label,
+            text = if (isRequired) "$label *" else label,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -377,13 +369,11 @@ fun EditProfileScreenPreview() {
             editState = EditProfileUiState(
                 pseudo = "JohnHiker",
                 bio = "Passionné de randonnée depuis toujours",
-                city = "Paris",
             ),
             initials = "JO",
             onBack = {},
             onPseudoChange = {},
             onBioChange = {},
-            onCityChange = {},
             onAvatarClick = {},
             onSave = {},
         )

@@ -122,6 +122,18 @@ private fun AccountContent(
                 )
             }
 
+            // --- Bio ---
+            if (!user.bio.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = user.bio,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
 
             // --- Stats row ---
@@ -232,8 +244,8 @@ private fun StatsRow(
         VerticalStatDivider()
 
         StatItem(
-            value = user.city ?: "--",
-            label = "CITY",
+            value = "${user.hikesCompleted}",
+            label = "HIKES",
             modifier = Modifier.weight(1f),
         )
     }
