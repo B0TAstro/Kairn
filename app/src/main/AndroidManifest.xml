@@ -18,6 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Kairn">
 
+        <meta-data
+            android:name="com.mapbox.token"
+            android:value="${MAPBOX_ACCESS_TOKEN}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

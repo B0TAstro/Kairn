@@ -28,9 +28,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["MAPBOX_ACCESS_TOKEN"] = localProperties.getProperty("MAPBOX_ACCESS_TOKEN", "")
 
         buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL", "")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\"")
+        buildConfigField("String", "MAPBOX_ACCESS_TOKEN", "\"${localProperties.getProperty("MAPBOX_ACCESS_TOKEN", "")}\"")
     }
 
     buildTypes {
@@ -78,6 +80,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.osmdroid.android)
+    implementation(libs.maplibre.android)
+    implementation(libs.mapbox.maps.android)
     implementation(libs.haze)
     implementation(libs.coil.compose)
 
