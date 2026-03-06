@@ -18,6 +18,7 @@ import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
+import io.ktor.client.engine.okhttp.OkHttp
 import javax.inject.Singleton
 
 @Module
@@ -31,6 +32,9 @@ object SupabaseModule {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
+            // Use OkHttp engine which supports WebSockets
+            httpEngine = OkHttp.create()
+            
             install(Auth) {
                 flowType = FlowType.PKCE
                 scheme = "com.example.kairn"

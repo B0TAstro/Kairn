@@ -8,7 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class HikeDto(
+internal data class HikeDto(
     @SerialName("id") val id: String,
     @SerialName("creator_id") val creatorId: String? = null,
     @SerialName("title") val title: String,

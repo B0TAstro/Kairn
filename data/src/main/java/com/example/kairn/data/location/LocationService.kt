@@ -1,6 +1,7 @@
 package com.example.kairn.data.location
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -14,6 +15,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -58,7 +60,10 @@ class LocationService @Inject constructor(
      * Emits [UserLocation] whenever the device location changes.
      * Immediately emits the last known location (if available) for a fast first render.
      * Automatically cleans up the GPS listener when the collector is cancelled.
+     * 
+     * Note: Caller must check [hasLocationPermission] before collecting this flow.
      */
+    @SuppressLint("MissingPermission")
     fun locationUpdates(): Flow<UserLocation> = callbackFlow {
         val locationManager =
             context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -113,7 +118,7 @@ class LocationService @Inject constructor(
      * Maps raw [Location] emissions to [UserLocation] with a resolved city name.
      */
     private fun Flow<Location>.reverseGeocode(): Flow<UserLocation> =
-        kotlinx.coroutines.flow.flow {
+        flow {
             var lastGeocodedLocation: Location? = null
             var lastCityName = ""
             var lastGeocodeAt = 0L

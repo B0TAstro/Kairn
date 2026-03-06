@@ -4,12 +4,11 @@ import com.example.kairn.data.remote.HikeDto
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.repository.HikeRepository
 import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.postgrest.from
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class HikeRepositoryImpl @Inject constructor(
+internal class HikeRepositoryImpl @Inject constructor(
     private val postgrest: Postgrest,
 ) : HikeRepository {
 
