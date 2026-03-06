@@ -129,15 +129,24 @@ internal class ChatRepositoryImpl @Inject constructor(
                 .filter { it != userId }
                 .distinct()
 
+            Log.d(TAG, "refreshConversations: directConvIds=${directConversationIds.size}, " +
+                "membersFound=${directConversationMembersMap.values.flatten().size}, " +
+                "otherUserIds=$otherUserIds")
+
             // Step 3: Fetch profiles for other users
             val profilesMap = if (otherUserIds.isNotEmpty()) {
-                postgrest.from("profiles")
+                val profiles = postgrest.from("profiles")
                     .select(Columns.raw("id, username, avatar_url")) {
                         filter { isIn("id", otherUserIds) }
                     }
                     .decodeList<ProfileDto>()
-                    .associateBy { it.id }
-            } else emptyMap()
+                Log.d(TAG, "refreshConversations: Fetched ${profiles.size} profiles: " +
+                    profiles.joinToString { "${it.id.take(8)}..=${it.username}" })
+                profiles.associateBy { it.id }
+            } else {
+                Log.w(TAG, "refreshConversations: No otherUserIds found - profiles will be empty!")
+                emptyMap()
+            }
 
             // Step 4: Fetch group names for GROUP conversations
             val groupIds = conversationDtos.mapNotNull { it.groupId }.distinct()
@@ -174,6 +183,10 @@ internal class ChatRepositoryImpl @Inject constructor(
                 val otherProfile = otherUserId?.let { profilesMap[it] }
                 val lastMessage = lastMessagesMap[dto.id]
                 val groupName = dto.groupId?.let { groupNamesMap[it] }
+
+                Log.d(TAG, "refreshConversations: Conv ${dto.id.take(8)}.. " +
+                    "type=${dto.type} otherUserId=${otherUserId?.take(8)} " +
+                    "otherUsername=${otherProfile?.username} groupName=$groupName")
 
                 dto.toDomain(
                     currentUserId = userId,
