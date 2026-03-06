@@ -43,6 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,12 +52,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.kairn.domain.model.User
 import com.example.kairn.ui.theme.KairnTheme
 
 @Composable
 fun AccountScreen(
     onSignOut: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
@@ -67,6 +72,7 @@ fun AccountScreen(
             viewModel.signOut()
             onSignOut()
         },
+        onEditProfile = onNavigateToEditProfile,
         modifier = modifier,
     )
 }
@@ -75,6 +81,7 @@ fun AccountScreen(
 private fun AccountContent(
     user: User?,
     onSignOut: () -> Unit,
+    onEditProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -91,6 +98,7 @@ private fun AccountContent(
             // --- Avatar ---
             ProfileAvatar(
                 initials = AccountViewModel.getInitials(user),
+                avatarUrl = user.avatarUrl,
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -127,7 +135,7 @@ private fun AccountContent(
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- Settings menu ---
-            SettingsSection()
+            SettingsSection(onEditProfile = onEditProfile)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -154,22 +162,37 @@ private fun AccountContent(
 @Composable
 private fun ProfileAvatar(
     initials: String,
+    avatarUrl: String?,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(120.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
-    ) {
-        Text(
-            text = initials,
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontSize = 40.sp,
-            fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.displaySmall,
+    if (!avatarUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(avatarUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = "Avatar",
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(120.dp)
+                .clip(CircleShape),
         )
+    } else {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+        ) {
+            Text(
+                text = initials,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.displaySmall,
+            )
+        }
     }
 }
 
@@ -324,7 +347,10 @@ private fun XpProgressSection(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SettingsSection(modifier: Modifier = Modifier) {
+private fun SettingsSection(
+    onEditProfile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -334,7 +360,7 @@ private fun SettingsSection(modifier: Modifier = Modifier) {
         SettingsItem(
             icon = Icons.Outlined.Person,
             label = "Modifier le profil",
-            onClick = { /* TODO */ },
+            onClick = onEditProfile,
         )
         SettingsDivider()
         SettingsItem(
@@ -452,6 +478,7 @@ fun AccountScreenPreview() {
         AccountContent(
             user = User.preview,
             onSignOut = {},
+            onEditProfile = {},
         )
     }
 }

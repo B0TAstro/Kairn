@@ -164,14 +164,15 @@ private fun MainScreen(
     val hazeState = remember { HazeState() }
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
-    val showBottomNav = currentRoute != NavRoutes.HIKE_DETAIL
+    val showBottomNav = currentRoute != NavRoutes.HIKE_DETAIL &&
+        currentRoute != NavRoutes.EDIT_PROFILE
 
     LaunchedEffect(currentRoute) {
         selectedItem = when (currentRoute) {
             Screen.HOME.name -> Screen.HOME.name
             Screen.EXPLORE.name, NavRoutes.HIKE_DETAIL -> Screen.EXPLORE.name
             Screen.CHAT.name -> Screen.CHAT.name
-            Screen.PROFILE.name -> Screen.PROFILE.name
+            Screen.PROFILE.name, NavRoutes.EDIT_PROFILE -> Screen.PROFILE.name
             else -> selectedItem
         }
     }

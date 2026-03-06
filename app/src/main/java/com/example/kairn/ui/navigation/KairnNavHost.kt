@@ -13,6 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.ui.account.AccountScreen
+import com.example.kairn.ui.account.AccountViewModel
+import com.example.kairn.ui.account.EditProfileScreen
 import com.example.kairn.ui.explore.ExploreScreen
 import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
@@ -51,11 +53,27 @@ fun KairnNavHost(
                 HomeScreen() // TODO: Replace with ChatScreen
             }
 
-            composable(Screen.PROFILE.name) {
+            composable(Screen.PROFILE.name) { backStackEntry ->
+                val accountViewModel: AccountViewModel = hiltViewModel(backStackEntry)
                 AccountScreen(
                     onSignOut = {
                         navController.navigate(Screen.PROFILE.name)
                     },
+                    onNavigateToEditProfile = {
+                        navController.navigate(NavRoutes.EDIT_PROFILE)
+                    },
+                    viewModel = accountViewModel,
+                )
+            }
+
+            composable(NavRoutes.EDIT_PROFILE) { backStackEntry ->
+                val profileEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Screen.PROFILE.name)
+                }
+                val accountViewModel: AccountViewModel = hiltViewModel(profileEntry)
+                EditProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    viewModel = accountViewModel,
                 )
             }
 
