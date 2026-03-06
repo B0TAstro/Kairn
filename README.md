@@ -137,18 +137,22 @@ Backend:
 - [x] Introduce map rendering strategy pattern (Mapbox/MapLibre)
 - [x] Add Explore catalog with filters, hike cards, and detail navigation
 - [x] Implement hike detail screen with shared element transition and CTA
+- [ ] Connect hike markers and map cards to backend hike data
 
 ### Phase 2 - Hikes Editor
+- [ ] Add Editor tab and navigation entry points
 - [ ] Build hike create/edit flow
 - [ ] Edit GPS points and route metadata
 - [ ] Enable user route publishing
+- [ ] Persist draft routes locally and restore draft session
 
 ### Phase 3 - Social
-- [ ] Add friend system and group creation
+- [ ] Add full friend system and group creation
 - [ ] Add group chat and hike sharing
 - [ ] Add comments and creator/community photos on hike detail pages
 - [x] Add social navigation shell (Chat tab routing placeholder)
 - [x] Add friend search/requests and direct message flows (chat list + chat detail)
+- [ ] Add moderation/reporting flows in the app UI
 
 ### Phase 4 - XP + Leaderboards
 - [ ] Finalize XP formula by hike difficulty, completion and time
@@ -157,10 +161,25 @@ Backend:
 - [ ] Add anti-cheat validation for route run consistency
 
 ### Phase 5 - Production Readiness
-- [x] Add tests and CI/CD pipeline
+- [x] Add CI pipeline (lint + unit tests)
+- [ ] Add CD pipeline (automated internal build/distribution)
 - [x] Optimize battery and GPS performance
 - [x] Set up Hilt dependency injection and Supabase modules (Auth, PostgREST, Realtime, Storage)
 - [x] Add baseline Android/JUnit and instrumented test scaffolding
+- [ ] Increase test coverage for ViewModels and repositories
+- [ ] Stabilize lint (fix or baseline non-critical legacy warnings)
+
+### Phase 6 - UI/UX + Branding
+- [ ] Run a full UI consistency pass (spacing, typography, components)
+- [ ] Run a complete UX flow audit (onboarding, auth, discover, social, error states)
+- [ ] Design and integrate the final Kairn logo (app icon, splash, in-app branding)
+- [ ] Add accessibility pass (contrast, touch targets, TalkBack labels)
+- [ ] Define empty/loading/error states for every primary screen
+
+### Phase 7 - Product Operations
+- [ ] Add crash reporting and monitoring (e.g. Firebase Crashlytics)
+- [ ] Add analytics events for core flows (auth, map, hikes, social)
+- [ ] Prepare release checklist (permissions, privacy policy, store assets)
 
 ## How to Start 🚀
 ### Prerequisites
