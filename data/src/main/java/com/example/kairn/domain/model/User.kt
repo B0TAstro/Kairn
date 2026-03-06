@@ -17,7 +17,9 @@ data class User(
     val createdAt: String? = null,
     val city: String? = null,
     val region: String? = null,
+    val regionId: Long? = null,
     val country: String? = null,
+    val countryCode: String? = null,
 ) {
     companion object {
         val preview = User(
@@ -36,7 +38,9 @@ data class User(
             createdAt = "2023-05-15T10:30:00Z",
             city = "Paris",
             region = "Île-de-France",
+            regionId = 1,
             country = "France",
+            countryCode = "FR",
         )
     }
 }

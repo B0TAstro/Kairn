@@ -2,15 +2,19 @@ package com.example.kairn.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.data.location.LocationService
 import com.example.kairn.domain.model.Hike
+import com.example.kairn.domain.model.LeaderboardEntry
 import com.example.kairn.domain.model.User
 import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
+import com.example.kairn.domain.repository.LeaderboardRepository
 import com.example.kairn.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,11 +32,28 @@ data class EditProfileUiState(
     val errorMessage: String? = null,
 )
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Leaderboard UI State
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum class LeaderboardScope { REGIONAL, NATIONAL, GLOBAL }
+
+data class LeaderboardUiState(
+    val selectedScope: LeaderboardScope = LeaderboardScope.REGIONAL,
+    val regionalEntries: List<LeaderboardEntry> = emptyList(),
+    val nationalEntries: List<LeaderboardEntry> = emptyList(),
+    val globalEntries: List<LeaderboardEntry> = emptyList(),
+    val isLoading: Boolean = false,
+    val hasGeoData: Boolean = false,
+)
+
 @HiltViewModel
 class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
     private val hikeRepository: HikeRepository,
+    private val leaderboardRepository: LeaderboardRepository,
+    private val locationService: LocationService,
 ) : ViewModel() {
 
     val currentUser: StateFlow<User?> = authRepository.currentUser
@@ -45,8 +66,13 @@ class AccountViewModel @Inject constructor(
     private val _editState = MutableStateFlow(EditProfileUiState())
     val editState: StateFlow<EditProfileUiState> = _editState.asStateFlow()
 
+    // --- Leaderboard state ---
+    private val _leaderboardState = MutableStateFlow(LeaderboardUiState())
+    val leaderboardState: StateFlow<LeaderboardUiState> = _leaderboardState.asStateFlow()
+
     init {
         loadCompletedHikes()
+        detectGeoAndLoadLeaderboards()
     }
 
     private fun loadCompletedHikes() {
@@ -71,6 +97,97 @@ class AccountViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    /**
+     * Detects the user's geolocation, updates their profile with country/region,
+     * then loads all three leaderboard scopes.
+     */
+    private fun detectGeoAndLoadLeaderboards() {
+        viewModelScope.launch {
+            _leaderboardState.update { it.copy(isLoading = true) }
+
+            val user = currentUser.value
+            val userId = user?.id ?: run {
+                _leaderboardState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            // Try to resolve geo from GPS if we have location permission
+            var countryCode = user.countryCode
+            var regionId = user.regionId
+
+            if (locationService.hasLocationPermission()) {
+                val location = locationService.locationUpdates().firstOrNull()
+                if (location != null &&
+                    location.countryCode.isNotBlank() &&
+                    location.regionName.isNotBlank()
+                ) {
+                    countryCode = location.countryCode
+
+                    // Lookup or create region, then update profile
+                    leaderboardRepository.getOrCreateRegion(
+                        countryCode = location.countryCode,
+                        regionName = location.regionName,
+                    ).onSuccess { resolvedRegionId ->
+                        regionId = resolvedRegionId
+
+                        // Update the profile with geo data
+                        profileRepository.updateGeoLocation(
+                            userId = userId,
+                            countryCode = location.countryCode,
+                            regionId = resolvedRegionId,
+                        )
+
+                        // Refresh profile so currentUser picks up changes
+                        authRepository.refreshProfile()
+                    }
+                }
+            }
+
+            val hasGeo = countryCode != null && regionId != null
+            _leaderboardState.update { it.copy(hasGeoData = hasGeo) }
+
+            // Load all three leaderboard scopes
+            loadLeaderboards(userId, countryCode, regionId)
+        }
+    }
+
+    private suspend fun loadLeaderboards(
+        userId: String,
+        countryCode: String?,
+        regionId: Long?,
+    ) {
+        // Global — always available
+        leaderboardRepository.getGlobalLeaderboard(userId)
+            .onSuccess { entries ->
+                _leaderboardState.update { it.copy(globalEntries = entries) }
+            }
+
+        // National — only if we have a country code
+        if (countryCode != null) {
+            leaderboardRepository.getNationalLeaderboard(countryCode, userId)
+                .onSuccess { entries ->
+                    _leaderboardState.update { it.copy(nationalEntries = entries) }
+                }
+        }
+
+        // Regional — only if we have a region id
+        if (regionId != null) {
+            leaderboardRepository.getRegionalLeaderboard(regionId, userId)
+                .onSuccess { entries ->
+                    _leaderboardState.update { it.copy(regionalEntries = entries) }
+                }
+        }
+
+        _leaderboardState.update { it.copy(isLoading = false) }
+    }
+
+    /**
+     * Called when the user selects a different leaderboard tab.
+     */
+    fun onLeaderboardScopeChange(scope: LeaderboardScope) {
+        _leaderboardState.update { it.copy(selectedScope = scope) }
     }
 
     /**
@@ -193,7 +310,7 @@ class AccountViewModel @Inject constructor(
 
         /**
          * Formats a "Member Since" string from an ISO date.
-         * E.g. "2023-05-15T10:30:00Z" → "MAI 2023".
+         * E.g. "2023-05-15T10:30:00Z" -> "MAI 2023".
          */
         fun formatMemberSince(createdAt: String?): String {
             if (createdAt.isNullOrBlank()) return "—"
@@ -211,6 +328,47 @@ class AccountViewModel @Inject constructor(
             } catch (_: Exception) {
                 "—"
             }
+        }
+
+        /**
+         * Computes a sliding window of leaderboard entries around the current user.
+         * Returns at most 11 entries: 5 above + current user + 5 below.
+         * If user is near the top or bottom, the window shifts accordingly.
+         */
+        fun windowedLeaderboard(
+            entries: List<LeaderboardEntry>,
+            windowSize: Int = 5,
+        ): List<LeaderboardEntry> {
+            if (entries.isEmpty()) return emptyList()
+
+            val currentUserIndex = entries.indexOfFirst { it.isCurrentUser }
+            if (currentUserIndex == -1) {
+                // Current user not in this list — show top entries
+                return entries.take(windowSize * 2 + 1)
+            }
+
+            val totalWindow = windowSize * 2 + 1
+            val start: Int
+            val end: Int
+
+            when {
+                // User is near the top
+                currentUserIndex < windowSize -> {
+                    start = 0
+                    end = minOf(totalWindow, entries.size)
+                }
+                // User is near the bottom
+                currentUserIndex >= entries.size - windowSize -> {
+                    end = entries.size
+                    start = maxOf(0, entries.size - totalWindow)
+                }
+                // User is in the middle
+                else -> {
+                    start = currentUserIndex - windowSize
+                    end = minOf(currentUserIndex + windowSize + 1, entries.size)
+                }
+            }
+            return entries.subList(start, end)
         }
     }
 }
