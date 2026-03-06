@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -64,8 +65,10 @@ fun AppNavigation(
         }
 
         is SessionState.NotAuthenticated -> {
+            val isSignOut = (sessionState as SessionState.NotAuthenticated).isSignOut
             UnauthenticatedNavigation(
                 authViewModel = authViewModel,
+                isSignOut = isSignOut,
                 modifier = modifier,
             )
         }
@@ -75,10 +78,16 @@ fun AppNavigation(
 @Composable
 private fun UnauthenticatedNavigation(
     authViewModel: AuthViewModel,
+    isSignOut: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val sharedImageAssetPath = remember {
+        com.example.kairn.ui.auth.onboarding.pickRandomOnboardingImage(context)
+    }
+    val startDestination = if (isSignOut) AuthRoute.Login.route else AuthRoute.Onboarding.route
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -88,16 +97,23 @@ private fun UnauthenticatedNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = AuthRoute.Onboarding.route,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
-        authGraph(navController = navController)
+        authGraph(
+            navController = navController,
+            imageAssetPath = sharedImageAssetPath,
+        )
     }
 }
 
-private fun NavGraphBuilder.authGraph(navController: NavHostController) {
+private fun NavGraphBuilder.authGraph(
+    navController: NavHostController,
+    imageAssetPath: String?,
+) {
     composable(AuthRoute.Onboarding.route) {
         OnboardingScreen(
+            imageAssetPath = imageAssetPath,
             onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
             onNavigateToSignIn = { navController.navigate(AuthRoute.Login.route) },
         )
@@ -105,15 +121,20 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
 
     composable(AuthRoute.Login.route) {
         LoginScreen(
+            imageAssetPath = imageAssetPath,
             onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
             onSignInSuccess = {
                 // Session flow will switch AppNavigation to authenticated content.
+            },
+            onBack = {
+                navController.popBackStack(AuthRoute.Onboarding.route, inclusive = false)
             },
         )
     }
 
     composable(AuthRoute.SignUp.route) {
         SignUpScreen(
+            imageAssetPath = imageAssetPath,
             onNavigateToSignIn = {
                 navController.navigate(AuthRoute.Login.route) {
                     popUpTo(AuthRoute.Onboarding.route)
@@ -126,6 +147,9 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
                     popUpTo(AuthRoute.Onboarding.route)
                     launchSingleTop = true
                 }
+            },
+            onBack = {
+                navController.popBackStack(AuthRoute.Onboarding.route, inclusive = false)
             },
         )
     }

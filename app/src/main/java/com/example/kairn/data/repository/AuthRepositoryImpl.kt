@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,10 +61,21 @@ class AuthRepositoryImpl @Inject constructor(
         // Session state will be updated automatically via the sessionStatus flow
     }
 
-    override suspend fun signUp(email: String, password: String): Result<Unit> = runCatching {
+    override suspend fun signUp(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String,
+        pseudo: String,
+    ): Result<Unit> = runCatching {
         auth.signUpWith(Email) {
             this.email = email
             this.password = password
+            this.data = buildJsonObject {
+                put("first_name", firstName)
+                put("last_name", lastName)
+                put("pseudo", pseudo)
+            }
         }
         // If auto-confirm is disabled, user needs to verify email first.
         // The sessionStatus flow will remain NotAuthenticated until they do.
@@ -92,9 +105,16 @@ class AuthRepositoryImpl @Inject constructor(
         SessionStatus.Initializing -> SessionState.Loading
     }
 
-    private fun UserInfo.toDomain(): User = User(
-        id = id,
-        email = email ?: "",
-        username = email?.substringBefore("@") ?: "",
-    )
+    private fun UserInfo.toDomain(): User {
+        val meta = userMetadata
+        return User(
+            id = id,
+            email = email ?: "",
+            firstName = meta?.get("first_name")?.toString()?.removeSurrounding("\""),
+            lastName = meta?.get("last_name")?.toString()?.removeSurrounding("\""),
+            pseudo = meta?.get("pseudo")?.toString()?.removeSurrounding("\""),
+            username = meta?.get("pseudo")?.toString()?.removeSurrounding("\"")
+                ?: email?.substringBefore("@") ?: "",
+        )
+    }
 }
