@@ -237,11 +237,14 @@ DROP POLICY IF EXISTS "Users can create groups" ON groups;
 DROP POLICY IF EXISTS "Owners and admins can update groups" ON groups;
 DROP POLICY IF EXISTS "Owners can delete groups" ON groups;
 
--- SELECT: See groups you belong to (uses helper to avoid recursion via group_members)
+-- SELECT: See groups you belong to, or groups you own.
+-- owner_id check is needed so the creator can read the row back immediately
+-- after INSERT, before they've been added to group_members.
 CREATE POLICY "Members can view their groups"
   ON groups FOR SELECT
   USING (
-    id IN (SELECT get_user_group_ids(auth.uid()))
+    owner_id = auth.uid()
+    OR id IN (SELECT get_user_group_ids(auth.uid()))
   );
 
 -- INSERT: Authenticated users can create groups (must be owner)
