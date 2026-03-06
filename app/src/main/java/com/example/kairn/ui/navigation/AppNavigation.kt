@@ -162,10 +162,17 @@ private fun MainScreen(
     val navController = rememberNavController()
     var selectedItem by remember { mutableStateOf(Screen.HOME.name) }
     val hazeState = remember { HazeState() }
-    val currentBackStack by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStack?.destination?.route
-    val showBottomNav = currentRoute != NavRoutes.HIKE_DETAIL
+    
+    // Track current route to hide bottom nav in chat detail and hike detail screens
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    val showBottomNav = currentRoute !in listOf(
+        NavRoutes.HIKE_DETAIL,
+        NavRoutes.CHAT,
+        NavRoutes.FRIEND_LIST
+    )
 
+    // Update selected item based on current route
     LaunchedEffect(currentRoute) {
         selectedItem = when (currentRoute) {
             Screen.HOME.name -> Screen.HOME.name
