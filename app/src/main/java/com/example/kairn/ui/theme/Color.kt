@@ -13,6 +13,7 @@ val TextAccent = Color(0xFF7ca16a)
 // ── Extended palette ────────────────────────────────────────
 val Surface = Color(0xFFf5f2ed)
 val SurfaceVariant = Color(0xFFe0dbd3)
+val CardBackground = Color(0xFFe0dbd3) // For chat bubbles and cards
 val TextSecondary = Color(0xFF6b7775)
 val DividerColor = Color(0xFFccc8c0)
 val ErrorRed = Color(0xFFc0392b)
