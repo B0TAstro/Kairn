@@ -185,6 +185,9 @@ CREATE POLICY "Users can view their own conversations"
   ON conversations FOR SELECT
   USING (
     id IN (SELECT get_user_conversation_ids(auth.uid()))
+    -- Allow group owner to read the conversation right after creating it,
+    -- before conversation_members rows are inserted.
+    OR group_id IN (SELECT id FROM groups WHERE owner_id = auth.uid())
   );
 
 CREATE POLICY "Users can create conversations"
