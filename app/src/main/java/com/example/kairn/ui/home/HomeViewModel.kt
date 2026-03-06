@@ -1,8 +1,11 @@
 package com.example.kairn.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairn.data.location.LocationService
+import com.example.kairn.data.parser.GpxParser
+import com.example.kairn.data.repository.GpxRepository
 import com.example.kairn.domain.model.Hike
 import com.example.kairn.domain.model.HikeDifficulty
 import com.example.kairn.domain.repository.HikeRepository
@@ -11,19 +14,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "HomeViewModel"
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val hikeRepository: HikeRepository,
     private val locationService: LocationService,
+    private val gpxRepository: GpxRepository,
+    private val gpxParser: GpxParser,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-    private var locationCollectionJob: Job? = null
+    private var locationCollectionJob: kotlinx.coroutines.Job? = null
 
     /** Whether the device currently has fine-location permission. */
     val hasLocationPermission: Boolean
@@ -31,6 +37,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadHikes()
+        loadGpxRoutes()
         collectLocation()
     }
 
@@ -44,6 +51,46 @@ class HomeViewModel @Inject constructor(
                 .onFailure { error ->
                     _uiState.update {
                         it.copy(isLoading = false, errorMessage = error.message ?: "Unknown error")
+                    }
+                }
+        }
+    }
+
+    private fun loadGpxRoutes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingGpx = true, gpxError = null) }
+            Log.d(TAG, "loadGpxRoutes: starting")
+
+            gpxRepository.listGpxFiles()
+                .onSuccess { gpxFiles ->
+                    Log.d(TAG, "loadGpxRoutes: found ${gpxFiles.size} GPX files")
+                    val routes = mutableListOf<com.example.kairn.domain.model.GpxRoute>()
+
+                    for (file in gpxFiles) {
+                        Log.d(TAG, "loadGpxRoutes: processing ${file.name}")
+                        val contentResult = gpxRepository.downloadGpxContent(file.publicUrl)
+                        contentResult.onSuccess { content ->
+                            val parseResult = gpxParser.parse(content, file.name)
+                            parseResult.onSuccess { route ->
+                                Log.d(TAG, "loadGpxRoutes: parsed ${route.name} with ${route.points.size} points")
+                                routes.add(route)
+                            }.onFailure { e ->
+                                Log.e(TAG, "loadGpxRoutes: parse error for ${file.name}", e)
+                            }
+                        }.onFailure { e ->
+                            Log.e(TAG, "loadGpxRoutes: download error for ${file.name}", e)
+                        }
+                    }
+
+                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes")
+                    _uiState.update {
+                        it.copy(gpxRoutes = routes, isLoadingGpx = false)
+                    }
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "loadGpxRoutes: list error", error)
+                    _uiState.update {
+                        it.copy(isLoadingGpx = false, gpxError = error.message)
                     }
                 }
         }
