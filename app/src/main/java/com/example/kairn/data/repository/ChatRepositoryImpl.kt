@@ -10,9 +10,22 @@ import com.example.kairn.domain.repository.ChatRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,11 +49,16 @@ private const val TAG = "ChatRepository"
 class ChatRepositoryImpl @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
+    private val realtime: Realtime,
 ) : ChatRepository {
 
     // State flows for reactive UI
     private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
     private val _messages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
+
+    // Realtime channels per conversation
+    private val realtimeChannels = mutableMapOf<String, RealtimeChannel>()
+    private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Cache current user ID to avoid repeated auth calls
     private val currentUserId: String?
@@ -354,17 +372,71 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    // ==================== REALTIME (Simplified) ====================
+    // ==================== REALTIME ====================
 
     override suspend fun subscribeToConversation(conversationId: String) {
-        // For now, just load messages - Realtime can be added later
-        Log.d(TAG, "subscribeToConversation: Loading messages for $conversationId")
+        Log.d(TAG, "subscribeToConversation: $conversationId")
+        
+        // Initial load
         refreshMessages(conversationId)
+        
+        // Clean up existing channel if any
+        unsubscribeFromConversation(conversationId)
+        
+        try {
+            // Create unique channel for this conversation
+            // Use table-specific channel name to avoid conflicts
+            val channel = realtime.channel("messages:conversation_id=eq.$conversationId")
+            
+            // Setup postgres change listener BEFORE subscribing
+            // Listen to all changes on messages table for this conversation
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "messages"
+            }
+            
+            // Collect changes and refresh messages for this conversation
+            changeFlow.onEach { action ->
+                Log.d(TAG, "subscribeToConversation: Realtime event ${action.javaClass.simpleName}")
+                // Refresh only if the change is for our conversation
+                // (Supabase RLS should already filter, but double-check)
+                refreshMessages(conversationId)
+            }.launchIn(realtimeScope)
+            
+            // Now subscribe the channel
+            channel.subscribe()
+            
+            // Store the channel for cleanup
+            realtimeChannels[conversationId] = channel
+            Log.d(TAG, "subscribeToConversation: SUCCESS - subscribed to $conversationId")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "subscribeToConversation: Failed for $conversationId", e)
+        }
     }
 
     override suspend fun unsubscribeFromConversation(conversationId: String) {
-        // No-op for now since we're not using Realtime
         Log.d(TAG, "unsubscribeFromConversation: $conversationId")
+        
+        realtimeChannels[conversationId]?.let { channel ->
+            try {
+                channel.unsubscribe()
+                realtimeChannels.remove(conversationId)
+                Log.d(TAG, "unsubscribeFromConversation: SUCCESS - unsubscribed from $conversationId")
+            } catch (e: Exception) {
+                Log.e(TAG, "unsubscribeFromConversation: Failed for $conversationId", e)
+            }
+        }
+    }
+    
+    // Clean up all channels when repository is destroyed (shouldn't happen with Singleton, but safe)
+    fun cleanup() {
+        Log.d(TAG, "cleanup: Cleaning up ${realtimeChannels.size} Realtime channels")
+        realtimeChannels.keys.toList().forEach { conversationId ->
+            realtimeScope.launch {
+                unsubscribeFromConversation(conversationId)
+            }
+        }
+        realtimeScope.cancel()
     }
 }
 

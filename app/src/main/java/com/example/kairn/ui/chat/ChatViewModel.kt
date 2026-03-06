@@ -65,6 +65,13 @@ class ChatViewModel @Inject constructor(
     fun loadConversation(conversationId: String, conversationName: String) {
         Log.d(TAG, "loadConversation: id=$conversationId, name=$conversationName")
         
+        // Unsubscribe from previous conversation if any
+        _chatUiState.value.conversationId.takeIf { it.isNotEmpty() }?.let { previousId ->
+            viewModelScope.launch {
+                chatRepository.unsubscribeFromConversation(previousId)
+            }
+        }
+        
         // Cancel any existing message collection
         messagesJob?.cancel()
         
@@ -83,8 +90,8 @@ class ChatViewModel @Inject constructor(
 
         // Start collecting messages
         messagesJob = viewModelScope.launch {
-            // First, refresh messages from server
-            chatRepository.refreshMessages(conversationId)
+            // Subscribe to Realtime updates (also does initial refresh)
+            chatRepository.subscribeToConversation(conversationId)
             
             // Then collect updates
             chatRepository.getMessages(conversationId).collect { messages ->
@@ -158,6 +165,14 @@ class ChatViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        
+        // Unsubscribe from current conversation
+        _chatUiState.value.conversationId.takeIf { it.isNotEmpty() }?.let { conversationId ->
+            viewModelScope.launch {
+                chatRepository.unsubscribeFromConversation(conversationId)
+            }
+        }
+        
         messagesJob?.cancel()
         Log.d(TAG, "onCleared: ViewModel destroyed")
     }
