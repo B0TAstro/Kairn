@@ -71,10 +71,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun loadGpxRoutes() {
+private fun loadGpxRoutes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingGpx = true, gpxError = null) }
             Log.d(TAG, "loadGpxRoutes: starting")
+
+            // 1. Récupérer les métadonnées des hikes depuis Supabase
+            val hikesMetadataResult = gpxRepository.getHikesMetadata()
+            val hikesMetadata = hikesMetadataResult.getOrDefault(emptyMap())
+            Log.d(TAG, "loadGpxRoutes: found ${hikesMetadata.size} hike metadata entries")
 
             gpxRepository.listGpxFiles()
                 .onSuccess { gpxFiles ->
@@ -86,9 +91,21 @@ class HomeViewModel @Inject constructor(
                         val contentResult = gpxRepository.downloadGpxContent(file.publicUrl)
                         contentResult.onSuccess { content ->
                             val parseResult = gpxParser.parse(content, file.name)
-                            parseResult.onSuccess { route ->
-                                Log.d(TAG, "loadGpxRoutes: parsed ${route.name} with ${route.points.size} points")
-                                routes.add(route)
+                            parseResult.onSuccess { gpxRoute ->
+                                Log.d(TAG, "loadGpxRoutes: parsed ${gpxRoute.name} with ${gpxRoute.points.size} points")
+                                
+                                // 2. Chercher les métadonnées du hike correspondant
+                                val hikeDto = hikesMetadata[file.name]
+                                
+                                // 3. Créer un GpxRoute avec les métadonnées mergées
+                                val mergedRoute = gpxRoute.copy(
+                                    id = hikeDto?.id,
+                                    creatorId = hikeDto?.creatorId,
+                                    createdAt = hikeDto?.createdAt ?: gpxRoute.createdAt,
+                                )
+                                
+                                routes.add(mergedRoute)
+                                Log.d(TAG, "loadGpxRoutes: merged route ${gpxRoute.name} with hike metadata: ${hikeDto != null}")
                             }.onFailure { e ->
                                 Log.e(TAG, "loadGpxRoutes: parse error for ${file.name}", e)
                             }
@@ -168,6 +185,14 @@ class HomeViewModel @Inject constructor(
 
     fun onBottomSheetDismissed() {
         _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
+    }
+
+    fun onGpxRouteSelected(route: com.example.kairn.domain.model.GpxRoute) {
+        _uiState.update { it.copy(selectedGpxRoute = route, isGpxBottomSheetExpanded = true) }
+    }
+
+    fun onGpxBottomSheetDismissed() {
+        _uiState.update { it.copy(selectedGpxRoute = null, isGpxBottomSheetExpanded = false) }
     }
 
     fun retry() {

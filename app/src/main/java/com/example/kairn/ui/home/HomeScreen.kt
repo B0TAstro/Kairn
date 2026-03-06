@@ -103,8 +103,11 @@ fun HomeScreen(
                 userLatitude = uiState.userLatitude,
                 userLongitude = uiState.userLongitude,
                 selectedCity = uiState.selectedCity,
+                gpxRoutes = uiState.gpxRoutes,
+                selectedGpxRoute = uiState.selectedGpxRoute,
             ),
             modifier = Modifier.fillMaxSize(),
+            onGpxRouteClick = viewModel::onGpxRouteSelected,
         )
 
         // ── Liquid glass panel overlay ────────────────────────────────────
@@ -154,6 +157,21 @@ fun HomeScreen(
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
                 onStartTrip = { viewModel.onBottomSheetDismissed() },
+            )
+        }
+    }
+
+    if (uiState.isGpxBottomSheetExpanded && uiState.selectedGpxRoute != null) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.onGpxBottomSheetDismissed() },
+            sheetState = bottomSheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        ) {
+            GpxRouteBottomSheet(
+                gpxRoute = uiState.selectedGpxRoute!!,
+                onStartTrip = { /* TODO: Implement start feature */ },
+                onEditInEditor = { /* TODO: Implement edit feature */ },
             )
         }
     }
