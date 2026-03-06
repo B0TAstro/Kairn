@@ -270,7 +270,7 @@ private fun StatsRow(
 
         StatItem(
             value = "${user.hikesCompleted}",
-            label = "SENTIERS COMPLETES",
+            label = "RANDOS FAITES",
             modifier = Modifier.weight(1f),
         )
 
@@ -278,7 +278,7 @@ private fun StatsRow(
 
         StatItem(
             value = if (longestTrailKm > 0) "${"%.1f".format(longestTrailKm)} KM" else "—",
-            label = "PLUS LONG SENTIER",
+            label = "RECORD RANDO",
             modifier = Modifier.weight(1f),
         )
     }
