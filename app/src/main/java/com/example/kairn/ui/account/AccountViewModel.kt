@@ -193,7 +193,7 @@ class AccountViewModel @Inject constructor(
 
         /**
          * Formats a "Member Since" string from an ISO date.
-         * E.g. "2023-05-15T10:30:00Z" → "MAY 2023".
+         * E.g. "2023-05-15T10:30:00Z" → "MAI 2023".
          */
         fun formatMemberSince(createdAt: String?): String {
             if (createdAt.isNullOrBlank()) return "—"
@@ -204,8 +204,8 @@ class AccountViewModel @Inject constructor(
                 val year = parts[0]
                 val monthNum = parts[1].toIntOrNull() ?: return "—"
                 val monthName = listOf(
-                    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-                    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+                    "JAN", "FEV", "MAR", "AVR", "MAI", "JUN",
+                    "JUL", "AOU", "SEP", "OCT", "NOV", "DEC",
                 ).getOrElse(monthNum - 1) { "—" }
                 "$monthName $year"
             } catch (_: Exception) {

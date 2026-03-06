@@ -262,7 +262,7 @@ private fun StatsRow(
     ) {
         StatItem(
             value = AccountViewModel.formatMemberSince(user.createdAt),
-            label = "MEMBER SINCE",
+            label = "MEMBRE DEPUIS",
             modifier = Modifier.weight(1f),
         )
 
@@ -270,7 +270,7 @@ private fun StatsRow(
 
         StatItem(
             value = "${user.hikesCompleted}",
-            label = "TRAILS COMPLETED",
+            label = "SENTIERS COMPLETES",
             modifier = Modifier.weight(1f),
         )
 
@@ -278,7 +278,7 @@ private fun StatsRow(
 
         StatItem(
             value = if (longestTrailKm > 0) "${"%.1f".format(longestTrailKm)} KM" else "—",
-            label = "LONGEST TRAIL",
+            label = "PLUS LONG SENTIER",
             modifier = Modifier.weight(1f),
         )
     }
@@ -296,7 +296,7 @@ private fun StatItem(
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
@@ -339,13 +339,13 @@ private fun CompletedHikesSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "COMPLETED TRAILS",
+                text = "SENTIERS COMPLETES",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             if (hikes.size > 3) {
                 Text(
-                    text = "View All Trails",
+                    text = "Voir tous les sentiers",
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable(onClick = onViewAllClick),
@@ -506,13 +506,13 @@ private fun AllTrailsBottomSheet(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "All Completed Trails",
+                text = "Tous les sentiers completes",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${hikes.size} trails completed",
+                text = "${hikes.size} sentiers completes",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
