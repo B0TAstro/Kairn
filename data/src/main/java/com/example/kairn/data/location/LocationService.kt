@@ -1,6 +1,7 @@
 package com.example.kairn.data.location
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -59,7 +60,10 @@ class LocationService @Inject constructor(
      * Emits [UserLocation] whenever the device location changes.
      * Immediately emits the last known location (if available) for a fast first render.
      * Automatically cleans up the GPS listener when the collector is cancelled.
+     * 
+     * Note: Caller must check [hasLocationPermission] before collecting this flow.
      */
+    @SuppressLint("MissingPermission")
     fun locationUpdates(): Flow<UserLocation> = callbackFlow {
         val locationManager =
             context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
