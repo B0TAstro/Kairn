@@ -104,10 +104,30 @@ internal class ChatRepositoryImpl @Inject constructor(
 
             Log.d(TAG, "refreshConversations: Fetched ${conversationDtos.size} conversations")
 
-            // Step 2: Get all other user IDs for profile fetching
-            val otherUserIds = conversationDtos.flatMap { conv ->
-                conv.members.map { it.userId }
-            }.filter { it != userId }.distinct()
+            // Step 2: For DIRECT conversations, fetch ALL members (the !inner filter above
+            // only returns the current user's member row, so we need a separate query to find
+            // the other user in each DIRECT conversation)
+            val directConversationIds = conversationDtos
+                .filter { it.type.uppercase() == "DIRECT" }
+                .map { it.id }
+
+            val directConversationMembersMap: Map<String, List<ConversationMemberDto>> =
+                if (directConversationIds.isNotEmpty()) {
+                    postgrest.from("conversation_members")
+                        .select(Columns.raw("conversation_id, user_id, last_read_message_id")) {
+                            filter { isIn("conversation_id", directConversationIds) }
+                        }
+                        .decodeList<ConversationMemberWithConvIdDto>()
+                        .groupBy(
+                            { it.conversationId },
+                            { ConversationMemberDto(userId = it.userId, lastReadMessageId = it.lastReadMessageId) },
+                        )
+                } else emptyMap()
+
+            val otherUserIds = directConversationMembersMap.values.flatten()
+                .map { it.userId }
+                .filter { it != userId }
+                .distinct()
 
             // Step 3: Fetch profiles for other users
             val profilesMap = if (otherUserIds.isNotEmpty()) {
@@ -148,7 +168,9 @@ internal class ChatRepositoryImpl @Inject constructor(
 
             // Step 6: Convert to domain models
             _conversations.value = conversationDtos.map { dto ->
-                val otherUserId = dto.members.firstOrNull { it.userId != userId }?.userId
+                // Use the full members list from the separate query for DIRECT conversations
+                val allMembers = directConversationMembersMap[dto.id] ?: dto.members
+                val otherUserId = allMembers.firstOrNull { it.userId != userId }?.userId
                 val otherProfile = otherUserId?.let { profilesMap[it] }
                 val lastMessage = lastMessagesMap[dto.id]
                 val groupName = dto.groupId?.let { groupNamesMap[it] }
@@ -911,6 +933,16 @@ private data class ConversationListDto(
 
 @Serializable
 private data class ConversationMemberDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("last_read_message_id") val lastReadMessageId: String? = null,
+)
+
+/**
+ * DTO for conversation_members with conversation_id included (for standalone queries)
+ */
+@Serializable
+private data class ConversationMemberWithConvIdDto(
+    @SerialName("conversation_id") val conversationId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("last_read_message_id") val lastReadMessageId: String? = null,
 )
