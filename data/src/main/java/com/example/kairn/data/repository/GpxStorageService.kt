@@ -1,10 +1,8 @@
 package com.example.kairn.data.repository
 
-import com.example.kairn.ui.editor.model.EditorPoint
 import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.osmdroid.util.GeoPoint
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,8 +17,8 @@ class GpxStorageService @Inject constructor(
     private val bucketName = "GPX_FILES"
 
     suspend fun uploadGpx(
-        points: List<EditorPoint>,
-        routes: List<List<GeoPoint>>,
+        points: List<GpxPointPayload>,
+        routes: List<List<GpxRoutePointPayload>>,
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val gpxContent = generateGpxContent(points, routes)
@@ -44,7 +42,10 @@ class GpxStorageService @Inject constructor(
         return "${timestamp}_${uuid}.gpx"
     }
 
-    private fun generateGpxContent(points: List<EditorPoint>, routes: List<List<GeoPoint>>): String {
+    private fun generateGpxContent(
+        points: List<GpxPointPayload>,
+        routes: List<List<GpxRoutePointPayload>>,
+    ): String {
         val builder = StringBuilder()
 
         builder.appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
@@ -102,3 +103,14 @@ class GpxStorageService @Inject constructor(
         return format.format(date)
     }
 }
+
+data class GpxPointPayload(
+    val latitude: Double,
+    val longitude: Double,
+    val name: String,
+)
+
+data class GpxRoutePointPayload(
+    val latitude: Double,
+    val longitude: Double,
+)

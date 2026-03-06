@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.supabase.storage)
     implementation(libs.material)
     implementation(libs.hilt.android)
+    implementation(libs.osmdroid.android)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)

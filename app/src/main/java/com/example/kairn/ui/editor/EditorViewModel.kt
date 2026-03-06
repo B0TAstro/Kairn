@@ -2,6 +2,8 @@ package com.example.kairn.ui.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kairn.data.repository.GpxPointPayload
+import com.example.kairn.data.repository.GpxRoutePointPayload
 import com.example.kairn.data.repository.GpxStorageService
 import com.example.kairn.ui.editor.model.EditorPoint
 import com.example.kairn.ui.editor.routing.OsrmService
@@ -205,7 +207,23 @@ class EditorViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = withContext(dispatcher) {
-                    gpxStorageService.uploadGpx(points, routes)
+                    gpxStorageService.uploadGpx(
+                        points = points.map {
+                            GpxPointPayload(
+                                latitude = it.latitude,
+                                longitude = it.longitude,
+                                name = it.name,
+                            )
+                        },
+                        routes = routes.map { route ->
+                            route.map { point ->
+                                GpxRoutePointPayload(
+                                    latitude = point.latitude,
+                                    longitude = point.longitude,
+                                )
+                            }
+                        },
+                    )
                 }
 
                 _uiState.update { oldState ->
