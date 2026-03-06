@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -113,7 +114,7 @@ class LocationService @Inject constructor(
      * Maps raw [Location] emissions to [UserLocation] with a resolved city name.
      */
     private fun Flow<Location>.reverseGeocode(): Flow<UserLocation> =
-        kotlinx.coroutines.flow.flow {
+        flow {
             var lastGeocodedLocation: Location? = null
             var lastCityName = ""
             var lastGeocodeAt = 0L
