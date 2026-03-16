@@ -65,9 +65,10 @@
     <string name="gpx_date">Date</string>
     <string name="gpx_start">Démarrer</string>
     <string name="gpx_edit_in_editor">Modifier dans l\'éditeur</string>
-    <string name="demo_run_active_title">Rando en cours</string>
-    <string name="demo_run_stats">%1$s · %2$d min · %3$d%%</string>
-    <string name="demo_run_stop">Arrêter la démo</string>
+    <string name="run_active_title">Rando en cours</string>
+    <string name="run_stats">%1$s km · %2$d min · %3$d%%</string>
+    <string name="run_stop">Terminer</string>
+    <string name="run_back_map">Retour carte</string>
 
     <!-- ── Explore ─────────────────────────────────────────────────────────── -->
     <string name="explore_title">Explorer</string>

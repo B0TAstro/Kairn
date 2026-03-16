@@ -19,6 +19,7 @@ object NavRoutes {
     fun accountHikeDetail(hikeId: String) = "account_hike_detail/$hikeId"
 
     const val EDIT_PROFILE = "edit_profile"
+    const val ACTIVE_RUN = "active_run"
 
     // Chat routes
     const val CHAT_LIST = "chat_list"

@@ -29,15 +29,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -73,13 +69,13 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    onStartTripNavigation: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -152,18 +148,6 @@ fun HomeScreen(
             }
         }
 
-        if (uiState.isDemoRunActive) {
-            DemoRunOverlay(
-                title = uiState.demoRunTitle,
-                progress = uiState.demoRunProgress,
-                distanceKm = uiState.demoRunDistanceKm,
-                elapsedMinutes = uiState.demoRunElapsedMinutes,
-                onStop = viewModel::stopHikeDemo,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 96.dp),
-            )
-        }
     }
 
     if (uiState.isBottomSheetExpanded && uiState.selectedHike != null) {
@@ -175,7 +159,10 @@ fun HomeScreen(
         ) {
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
-                onStartTrip = viewModel::onStartHikeDemoFromSelectedHike,
+                onStartTrip = {
+                    viewModel.onStartHikeDemoFromSelectedHike()
+                    onStartTripNavigation()
+                },
             )
         }
     }
@@ -189,68 +176,12 @@ fun HomeScreen(
         ) {
             GpxRouteBottomSheet(
                 gpxRoute = uiState.selectedGpxRoute!!,
-                onStartTrip = viewModel::onStartHikeDemoFromSelectedGpx,
+                onStartTrip = {
+                    viewModel.onStartHikeDemoFromSelectedGpx()
+                    onStartTripNavigation()
+                },
                 onEditInEditor = { /* TODO: Implement edit feature */ },
             )
-        }
-    }
-}
-
-@Composable
-private fun DemoRunOverlay(
-    title: String,
-    progress: Float,
-    distanceKm: Double,
-    elapsedMinutes: Int,
-    onStop: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-        shape = RoundedCornerShape(20.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.demo_run_active_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = stringResource(
-                    R.string.demo_run_stats,
-                    "${String.format(Locale.US, "%.1f", distanceKm)} km",
-                    elapsedMinutes,
-                    (progress * 100).toInt(),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onStop) {
-                    Text(text = stringResource(R.string.demo_run_stop))
-                }
-            }
         }
     }
 }

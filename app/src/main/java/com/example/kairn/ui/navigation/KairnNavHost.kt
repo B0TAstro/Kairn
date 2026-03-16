@@ -22,7 +22,9 @@ import com.example.kairn.ui.explore.ExploreScreen
 import com.example.kairn.ui.explore.ExploreViewModel
 import com.example.kairn.ui.explore.HikeDetailScreenWithCta
 import com.example.kairn.ui.explore.StandaloneHikeDetailScreenWithCta
+import com.example.kairn.ui.home.ActiveRunScreen
 import com.example.kairn.ui.home.HomeScreen
+import com.example.kairn.ui.home.HomeViewModel
 import com.example.kairn.ui.chat.ChatListScreen
 import com.example.kairn.ui.chat.ChatScreen
 import com.example.kairn.ui.friends.FriendListScreen
@@ -47,7 +49,23 @@ fun KairnNavHost(
             modifier = modifier,
         ) {
             composable(Screen.HOME.name) {
-                HomeScreen()
+                HomeScreen(
+                    onStartTripNavigation = {
+                        navController.navigate(NavRoutes.ACTIVE_RUN)
+                    },
+                )
+            }
+
+            composable(NavRoutes.ACTIVE_RUN) { backStackEntry ->
+                val homeEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Screen.HOME.name)
+                }
+                val homeViewModel: HomeViewModel = hiltViewModel(homeEntry)
+
+                ActiveRunScreen(
+                    viewModel = homeViewModel,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(Screen.EXPLORE.name) { backStackEntry ->
