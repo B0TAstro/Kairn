@@ -97,8 +97,7 @@ fun HomeScreen(
 
     // ── UI ────────────────────────────────────────────────────────────────
     Box(modifier = modifier.fillMaxSize()) {
-
-        // ── Mapbox 3D POC map fills entire screen ─────────────────────────
+        // ── 3D map fills entire screen (provider strategy) ────────────────
         StrategyMapView(
             provider = MapProvider.MAPBOX,
             cameraState = MapCameraState(

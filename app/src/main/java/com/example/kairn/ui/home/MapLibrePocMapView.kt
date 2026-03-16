@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,7 +25,11 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.annotations.PolylineOptions
 
-private val DEFAULT_TARGET = LatLng(47.27574, 11.39085)
+private val DEFAULT_TARGET = LatLng(45.899247, 6.129384)
+private const val CAMERA_ZOOM_3D = 13.8
+private const val CAMERA_TILT_3D = 60.0
+private const val CAMERA_BEARING_3D = 22.0
+private const val ROUTE_CLICK_THRESHOLD = 0.0012
 
 private const val TERRAIN_STYLE_JSON = """
 {
@@ -63,10 +68,10 @@ private const val TERRAIN_STYLE_JSON = """
       }
     }
   ],
-  "terrain": {
-    "source": "terrainSource",
-    "exaggeration": 1.4
-  },
+    "terrain": {
+      "source": "terrainSource",
+      "exaggeration": 1.6
+    },
   "sky": {}
 }
 """
@@ -84,6 +89,8 @@ fun MapLibrePocMapView(
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    val currentRoutes by rememberUpdatedState(gpxRoutes)
+    val currentOnRouteClick by rememberUpdatedState(onGpxRouteClick)
 
     val mapView = remember {
         createMapView(context).apply {
@@ -94,9 +101,9 @@ fun MapLibrePocMapView(
                 ) {
                     mapLibreMap.cameraPosition = CameraPosition.Builder()
                         .target(DEFAULT_TARGET)
-                        .zoom(13.6)
-                        .tilt(60.0)
-                        .bearing(25.0)
+                        .zoom(CAMERA_ZOOM_3D)
+                        .tilt(CAMERA_TILT_3D)
+                        .bearing(CAMERA_BEARING_3D)
                         .build()
                 }
             }
@@ -113,9 +120,9 @@ fun MapLibrePocMapView(
 
         mapLibreMap.cameraPosition = CameraPosition.Builder()
             .target(target)
-            .zoom(13.6)
-            .tilt(60.0)
-            .bearing(25.0)
+            .zoom(CAMERA_ZOOM_3D)
+            .tilt(CAMERA_TILT_3D)
+            .bearing(CAMERA_BEARING_3D)
             .build()
     }
 
@@ -139,8 +146,34 @@ fun MapLibrePocMapView(
         }
     }
 
-    // Note: Click handling for MapLibre requires additional setup
-    // The primary provider (MapBox) already has proper click handling
+    DisposableEffect(map) {
+        val mapLibreMap = map
+        if (mapLibreMap == null) {
+            onDispose { }
+        } else {
+            val clickListener = MapLibreMap.OnMapClickListener { clickPoint ->
+                val route = currentRoutes.firstOrNull { candidate ->
+                    candidate.points.size >= 2 && isPointNearRoute(
+                        clickLatitude = clickPoint.latitude,
+                        clickLongitude = clickPoint.longitude,
+                        route = candidate,
+                        threshold = ROUTE_CLICK_THRESHOLD,
+                    )
+                }
+                if (route != null) {
+                    currentOnRouteClick(route)
+                    true
+                } else {
+                    false
+                }
+            }
+
+            mapLibreMap.addOnMapClickListener(clickListener)
+            onDispose {
+                mapLibreMap.removeOnMapClickListener(clickListener)
+            }
+        }
+    }
 
     DisposableEffect(lifecycle, mapView) {
         val observer = LifecycleEventObserver { _, event ->
@@ -171,5 +204,17 @@ private fun createMapView(context: Context): MapView {
     MapLibre.getInstance(context)
     return MapView(context).apply {
         onCreate(Bundle())
+    }
+}
+
+private fun isPointNearRoute(
+    clickLatitude: Double,
+    clickLongitude: Double,
+    route: GpxRoute,
+    threshold: Double,
+): Boolean {
+    return route.points.any { point ->
+        kotlin.math.abs(point.latitude - clickLatitude) <= threshold &&
+            kotlin.math.abs(point.longitude - clickLongitude) <= threshold
     }
 }
