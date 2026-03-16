@@ -151,12 +151,12 @@ class HomeViewModel @Inject constructor(
         if (locationCollectionJob?.isActive == true) return
 
         locationCollectionJob = viewModelScope.launch {
-            locationService.locationUpdates().collect { loc ->
+            locationService.locationUpdates().collect {
                 _uiState.update {
                     it.copy(
-                        userLatitude = loc.latitude,
-                        userLongitude = loc.longitude,
-                        location = loc.cityName,
+                        userLatitude = ANNECY_AUSSEDAT_LATITUDE,
+                        userLongitude = ANNECY_AUSSEDAT_LONGITUDE,
+                        location = ANNECY_AUSSEDAT_LABEL,
                     )
                 }
             }
