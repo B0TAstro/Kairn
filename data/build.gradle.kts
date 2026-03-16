@@ -66,6 +66,8 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlinx.serialization.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
