@@ -131,10 +131,10 @@ class HomeViewModel @Inject constructor(
                         }
                     }
 
-                    val demoRoute = buildDemoRouteNearAnnecyBase()
-                    routes.add(0, demoRoute)
+                    val seededRoute = buildSeededRouteNearAnnecyBase()
+                    routes.add(0, seededRoute)
 
-                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes (including demo route)")
+                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes (including seeded route)")
                     _uiState.update {
                         it.copy(gpxRoutes = routes, isLoadingGpx = false)
                     }
@@ -143,7 +143,7 @@ class HomeViewModel @Inject constructor(
                     Log.e(TAG, "loadGpxRoutes: list error", error)
                     _uiState.update {
                         it.copy(
-                            gpxRoutes = listOf(buildDemoRouteNearAnnecyBase()),
+                            gpxRoutes = listOf(buildSeededRouteNearAnnecyBase()),
                             isLoadingGpx = false,
                             gpxError = error.message,
                         )
@@ -301,11 +301,11 @@ class HomeViewModel @Inject constructor(
             ?: email.substringBefore('@')
     }
 
-    private fun buildDemoRouteNearAnnecyBase(): com.example.kairn.domain.model.GpxRoute {
+    private fun buildSeededRouteNearAnnecyBase(): com.example.kairn.domain.model.GpxRoute {
         val lat = ANNECY_AUSSEDAT_LATITUDE
         val lon = ANNECY_AUSSEDAT_LONGITUDE
         return com.example.kairn.domain.model.GpxRoute(
-            id = "demo-annecy-loop",
+            id = "annecy-centre-loop",
             name = "Boucle Annecy Centre",
             points = listOf(
                 GeoPoint(lat + 0.0010, lon - 0.0018),
@@ -318,9 +318,9 @@ class HomeViewModel @Inject constructor(
                 GeoPoint(lat + 0.0010, lon - 0.0018),
             ),
             createdAt = "2026-03-16T10:00:00",
-            creatorId = "kairn-demo",
+            creatorId = "kairn-team",
             distanceMeters = 6200.0,
-            fileName = "demo-annecy-loop.gpx",
+            fileName = "annecy-centre-loop.gpx",
         )
     }
 }
