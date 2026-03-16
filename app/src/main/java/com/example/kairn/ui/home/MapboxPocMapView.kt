@@ -1,6 +1,9 @@
 package com.example.kairn.ui.home
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -49,6 +52,7 @@ import android.util.Log
 private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
+private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
 private const val USER_LOCATION_LABEL = "Tu es la"
 
 @Composable
@@ -132,10 +136,13 @@ fun MapboxPocMapView(
             userLocationPoint = manager.create(
                 PointAnnotationOptions()
                     .withPoint(nextPoint)
-                    .withIconImage("marker-15")
-                    .withIconColor("#BA8C5E")
-                    .withIconSize(1.4)
-                    .withTextField(USER_LOCATION_LABEL),
+                    .withIconImage(USER_MARKER_IMAGE_ID)
+                    .withIconSize(1.0)
+                    .withTextField(USER_LOCATION_LABEL)
+                    .withTextColor("#1D2622")
+                    .withTextHaloColor("#ECE7DF")
+                    .withTextHaloWidth(1.4)
+                    .withTextOffset(listOf(0.0, 1.5)),
             )
         } else {
             existing.point = nextPoint
@@ -227,6 +234,7 @@ private fun createMapboxMapView(
     return MapView(context).apply {
         mapboxMap.loadStyle("mapbox://styles/mapbox/outdoors-v12") {
             configureMapbox3d(style = it)
+            configureUserLocationMarkerStyle(style = it)
             val polylineManager = this@apply.annotations.createPolylineAnnotationManager()
             val pointManager = this@apply.annotations.createPointAnnotationManager()
             onStyleReady(polylineManager, pointManager)
@@ -240,6 +248,32 @@ private fun createMapboxMapView(
             )
         }
     }
+}
+
+private fun configureUserLocationMarkerStyle(style: Style) {
+    if (!style.styleImageExists(USER_MARKER_IMAGE_ID)) {
+        style.addImage(USER_MARKER_IMAGE_ID, createUserMarkerBitmap())
+    }
+}
+
+private fun createUserMarkerBitmap(): Bitmap {
+    val sizePx = 64
+    val center = sizePx / 2f
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#ECE7DF")
+        style = Paint.Style.FILL
+    }
+    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#BA8C5E")
+        style = Paint.Style.FILL
+    }
+
+    canvas.drawCircle(center, center, 18f, outerPaint)
+    canvas.drawCircle(center, center, 12f, innerPaint)
+    return bitmap
 }
 
 private fun configureMapbox3d(style: Style) {
