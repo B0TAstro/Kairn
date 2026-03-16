@@ -32,6 +32,7 @@ import com.mapbox.maps.extension.style.expressions.dsl.generated.get
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.addLayerBelow
 import com.mapbox.maps.extension.style.layers.generated.fillExtrusionLayer
+import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.rasterDemSource
 import com.mapbox.maps.extension.style.terrain.generated.setTerrain
@@ -138,7 +139,7 @@ fun MapboxPocMapView(
                     .withPoint(nextPoint)
                     .withIconImage(USER_MARKER_IMAGE_ID)
                     .withIconSize(1.0)
-                    .withIconAnchor("bottom"),
+                    .withIconAnchor(IconAnchor.BOTTOM),
             )
         } else {
             existing.point = nextPoint
