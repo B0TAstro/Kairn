@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 private const val TAG = "HomeViewModel"
@@ -130,7 +131,10 @@ class HomeViewModel @Inject constructor(
                         }
                     }
 
-                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes")
+                    val demoRoute = buildDemoRouteNearAnnecyBase()
+                    routes.add(0, demoRoute)
+
+                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes (including demo route)")
                     _uiState.update {
                         it.copy(gpxRoutes = routes, isLoadingGpx = false)
                     }
@@ -138,7 +142,11 @@ class HomeViewModel @Inject constructor(
                 .onFailure { error ->
                     Log.e(TAG, "loadGpxRoutes: list error", error)
                     _uiState.update {
-                        it.copy(isLoadingGpx = false, gpxError = error.message)
+                        it.copy(
+                            gpxRoutes = listOf(buildDemoRouteNearAnnecyBase()),
+                            isLoadingGpx = false,
+                            gpxError = error.message,
+                        )
                     }
                 }
         }
@@ -291,5 +299,28 @@ class HomeViewModel @Inject constructor(
                 .trim()
                 .ifBlank { null }
             ?: email.substringBefore('@')
+    }
+
+    private fun buildDemoRouteNearAnnecyBase(): com.example.kairn.domain.model.GpxRoute {
+        val lat = ANNECY_AUSSEDAT_LATITUDE
+        val lon = ANNECY_AUSSEDAT_LONGITUDE
+        return com.example.kairn.domain.model.GpxRoute(
+            id = "demo-annecy-loop",
+            name = "Boucle Annecy Centre",
+            points = listOf(
+                GeoPoint(lat + 0.0010, lon - 0.0018),
+                GeoPoint(lat + 0.0016, lon - 0.0006),
+                GeoPoint(lat + 0.0013, lon + 0.0011),
+                GeoPoint(lat + 0.0002, lon + 0.0018),
+                GeoPoint(lat - 0.0010, lon + 0.0011),
+                GeoPoint(lat - 0.0015, lon - 0.0004),
+                GeoPoint(lat - 0.0006, lon - 0.0019),
+                GeoPoint(lat + 0.0010, lon - 0.0018),
+            ),
+            createdAt = "2026-03-16T10:00:00",
+            creatorId = "kairn-demo",
+            distanceMeters = 6200.0,
+            fileName = "demo-annecy-loop.gpx",
+        )
     }
 }
