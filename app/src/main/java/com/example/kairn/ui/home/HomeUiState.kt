@@ -29,6 +29,11 @@ data class HomeUiState(
     val gpxError: String? = null,
     val selectedGpxRoute: GpxRoute? = null,
     val isGpxBottomSheetExpanded: Boolean = false,
+    val isDemoRunActive: Boolean = false,
+    val demoRunTitle: String = "",
+    val demoRunProgress: Float = 0f,
+    val demoRunDistanceKm: Double = 0.0,
+    val demoRunElapsedMinutes: Int = 0,
 ) {
     val filteredHikes: List<Hike>
         get() {

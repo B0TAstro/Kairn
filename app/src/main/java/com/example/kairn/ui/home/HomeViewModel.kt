@@ -13,6 +13,7 @@ import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +42,7 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var locationCollectionJob: Job? = null
+    private var demoRunJob: Job? = null
 
     /** Whether the device currently has fine-location permission. */
     val hasLocationPermission: Boolean
@@ -201,6 +203,12 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
     }
 
+    fun onStartHikeDemoFromSelectedHike() {
+        val title = _uiState.value.selectedHike?.title ?: "Randonnee locale"
+        startHikeDemo(title)
+        onBottomSheetDismissed()
+    }
+
     fun onGpxRouteSelected(route: com.example.kairn.domain.model.GpxRoute) {
         _uiState.update { it.copy(selectedGpxRoute = route, isGpxBottomSheetExpanded = true) }
     }
@@ -209,8 +217,64 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedGpxRoute = null, isGpxBottomSheetExpanded = false) }
     }
 
+    fun onStartHikeDemoFromSelectedGpx() {
+        val title = _uiState.value.selectedGpxRoute?.name ?: "Trace GPX"
+        startHikeDemo(title)
+        onGpxBottomSheetDismissed()
+    }
+
+    fun stopHikeDemo() {
+        demoRunJob?.cancel()
+        demoRunJob = null
+        _uiState.update {
+            it.copy(
+                isDemoRunActive = false,
+                demoRunTitle = "",
+                demoRunProgress = 0f,
+                demoRunDistanceKm = 0.0,
+                demoRunElapsedMinutes = 0,
+            )
+        }
+    }
+
     fun retry() {
         loadHikes()
+    }
+
+    private fun startHikeDemo(title: String) {
+        demoRunJob?.cancel()
+        _uiState.update {
+            it.copy(
+                isDemoRunActive = true,
+                demoRunTitle = title,
+                demoRunProgress = 0.02f,
+                demoRunDistanceKm = 0.1,
+                demoRunElapsedMinutes = 1,
+            )
+        }
+
+        demoRunJob = viewModelScope.launch {
+            while (true) {
+                delay(1500)
+                var reachedGoal = false
+                _uiState.update { current ->
+                    if (!current.isDemoRunActive) {
+                        return@update current
+                    }
+
+                    val nextProgress = (current.demoRunProgress + 0.06f).coerceAtMost(1f)
+                    reachedGoal = nextProgress >= 1f
+                    current.copy(
+                        demoRunProgress = nextProgress,
+                        demoRunDistanceKm = (nextProgress.toDouble() * 6.2).coerceAtMost(6.2),
+                        demoRunElapsedMinutes = current.demoRunElapsedMinutes + 2,
+                    )
+                }
+                if (reachedGoal) {
+                    break
+                }
+            }
+        }
     }
 
     private fun citySuggestionsForQuery(query: String): List<MapCity> {
