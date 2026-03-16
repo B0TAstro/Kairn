@@ -36,6 +36,10 @@ import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
@@ -45,6 +49,7 @@ import android.util.Log
 private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
+private const val USER_LOCATION_LABEL = "Tu es la"
 
 @Composable
 fun MapboxPocMapView(
@@ -61,7 +66,9 @@ fun MapboxPocMapView(
     val token = BuildConfig.MAPBOX_ACCESS_TOKEN.trim()
     var mapInitError by remember { mutableStateOf<String?>(null) }
     var polylineManager by remember { mutableStateOf<PolylineAnnotationManager?>(null) }
+    var userPointManager by remember { mutableStateOf<PointAnnotationManager?>(null) }
     val polylines = remember { mutableMapOf<String, PolylineAnnotation>() }
+    var userLocationPoint by remember { mutableStateOf<PointAnnotation?>(null) }
 
     if (token.isBlank()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -73,8 +80,9 @@ fun MapboxPocMapView(
     val mapView = remember {
         MapboxOptions.accessToken = token
         runCatching {
-            createMapboxMapView(context) { manager ->
-                polylineManager = manager
+            createMapboxMapView(context) { lineManager, pointManager ->
+                polylineManager = lineManager
+                userPointManager = pointManager
             }
         }
             .onFailure { mapInitError = it.message ?: "Mapbox initialization failed" }
@@ -110,6 +118,28 @@ fun MapboxPocMapView(
                     .bearing(20.0)
                     .build(),
             )
+        }
+    }
+
+    LaunchedEffect(userLatitude, userLongitude, userPointManager) {
+        val manager = userPointManager ?: return@LaunchedEffect
+        val latitude = userLatitude ?: return@LaunchedEffect
+        val longitude = userLongitude ?: return@LaunchedEffect
+        val nextPoint = Point.fromLngLat(longitude, latitude)
+
+        val existing = userLocationPoint
+        if (existing == null) {
+            userLocationPoint = manager.create(
+                PointAnnotationOptions()
+                    .withPoint(nextPoint)
+                    .withIconImage("marker-15")
+                    .withIconColor("#BA8C5E")
+                    .withIconSize(1.4)
+                    .withTextField(USER_LOCATION_LABEL),
+            )
+        } else {
+            existing.point = nextPoint
+            manager.update(existing)
         }
     }
 
@@ -192,13 +222,14 @@ fun MapboxPocMapView(
 
 private fun createMapboxMapView(
     context: Context,
-    onStyleReady: (PolylineAnnotationManager) -> Unit,
+    onStyleReady: (PolylineAnnotationManager, PointAnnotationManager) -> Unit,
 ): MapView {
     return MapView(context).apply {
         mapboxMap.loadStyle("mapbox://styles/mapbox/outdoors-v12") {
             configureMapbox3d(style = it)
-            val manager = this@apply.annotations.createPolylineAnnotationManager()
-            onStyleReady(manager)
+            val polylineManager = this@apply.annotations.createPolylineAnnotationManager()
+            val pointManager = this@apply.annotations.createPointAnnotationManager()
+            onStyleReady(polylineManager, pointManager)
             mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(ANNECY_AUSSEDAT_LONGITUDE, ANNECY_AUSSEDAT_LATITUDE))

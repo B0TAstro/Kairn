@@ -24,12 +24,15 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.annotations.PolylineOptions
+import org.maplibre.android.annotations.Marker
+import org.maplibre.android.annotations.MarkerOptions
 
 private val DEFAULT_TARGET = LatLng(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE)
 private const val CAMERA_ZOOM_3D = 13.8
 private const val CAMERA_TILT_3D = 60.0
 private const val CAMERA_BEARING_3D = 22.0
 private const val ROUTE_CLICK_THRESHOLD = 0.0012
+private const val USER_LOCATION_LABEL = "Tu es la"
 
 private const val TERRAIN_STYLE_JSON = """
 {
@@ -89,6 +92,7 @@ fun MapLibrePocMapView(
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    var userLocationMarker by remember { mutableStateOf<Marker?>(null) }
     val currentRoutes by rememberUpdatedState(gpxRoutes)
     val currentOnRouteClick by rememberUpdatedState(onGpxRouteClick)
 
@@ -124,6 +128,22 @@ fun MapLibrePocMapView(
             .tilt(CAMERA_TILT_3D)
             .bearing(CAMERA_BEARING_3D)
             .build()
+    }
+
+    LaunchedEffect(map, userLatitude, userLongitude) {
+        val mapLibreMap = map ?: return@LaunchedEffect
+        val latitude = userLatitude ?: return@LaunchedEffect
+        val longitude = userLongitude ?: return@LaunchedEffect
+        val position = LatLng(latitude, longitude)
+
+        userLocationMarker?.let { existingMarker ->
+            mapLibreMap.removeMarker(existingMarker)
+        }
+        userLocationMarker = mapLibreMap.addMarker(
+            MarkerOptions()
+                .position(position)
+                .title(USER_LOCATION_LABEL),
+        )
     }
 
     LaunchedEffect(gpxRoutes, map, selectedGpxRoute) {

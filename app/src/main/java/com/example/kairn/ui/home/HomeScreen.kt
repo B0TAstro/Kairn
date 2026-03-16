@@ -66,6 +66,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -369,6 +370,7 @@ private fun OsmMapView(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     val mapView = remember { buildOsmMapView(context, locationPermissionGranted, gpxRoutes) }
+    var userLocationMarker by remember { mutableStateOf<Marker?>(null) }
 
     LaunchedEffect(gpxRoutes) {
         updateGpxOverlays(mapView, gpxRoutes)
@@ -377,7 +379,19 @@ private fun OsmMapView(
     // Center map on user's real position as soon as it becomes available
     LaunchedEffect(userLatitude, userLongitude) {
         if (userLatitude != null && userLongitude != null) {
-            mapView.controller.animateTo(GeoPoint(userLatitude, userLongitude))
+            val userPoint = GeoPoint(userLatitude, userLongitude)
+            mapView.controller.animateTo(userPoint)
+
+            userLocationMarker?.let { existingMarker ->
+                mapView.overlays.remove(existingMarker)
+            }
+            userLocationMarker = Marker(mapView).apply {
+                position = userPoint
+                title = "Tu es la"
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            }
+            mapView.overlays.add(userLocationMarker)
+            mapView.invalidate()
         }
     }
 
