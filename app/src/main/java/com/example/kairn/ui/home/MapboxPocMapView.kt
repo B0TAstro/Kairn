@@ -201,7 +201,7 @@ private fun createMapboxMapView(
             onStyleReady(manager)
             mapboxMap.setCamera(
                 CameraOptions.Builder()
-                    .center(Point.fromLngLat(6.9850, 45.8900))
+                    .center(Point.fromLngLat(ANNECY_AUSSEDAT_LONGITUDE, ANNECY_AUSSEDAT_LATITUDE))
                     .zoom(14.8)
                     .pitch(74.0)
                     .bearing(30.0)
