@@ -50,11 +50,15 @@ import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.example.kairn.domain.model.GpxRoute
 import android.util.Log
+import kotlin.math.abs
 
 private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
 private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
+private const val USER_MARKER_ICON_SCALE = 1.45
+private const val USER_MARKER_FOCUS_ZOOM = 17.2
+private const val USER_MARKER_CLICK_THRESHOLD = 0.0011
 
 @Composable
 fun MapboxPocMapView(
@@ -138,7 +142,7 @@ fun MapboxPocMapView(
                 PointAnnotationOptions()
                     .withPoint(nextPoint)
                     .withIconImage(USER_MARKER_IMAGE_ID)
-                    .withIconSize(1.0)
+                    .withIconSize(USER_MARKER_ICON_SCALE)
                     .withIconAnchor(IconAnchor.BOTTOM),
             )
         } else {
@@ -171,13 +175,30 @@ fun MapboxPocMapView(
         }
     }
 
-    LaunchedEffect(polylineManager, mapView, gpxRoutes) {
+    LaunchedEffect(polylineManager, mapView, gpxRoutes, userLatitude, userLongitude) {
         if (polylineManager == null || mapView == null) return@LaunchedEffect
         
         val clickListener = OnMapClickListener { point ->
             val clickLng = point.longitude()
             val clickLat = point.latitude()
             val threshold = 0.001
+
+            if (userLatitude != null && userLongitude != null) {
+                val clickedUserMarker =
+                    abs(userLongitude - clickLng) < USER_MARKER_CLICK_THRESHOLD &&
+                        abs(userLatitude - clickLat) < USER_MARKER_CLICK_THRESHOLD
+                if (clickedUserMarker) {
+                    mapView.mapboxMap.setCamera(
+                        CameraOptions.Builder()
+                            .center(Point.fromLngLat(userLongitude, userLatitude))
+                            .zoom(USER_MARKER_FOCUS_ZOOM)
+                            .pitch(74.0)
+                            .bearing(20.0)
+                            .build(),
+                    )
+                    return@OnMapClickListener true
+                }
+            }
             
             for ((fileName, _) in polylines) {
                 val route = gpxRoutes.find { it.fileName == fileName }
@@ -252,7 +273,7 @@ private fun configureUserLocationMarkerStyle(style: Style) {
 }
 
 private fun createUserMarkerBitmap(): Bitmap {
-    val sizePx = 88
+    val sizePx = 112
     val center = sizePx / 2f
     val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
