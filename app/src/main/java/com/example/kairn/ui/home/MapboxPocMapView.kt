@@ -56,7 +56,7 @@ private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
 private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
-private const val USER_MARKER_ICON_SCALE = 1.45
+private const val USER_MARKER_ICON_SCALE = 1.9
 private const val USER_MARKER_FOCUS_ZOOM = 17.2
 private const val USER_MARKER_CLICK_THRESHOLD = 0.0011
 
@@ -273,7 +273,7 @@ private fun configureUserLocationMarkerStyle(style: Style) {
 }
 
 private fun createUserMarkerBitmap(): Bitmap {
-    val sizePx = 112
+    val sizePx = 152
     val center = sizePx / 2f
     val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
