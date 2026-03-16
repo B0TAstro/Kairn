@@ -69,6 +69,13 @@
     <string name="run_stats">%1$s km · %2$d min · %3$d%%</string>
     <string name="run_stop">Terminer</string>
     <string name="run_back_map">Retour carte</string>
+    <string name="run_complete_title">Bravo, rando terminee !</string>
+    <string name="run_complete_subtitle">Vous avez complete %1$s</string>
+    <string name="run_complete_stats">%1$s km en %2$d min</string>
+    <string name="run_complete_distance">%1$s km</string>
+    <string name="run_complete_duration">%1$d min</string>
+    <string name="run_complete_xp">+%1$d XP gagnes</string>
+    <string name="run_complete_done">Continuer</string>
 
     <!-- ── Explore ─────────────────────────────────────────────────────────── -->
     <string name="explore_title">Explorer</string>

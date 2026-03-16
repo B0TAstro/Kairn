@@ -20,6 +20,7 @@ object NavRoutes {
 
     const val EDIT_PROFILE = "edit_profile"
     const val ACTIVE_RUN = "active_run"
+    const val RUN_COMPLETED = "run_completed"
 
     // Chat routes
     const val CHAT_LIST = "chat_list"

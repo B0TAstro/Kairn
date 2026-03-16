@@ -68,6 +68,7 @@ fun MapboxPocMapView(
     selectedCity: MapCity? = null,
     gpxRoutes: List<GpxRoute> = emptyList(),
     selectedGpxRoute: GpxRoute? = null,
+    isRunMode: Boolean = false,
     onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -105,7 +106,11 @@ fun MapboxPocMapView(
         return
     }
 
-    LaunchedEffect(userLatitude, userLongitude, selectedCity, mapView) {
+    LaunchedEffect(userLatitude, userLongitude, selectedCity, mapView, isRunMode) {
+        val userZoom = if (isRunMode) 16.5 else 14.8
+        val userPitch = if (isRunMode) 40.0 else 68.0
+        val userBearing = if (isRunMode) 0.0 else 20.0
+
         if (selectedCity != null) {
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
@@ -122,9 +127,9 @@ fun MapboxPocMapView(
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(userLongitude, userLatitude))
-                    .zoom(14.8)
-                    .pitch(68.0)
-                    .bearing(20.0)
+                    .zoom(userZoom)
+                    .pitch(userPitch)
+                    .bearing(userBearing)
                     .build(),
             )
         }
@@ -143,7 +148,7 @@ fun MapboxPocMapView(
                     .withPoint(nextPoint)
                     .withIconImage(USER_MARKER_IMAGE_ID)
                     .withIconSize(USER_MARKER_ICON_SCALE)
-                    .withIconAnchor(IconAnchor.BOTTOM),
+                    .withIconAnchor(if (isRunMode) IconAnchor.CENTER else IconAnchor.BOTTOM),
             )
         } else {
             existing.point = nextPoint

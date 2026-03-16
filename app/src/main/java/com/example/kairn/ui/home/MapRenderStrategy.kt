@@ -16,6 +16,7 @@ data class MapCameraState(
     val selectedCity: MapCity?,
     val gpxRoutes: List<GpxRoute> = emptyList(),
     val selectedGpxRoute: GpxRoute? = null,
+    val isRunMode: Boolean = false,
 )
 
 interface MapRenderStrategy {
@@ -41,6 +42,7 @@ object MapboxRenderStrategy : MapRenderStrategy {
             selectedCity = cameraState.selectedCity,
             gpxRoutes = cameraState.gpxRoutes,
             selectedGpxRoute = cameraState.selectedGpxRoute,
+            isRunMode = cameraState.isRunMode,
             onGpxRouteClick = onGpxRouteClick,
         )
     }
@@ -60,6 +62,7 @@ object MapLibreRenderStrategy : MapRenderStrategy {
             selectedCity = cameraState.selectedCity,
             gpxRoutes = cameraState.gpxRoutes,
             selectedGpxRoute = cameraState.selectedGpxRoute,
+            isRunMode = cameraState.isRunMode,
             onGpxRouteClick = onGpxRouteClick,
         )
     }

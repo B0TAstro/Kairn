@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,9 +31,16 @@ import java.util.Locale
 fun ActiveRunScreen(
     viewModel: HomeViewModel,
     onBack: () -> Unit,
+    onCompleted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.isRunCompleted) {
+        if (uiState.isRunCompleted) {
+            onCompleted()
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         StrategyMapView(
@@ -43,6 +51,7 @@ fun ActiveRunScreen(
                 selectedCity = null,
                 gpxRoutes = uiState.gpxRoutes,
                 selectedGpxRoute = uiState.selectedGpxRoute,
+                isRunMode = true,
             ),
             modifier = Modifier.fillMaxSize(),
             onGpxRouteClick = {},
@@ -70,20 +79,20 @@ fun ActiveRunScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = uiState.demoRunTitle,
+                    text = uiState.activeRunTitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LinearProgressIndicator(
-                    progress = { uiState.demoRunProgress },
+                    progress = { uiState.activeRunProgress },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
                     text = stringResource(
                         R.string.run_stats,
-                        String.format(Locale.US, "%.1f", uiState.demoRunDistanceKm),
-                        uiState.demoRunElapsedMinutes,
-                        (uiState.demoRunProgress * 100).toInt(),
+                        String.format(Locale.US, "%.1f", uiState.activeRunDistanceKm),
+                        uiState.activeRunElapsedMinutes,
+                        (uiState.activeRunProgress * 100).toInt(),
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -108,7 +117,7 @@ fun ActiveRunScreen(
             }
             TextButton(
                 onClick = {
-                    viewModel.stopHikeDemo()
+                    viewModel.stopRunTracking()
                     onBack()
                 },
             ) {

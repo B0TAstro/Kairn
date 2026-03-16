@@ -170,6 +170,7 @@ private fun MainScreen(
     val showBottomNav = currentRoute !in listOf(
         NavRoutes.HIKE_DETAIL,
         NavRoutes.ACTIVE_RUN,
+        NavRoutes.RUN_COMPLETED,
         NavRoutes.CHAT,
         NavRoutes.FRIEND_LIST,
         NavRoutes.EDIT_PROFILE,

@@ -87,6 +87,7 @@ fun MapLibrePocMapView(
     selectedCity: MapCity? = null,
     gpxRoutes: List<GpxRoute> = emptyList(),
     selectedGpxRoute: GpxRoute? = null,
+    isRunMode: Boolean = false,
     onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -114,7 +115,7 @@ fun MapLibrePocMapView(
         }
     }
 
-    LaunchedEffect(map, userLatitude, userLongitude, selectedCity) {
+    LaunchedEffect(map, userLatitude, userLongitude, selectedCity, isRunMode) {
         val mapLibreMap = map ?: return@LaunchedEffect
         val target = when {
             selectedCity != null -> LatLng(selectedCity.latitude, selectedCity.longitude)
@@ -122,11 +123,15 @@ fun MapLibrePocMapView(
             else -> null
         } ?: return@LaunchedEffect
 
+        val zoom = if (isRunMode) 16.5 else CAMERA_ZOOM_3D
+        val tilt = if (isRunMode) 38.0 else CAMERA_TILT_3D
+        val bearing = if (isRunMode) 0.0 else CAMERA_BEARING_3D
+
         mapLibreMap.cameraPosition = CameraPosition.Builder()
             .target(target)
-            .zoom(CAMERA_ZOOM_3D)
-            .tilt(CAMERA_TILT_3D)
-            .bearing(CAMERA_BEARING_3D)
+            .zoom(zoom)
+            .tilt(tilt)
+            .bearing(bearing)
             .build()
     }
 

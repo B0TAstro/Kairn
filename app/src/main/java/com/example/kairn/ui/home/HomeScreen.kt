@@ -160,7 +160,7 @@ fun HomeScreen(
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
                 onStartTrip = {
-                    viewModel.onStartHikeDemoFromSelectedHike()
+                    viewModel.onStartRunFromSelectedHike()
                     onStartTripNavigation()
                 },
             )
@@ -177,7 +177,7 @@ fun HomeScreen(
             GpxRouteBottomSheet(
                 gpxRoute = uiState.selectedGpxRoute!!,
                 onStartTrip = {
-                    viewModel.onStartHikeDemoFromSelectedGpx()
+                    viewModel.onStartRunFromSelectedGpx()
                     onStartTripNavigation()
                 },
                 onEditInEditor = { /* TODO: Implement edit feature */ },
