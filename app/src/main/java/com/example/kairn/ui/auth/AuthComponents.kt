@@ -1,7 +1,6 @@
 package com.example.kairn.ui.auth
 
-import android.content.Context
-import android.graphics.BitmapFactory
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,52 +13,30 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
-private fun loadAssetBitmap(
-    context: Context,
-    path: String?,
-): ImageBitmap? {
-    if (path.isNullOrBlank()) return null
-    return runCatching {
-        context.assets.open(path).use { input ->
-            BitmapFactory.decodeStream(input)?.asImageBitmap()
-        }
-    }.getOrNull()
-}
-
 /**
- * Full-screen background with a random onboarding image and a gradient overlay
+ * Full-screen background with the provided onboarding image and a gradient overlay
  * that goes from dark at top to dark at bottom (to match the onboarding style).
  */
 @Composable
 internal fun AuthBackground(
-    imageAssetPath: String?,
+    @DrawableRes imageResId: Int,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val imageBitmap = remember(imageAssetPath) {
-        loadAssetBitmap(context, imageAssetPath)
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
-        if (imageBitmap != null) {
-            Image(
-                bitmap = imageBitmap,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+        Image(
+            painter = painterResource(id = imageResId),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
 
         Box(
             modifier = Modifier
