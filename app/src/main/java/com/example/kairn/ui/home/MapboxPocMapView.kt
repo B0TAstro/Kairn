@@ -1,6 +1,10 @@
 package com.example.kairn.ui.home
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -28,23 +32,33 @@ import com.mapbox.maps.extension.style.expressions.dsl.generated.get
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.addLayerBelow
 import com.mapbox.maps.extension.style.layers.generated.fillExtrusionLayer
+import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.rasterDemSource
 import com.mapbox.maps.extension.style.terrain.generated.setTerrain
 import com.mapbox.maps.extension.style.terrain.generated.terrain
 import com.mapbox.maps.plugin.annotation.annotations
-import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.example.kairn.domain.model.GpxRoute
 import android.util.Log
+import kotlin.math.abs
 
 private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
+private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
+private const val USER_MARKER_ICON_SCALE = 1.9
+private const val USER_MARKER_FOCUS_ZOOM = 17.2
+private const val USER_MARKER_CLICK_THRESHOLD = 0.0011
+private const val ROUTE_CLICK_THRESHOLD = 0.001
 
 @Composable
 fun MapboxPocMapView(
@@ -54,6 +68,7 @@ fun MapboxPocMapView(
     selectedCity: MapCity? = null,
     gpxRoutes: List<GpxRoute> = emptyList(),
     selectedGpxRoute: GpxRoute? = null,
+    isRunMode: Boolean = false,
     onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -61,7 +76,9 @@ fun MapboxPocMapView(
     val token = BuildConfig.MAPBOX_ACCESS_TOKEN.trim()
     var mapInitError by remember { mutableStateOf<String?>(null) }
     var polylineManager by remember { mutableStateOf<PolylineAnnotationManager?>(null) }
-    val polylines = remember { mutableMapOf<String, PolylineAnnotation>() }
+    var userPointManager by remember { mutableStateOf<PointAnnotationManager?>(null) }
+    val routeByKey = remember { mutableMapOf<String, GpxRoute>() }
+    var userLocationPoint by remember { mutableStateOf<PointAnnotation?>(null) }
 
     if (token.isBlank()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -73,8 +90,9 @@ fun MapboxPocMapView(
     val mapView = remember {
         MapboxOptions.accessToken = token
         runCatching {
-            createMapboxMapView(context) { manager ->
-                polylineManager = manager
+            createMapboxMapView(context) { lineManager, pointManager ->
+                polylineManager = lineManager
+                userPointManager = pointManager
             }
         }
             .onFailure { mapInitError = it.message ?: "Mapbox initialization failed" }
@@ -88,7 +106,11 @@ fun MapboxPocMapView(
         return
     }
 
-    LaunchedEffect(userLatitude, userLongitude, selectedCity, mapView) {
+    LaunchedEffect(userLatitude, userLongitude, selectedCity, mapView, isRunMode) {
+        val userZoom = if (isRunMode) 16.5 else 14.8
+        val userPitch = if (isRunMode) 40.0 else 68.0
+        val userBearing = if (isRunMode) 0.0 else 20.0
+
         if (selectedCity != null) {
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
@@ -105,11 +127,32 @@ fun MapboxPocMapView(
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(userLongitude, userLatitude))
-                    .zoom(14.8)
-                    .pitch(68.0)
-                    .bearing(20.0)
+                    .zoom(userZoom)
+                    .pitch(userPitch)
+                    .bearing(userBearing)
                     .build(),
             )
+        }
+    }
+
+    LaunchedEffect(userLatitude, userLongitude, userPointManager) {
+        val manager = userPointManager ?: return@LaunchedEffect
+        val latitude = userLatitude ?: return@LaunchedEffect
+        val longitude = userLongitude ?: return@LaunchedEffect
+        val nextPoint = Point.fromLngLat(longitude, latitude)
+
+        val existing = userLocationPoint
+        if (existing == null) {
+            userLocationPoint = manager.create(
+                PointAnnotationOptions()
+                    .withPoint(nextPoint)
+                    .withIconImage(USER_MARKER_IMAGE_ID)
+                    .withIconSize(USER_MARKER_ICON_SCALE)
+                    .withIconAnchor(if (isRunMode) IconAnchor.CENTER else IconAnchor.BOTTOM),
+            )
+        } else {
+            existing.point = nextPoint
+            manager.update(existing)
         }
     }
 
@@ -117,46 +160,65 @@ fun MapboxPocMapView(
         if (polylineManager == null || mapView == null) return@LaunchedEffect
         
         Log.d(TAG, "GPX routes updated: ${gpxRoutes.size} routes, selected: ${selectedGpxRoute?.fileName}")
-        
-        polylines.values.forEach { polylineManager!!.delete(it) }
-        polylines.clear()
+        polylineManager!!.deleteAll()
+        routeByKey.clear()
         
         for ((index, route) in gpxRoutes.withIndex()) {
             if (route.points.size >= 2) {
                 val isSelected = selectedGpxRoute?.fileName == route.fileName
                 val key = route.fileName ?: "route_$index"
-                val polyline = polylineManager!!.create(
+                polylineManager!!.create(
                     PolylineAnnotationOptions()
                         .withPoints(route.points.map { Point.fromLngLat(it.longitude, it.latitude) })
-                        .withLineColor(if (isSelected) "#BA8C5E" else "#587B6C")
-                        .withLineWidth(if (isSelected) 8.0 else 5.0),
+                        .withLineColor(if (isSelected) "#1D2622" else "#0A2540")
+                        .withLineWidth(if (isSelected) 16.0 else 12.0),
                 )
-                polylines[key] = polyline
+                polylineManager!!.create(
+                    PolylineAnnotationOptions()
+                        .withPoints(route.points.map { Point.fromLngLat(it.longitude, it.latitude) })
+                        .withLineColor(if (isSelected) "#FF5A36" else "#00C2FF")
+                        .withLineWidth(if (isSelected) 9.0 else 7.0),
+                )
+                routeByKey[key] = route
                 Log.d(TAG, "Added polyline for ${route.name} with ${route.points.size} points, selected: $isSelected")
             }
         }
     }
 
-    LaunchedEffect(polylineManager, mapView, gpxRoutes) {
+    LaunchedEffect(polylineManager, mapView, gpxRoutes, userLatitude, userLongitude) {
         if (polylineManager == null || mapView == null) return@LaunchedEffect
         
         val clickListener = OnMapClickListener { point ->
             val clickLng = point.longitude()
             val clickLat = point.latitude()
-            val threshold = 0.001
+            val threshold = ROUTE_CLICK_THRESHOLD
+
+            if (userLatitude != null && userLongitude != null) {
+                val clickedUserMarker =
+                    abs(userLongitude - clickLng) < USER_MARKER_CLICK_THRESHOLD &&
+                        abs(userLatitude - clickLat) < USER_MARKER_CLICK_THRESHOLD
+                if (clickedUserMarker) {
+                    mapView.mapboxMap.setCamera(
+                        CameraOptions.Builder()
+                            .center(Point.fromLngLat(userLongitude, userLatitude))
+                            .zoom(USER_MARKER_FOCUS_ZOOM)
+                            .pitch(74.0)
+                            .bearing(20.0)
+                            .build(),
+                    )
+                    return@OnMapClickListener true
+                }
+            }
             
-            for ((fileName, _) in polylines) {
-                val route = gpxRoutes.find { it.fileName == fileName }
-                if (route != null) {
-                    val isClose = route.points.any { p ->
+            for ((fileName, route) in routeByKey) {
+                val isClose = route.points.any { p ->
                         Math.abs(p.longitude - clickLng) < threshold && 
                         Math.abs(p.latitude - clickLat) < threshold
-                    }
-                    if (isClose) {
-                        Log.d(TAG, "Clicked on route: $fileName")
-                        onGpxRouteClick(route)
-                        return@OnMapClickListener true
-                    }
+                }
+                if (isClose) {
+                    Log.d(TAG, "Clicked on route: $fileName")
+                    onGpxRouteClick(route)
+                    return@OnMapClickListener true
                 }
             }
             
@@ -192,16 +254,18 @@ fun MapboxPocMapView(
 
 private fun createMapboxMapView(
     context: Context,
-    onStyleReady: (PolylineAnnotationManager) -> Unit,
+    onStyleReady: (PolylineAnnotationManager, PointAnnotationManager) -> Unit,
 ): MapView {
     return MapView(context).apply {
         mapboxMap.loadStyle("mapbox://styles/mapbox/outdoors-v12") {
             configureMapbox3d(style = it)
-            val manager = this@apply.annotations.createPolylineAnnotationManager()
-            onStyleReady(manager)
+            configureUserLocationMarkerStyle(style = it)
+            val polylineManager = this@apply.annotations.createPolylineAnnotationManager()
+            val pointManager = this@apply.annotations.createPointAnnotationManager()
+            onStyleReady(polylineManager, pointManager)
             mapboxMap.setCamera(
                 CameraOptions.Builder()
-                    .center(Point.fromLngLat(6.9850, 45.8900))
+                    .center(Point.fromLngLat(ANNECY_AUSSEDAT_LONGITUDE, ANNECY_AUSSEDAT_LATITUDE))
                     .zoom(14.8)
                     .pitch(74.0)
                     .bearing(30.0)
@@ -209,6 +273,51 @@ private fun createMapboxMapView(
             )
         }
     }
+}
+
+private fun configureUserLocationMarkerStyle(style: Style) {
+    style.addImage(USER_MARKER_IMAGE_ID, createUserMarkerBitmap())
+}
+
+private fun createUserMarkerBitmap(): Bitmap {
+    val sizePx = 152
+    val center = sizePx / 2f
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#DB3B2B")
+        style = Paint.Style.FILL
+    }
+
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#FFFFFF")
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
+
+    val corePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#FFFFFF")
+        style = Paint.Style.FILL
+    }
+
+    val headRadius = 18f
+    val headCenterY = 30f
+    val tipX = center
+    val tipY = 78f
+
+    val pinPath = Path().apply {
+        addCircle(center, headCenterY, headRadius, Path.Direction.CW)
+        moveTo(center - 10f, headCenterY + 12f)
+        lineTo(center + 10f, headCenterY + 12f)
+        lineTo(tipX, tipY)
+        close()
+    }
+
+    canvas.drawPath(pinPath, pinPaint)
+    canvas.drawPath(pinPath, borderPaint)
+    canvas.drawCircle(center, headCenterY, 6.5f, corePaint)
+    return bitmap
 }
 
 private fun configureMapbox3d(style: Style) {

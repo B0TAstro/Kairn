@@ -66,6 +66,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -74,6 +75,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    onStartTripNavigation: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -145,6 +147,7 @@ fun HomeScreen(
                 )
             }
         }
+
     }
 
     if (uiState.isBottomSheetExpanded && uiState.selectedHike != null) {
@@ -156,7 +159,10 @@ fun HomeScreen(
         ) {
             HikeBottomSheetContent(
                 hike = uiState.selectedHike!!,
-                onStartTrip = { viewModel.onBottomSheetDismissed() },
+                onStartTrip = {
+                    viewModel.onStartRunFromSelectedHike()
+                    onStartTripNavigation()
+                },
             )
         }
     }
@@ -170,7 +176,10 @@ fun HomeScreen(
         ) {
             GpxRouteBottomSheet(
                 gpxRoute = uiState.selectedGpxRoute!!,
-                onStartTrip = { /* TODO: Implement start feature */ },
+                onStartTrip = {
+                    viewModel.onStartRunFromSelectedGpx()
+                    onStartTripNavigation()
+                },
                 onEditInEditor = { /* TODO: Implement edit feature */ },
             )
         }
@@ -369,6 +378,7 @@ private fun OsmMapView(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     val mapView = remember { buildOsmMapView(context, locationPermissionGranted, gpxRoutes) }
+    var userLocationMarker by remember { mutableStateOf<Marker?>(null) }
 
     LaunchedEffect(gpxRoutes) {
         updateGpxOverlays(mapView, gpxRoutes)
@@ -377,7 +387,19 @@ private fun OsmMapView(
     // Center map on user's real position as soon as it becomes available
     LaunchedEffect(userLatitude, userLongitude) {
         if (userLatitude != null && userLongitude != null) {
-            mapView.controller.animateTo(GeoPoint(userLatitude, userLongitude))
+            val userPoint = GeoPoint(userLatitude, userLongitude)
+            mapView.controller.animateTo(userPoint)
+
+            userLocationMarker?.let { existingMarker ->
+                mapView.overlays.remove(existingMarker)
+            }
+            userLocationMarker = Marker(mapView).apply {
+                position = userPoint
+                title = "Tu es la"
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            }
+            mapView.overlays.add(userLocationMarker)
+            mapView.invalidate()
         }
     }
 
@@ -408,12 +430,18 @@ private fun updateGpxOverlays(mapView: MapView, gpxRoutes: List<GpxRoute>) {
     for (route in gpxRoutes) {
         Log.d(TAG, "updateGpxOverlays: adding route ${route.name} with ${route.points.size} points")
         if (route.points.size >= 2) {
-            val polyline = org.osmdroid.views.overlay.Polyline().apply {
+            val outline = org.osmdroid.views.overlay.Polyline().apply {
                 setPoints(route.points)
-                outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
-                outlinePaint.strokeWidth = 8f
+                outlinePaint.color = android.graphics.Color.parseColor("#0A2540")
+                outlinePaint.strokeWidth = 12f
             }
-            mapView.overlays.add(polyline)
+            val main = org.osmdroid.views.overlay.Polyline().apply {
+                setPoints(route.points)
+                outlinePaint.color = android.graphics.Color.parseColor("#00C2FF")
+                outlinePaint.strokeWidth = 7f
+            }
+            mapView.overlays.add(outline)
+            mapView.overlays.add(main)
         }
     }
 
@@ -430,8 +458,7 @@ private fun buildOsmMapView(
         setTileSource(TileSourceFactory.MAPNIK)
         setMultiTouchControls(true)
         controller.setZoom(14.0)
-        // Default center until GPS kicks in (centre de la France)
-        controller.setCenter(GeoPoint(46.603354, 1.888334))
+        controller.setCenter(GeoPoint(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE))
 
         if (locationPermissionGranted) {
             val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), this)
@@ -441,12 +468,18 @@ private fun buildOsmMapView(
 
         for (route in gpxRoutes) {
             if (route.points.size >= 2) {
-                val polyline = org.osmdroid.views.overlay.Polyline().apply {
+                val outline = org.osmdroid.views.overlay.Polyline().apply {
                     setPoints(route.points)
-                    outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
-                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.color = android.graphics.Color.parseColor("#0A2540")
+                    outlinePaint.strokeWidth = 12f
                 }
-                overlays.add(polyline)
+                val main = org.osmdroid.views.overlay.Polyline().apply {
+                    setPoints(route.points)
+                    outlinePaint.color = android.graphics.Color.parseColor("#00C2FF")
+                    outlinePaint.strokeWidth = 7f
+                }
+                overlays.add(outline)
+                overlays.add(main)
             }
         }
     }

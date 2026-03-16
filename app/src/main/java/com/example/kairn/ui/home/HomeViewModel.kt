@@ -13,12 +13,15 @@ import com.example.kairn.domain.repository.AuthRepository
 import com.example.kairn.domain.repository.HikeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.hypot
+import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 private const val TAG = "HomeViewModel"
@@ -33,7 +36,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val supportedCities = listOf(
-        MapCity(name = "Annecy", latitude = 45.899247, longitude = 6.129384),
+        DEFAULT_HOME_CITY,
         MapCity(name = "Chamonix", latitude = 45.923697, longitude = 6.869433),
         MapCity(name = "Lyon", latitude = 45.764043, longitude = 4.835659),
     )
@@ -41,6 +44,8 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var locationCollectionJob: Job? = null
+    private var runTrackingJob: Job? = null
+    private var activeRunRoutePoints: List<GeoPoint> = emptyList()
 
     /** Whether the device currently has fine-location permission. */
     val hasLocationPermission: Boolean
@@ -68,7 +73,7 @@ class HomeViewModel @Inject constructor(
             hikeRepository.getHikes()
                 .onSuccess { hikes ->
                     _uiState.update { current ->
-                        val selectedCity = current.selectedCity ?: supportedCities.first { it.name == "Chamonix" }
+                        val selectedCity = current.selectedCity ?: DEFAULT_HOME_CITY
                         current.copy(
                             nearbyHikes = hikes,
                             selectedCity = selectedCity,
@@ -128,7 +133,10 @@ class HomeViewModel @Inject constructor(
                         }
                     }
 
-                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes")
+                    val seededRoute = buildSeededRouteNearAnnecyBase()
+                    routes.add(0, seededRoute)
+
+                    Log.d(TAG, "loadGpxRoutes: finished with ${routes.size} routes (including seeded route)")
                     _uiState.update {
                         it.copy(gpxRoutes = routes, isLoadingGpx = false)
                     }
@@ -136,7 +144,11 @@ class HomeViewModel @Inject constructor(
                 .onFailure { error ->
                     Log.e(TAG, "loadGpxRoutes: list error", error)
                     _uiState.update {
-                        it.copy(isLoadingGpx = false, gpxError = error.message)
+                        it.copy(
+                            gpxRoutes = listOf(buildSeededRouteNearAnnecyBase()),
+                            isLoadingGpx = false,
+                            gpxError = error.message,
+                        )
                     }
                 }
         }
@@ -151,12 +163,15 @@ class HomeViewModel @Inject constructor(
         if (locationCollectionJob?.isActive == true) return
 
         locationCollectionJob = viewModelScope.launch {
-            locationService.locationUpdates().collect { loc ->
+            locationService.locationUpdates().collect {
                 _uiState.update {
+                    if (it.isRunActive) {
+                        return@update it
+                    }
                     it.copy(
-                        userLatitude = loc.latitude,
-                        userLongitude = loc.longitude,
-                        location = loc.cityName,
+                        userLatitude = ANNECY_AUSSEDAT_LATITUDE,
+                        userLongitude = ANNECY_AUSSEDAT_LONGITUDE,
+                        location = ANNECY_AUSSEDAT_LABEL,
                     )
                 }
             }
@@ -201,6 +216,14 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
     }
 
+    fun onStartRunFromSelectedHike() {
+        val state = _uiState.value
+        val title = state.selectedHike?.title ?: "Randonnee locale"
+        val route = state.selectedGpxRoute ?: state.gpxRoutes.firstOrNull() ?: buildSeededRouteNearAnnecyBase()
+        startRunTracking(title, route)
+        _uiState.update { it.copy(selectedHike = null, isBottomSheetExpanded = false) }
+    }
+
     fun onGpxRouteSelected(route: com.example.kairn.domain.model.GpxRoute) {
         _uiState.update { it.copy(selectedGpxRoute = route, isGpxBottomSheetExpanded = true) }
     }
@@ -209,8 +232,144 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedGpxRoute = null, isGpxBottomSheetExpanded = false) }
     }
 
+    fun onStartRunFromSelectedGpx() {
+        val route = _uiState.value.selectedGpxRoute ?: buildSeededRouteNearAnnecyBase()
+        val title = route.name
+        startRunTracking(title, route)
+        _uiState.update { it.copy(isGpxBottomSheetExpanded = false) }
+    }
+
+    fun stopRunTracking() {
+        runTrackingJob?.cancel()
+        runTrackingJob = null
+        activeRunRoutePoints = emptyList()
+        _uiState.update {
+            it.copy(
+                isRunActive = false,
+                activeRunTitle = "",
+                activeRunProgress = 0f,
+                activeRunDistanceKm = 0.0,
+                activeRunElapsedMinutes = 0,
+                selectedGpxRoute = null,
+            )
+        }
+    }
+
+    fun acknowledgeRunCompletion() {
+        _uiState.update {
+            it.copy(
+                isRunCompleted = false,
+                completedRunTitle = "",
+                completedRunDistanceKm = 0.0,
+                completedRunElapsedMinutes = 0,
+                completedRunXpGained = 0,
+            )
+        }
+    }
+
     fun retry() {
         loadHikes()
+    }
+
+    private fun startRunTracking(
+        title: String,
+        route: com.example.kairn.domain.model.GpxRoute,
+    ) {
+        runTrackingJob?.cancel()
+        activeRunRoutePoints = if (route.points.size >= 2) route.points else buildSeededRouteNearAnnecyBase().points
+        val startPoint = activeRunRoutePoints.firstOrNull() ?: GeoPoint(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE)
+
+        _uiState.update {
+            it.copy(
+                isRunActive = true,
+                activeRunTitle = title,
+                activeRunProgress = 0.02f,
+                activeRunDistanceKm = 0.1,
+                activeRunElapsedMinutes = 1,
+                userLatitude = startPoint.latitude,
+                userLongitude = startPoint.longitude,
+                selectedCity = null,
+                selectedGpxRoute = route,
+                isRunCompleted = false,
+                completedRunTitle = "",
+                completedRunDistanceKm = 0.0,
+                completedRunElapsedMinutes = 0,
+                completedRunXpGained = 0,
+            )
+        }
+
+        runTrackingJob = viewModelScope.launch {
+            while (true) {
+                delay(1200)
+                var reachedGoal = false
+                _uiState.update { current ->
+                    if (!current.isRunActive) {
+                        return@update current
+                    }
+
+                    val nextProgress = (current.activeRunProgress + 0.05f).coerceAtMost(1f)
+                    reachedGoal = nextProgress >= 1f
+                    val nextPosition = positionAlongRoute(activeRunRoutePoints, nextProgress)
+                    val distanceKm = (nextProgress.toDouble() * 6.2).coerceAtMost(6.2)
+                    val nextMinutes = current.activeRunElapsedMinutes + 2
+                    val xp = ((distanceKm * 35.0) + nextMinutes * 1.5).toInt()
+                    current.copy(
+                        activeRunProgress = nextProgress,
+                        activeRunDistanceKm = distanceKm,
+                        activeRunElapsedMinutes = nextMinutes,
+                        userLatitude = nextPosition.latitude,
+                        userLongitude = nextPosition.longitude,
+                        isRunActive = !reachedGoal,
+                        isRunCompleted = reachedGoal,
+                        completedRunTitle = if (reachedGoal) current.activeRunTitle else current.completedRunTitle,
+                        completedRunDistanceKm = if (reachedGoal) distanceKm else current.completedRunDistanceKm,
+                        completedRunElapsedMinutes = if (reachedGoal) nextMinutes else current.completedRunElapsedMinutes,
+                        completedRunXpGained = if (reachedGoal) xp else current.completedRunXpGained,
+                    )
+                }
+                if (reachedGoal) {
+                    break
+                }
+            }
+        }
+    }
+
+    private fun positionAlongRoute(points: List<GeoPoint>, progress: Float): GeoPoint {
+        if (points.isEmpty()) return GeoPoint(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE)
+        if (points.size == 1) return points.first()
+
+        val boundedProgress = progress.coerceIn(0f, 1f)
+        val segmentLengths = mutableListOf<Double>()
+        var totalLength = 0.0
+
+        for (index in 0 until points.lastIndex) {
+            val start = points[index]
+            val end = points[index + 1]
+            val length = hypot(end.latitude - start.latitude, end.longitude - start.longitude)
+            segmentLengths.add(length)
+            totalLength += length
+        }
+
+        if (totalLength <= 0.0) return points.first()
+
+        val targetDistance = totalLength * boundedProgress
+        var traversed = 0.0
+
+        for (index in segmentLengths.indices) {
+            val segmentLength = segmentLengths[index]
+            val start = points[index]
+            val end = points[index + 1]
+            if (traversed + segmentLength >= targetDistance) {
+                val ratio = ((targetDistance - traversed) / segmentLength).coerceIn(0.0, 1.0)
+                return GeoPoint(
+                    start.latitude + (end.latitude - start.latitude) * ratio,
+                    start.longitude + (end.longitude - start.longitude) * ratio,
+                )
+            }
+            traversed += segmentLength
+        }
+
+        return points.last()
     }
 
     private fun citySuggestionsForQuery(query: String): List<MapCity> {
@@ -227,5 +386,28 @@ class HomeViewModel @Inject constructor(
                 .trim()
                 .ifBlank { null }
             ?: email.substringBefore('@')
+    }
+
+    private fun buildSeededRouteNearAnnecyBase(): com.example.kairn.domain.model.GpxRoute {
+        val lat = ANNECY_AUSSEDAT_LATITUDE
+        val lon = ANNECY_AUSSEDAT_LONGITUDE
+        return com.example.kairn.domain.model.GpxRoute(
+            id = "annecy-centre-loop",
+            name = "Boucle Cran-Gevrier",
+            points = listOf(
+                GeoPoint(lat + 0.0010, lon - 0.0018),
+                GeoPoint(lat + 0.0016, lon - 0.0006),
+                GeoPoint(lat + 0.0013, lon + 0.0011),
+                GeoPoint(lat + 0.0002, lon + 0.0018),
+                GeoPoint(lat - 0.0010, lon + 0.0011),
+                GeoPoint(lat - 0.0015, lon - 0.0004),
+                GeoPoint(lat - 0.0006, lon - 0.0019),
+                GeoPoint(lat + 0.0010, lon - 0.0018),
+            ),
+            createdAt = "2026-03-16T10:00:00",
+            creatorId = "kairn-team",
+            distanceMeters = 6200.0,
+            fileName = "annecy-centre-loop.gpx",
+        )
     }
 }

@@ -24,12 +24,15 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.annotations.PolylineOptions
+import org.maplibre.android.annotations.Marker
+import org.maplibre.android.annotations.MarkerOptions
 
-private val DEFAULT_TARGET = LatLng(45.899247, 6.129384)
+private val DEFAULT_TARGET = LatLng(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE)
 private const val CAMERA_ZOOM_3D = 13.8
 private const val CAMERA_TILT_3D = 60.0
 private const val CAMERA_BEARING_3D = 22.0
 private const val ROUTE_CLICK_THRESHOLD = 0.0012
+private const val USER_LOCATION_LABEL = "Tu es la"
 
 private const val TERRAIN_STYLE_JSON = """
 {
@@ -84,11 +87,13 @@ fun MapLibrePocMapView(
     selectedCity: MapCity? = null,
     gpxRoutes: List<GpxRoute> = emptyList(),
     selectedGpxRoute: GpxRoute? = null,
+    isRunMode: Boolean = false,
     onGpxRouteClick: (GpxRoute) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    var userLocationMarker by remember { mutableStateOf<Marker?>(null) }
     val currentRoutes by rememberUpdatedState(gpxRoutes)
     val currentOnRouteClick by rememberUpdatedState(onGpxRouteClick)
 
@@ -110,7 +115,7 @@ fun MapLibrePocMapView(
         }
     }
 
-    LaunchedEffect(map, userLatitude, userLongitude, selectedCity) {
+    LaunchedEffect(map, userLatitude, userLongitude, selectedCity, isRunMode) {
         val mapLibreMap = map ?: return@LaunchedEffect
         val target = when {
             selectedCity != null -> LatLng(selectedCity.latitude, selectedCity.longitude)
@@ -118,12 +123,32 @@ fun MapLibrePocMapView(
             else -> null
         } ?: return@LaunchedEffect
 
+        val zoom = if (isRunMode) 16.5 else CAMERA_ZOOM_3D
+        val tilt = if (isRunMode) 38.0 else CAMERA_TILT_3D
+        val bearing = if (isRunMode) 0.0 else CAMERA_BEARING_3D
+
         mapLibreMap.cameraPosition = CameraPosition.Builder()
             .target(target)
-            .zoom(CAMERA_ZOOM_3D)
-            .tilt(CAMERA_TILT_3D)
-            .bearing(CAMERA_BEARING_3D)
+            .zoom(zoom)
+            .tilt(tilt)
+            .bearing(bearing)
             .build()
+    }
+
+    LaunchedEffect(map, userLatitude, userLongitude) {
+        val mapLibreMap = map ?: return@LaunchedEffect
+        val latitude = userLatitude ?: return@LaunchedEffect
+        val longitude = userLongitude ?: return@LaunchedEffect
+        val position = LatLng(latitude, longitude)
+
+        userLocationMarker?.let { existingMarker ->
+            mapLibreMap.removeMarker(existingMarker)
+        }
+        userLocationMarker = mapLibreMap.addMarker(
+            MarkerOptions()
+                .position(position)
+                .title(USER_LOCATION_LABEL),
+        )
     }
 
     LaunchedEffect(gpxRoutes, map, selectedGpxRoute) {
@@ -137,11 +162,18 @@ fun MapLibrePocMapView(
             if (route.points.size >= 2) {
                 val isSelected = selectedGpxRoute?.fileName == route.fileName
                 val points = route.points.map { LatLng(it.latitude, it.longitude) }
-                val polylineOptions = PolylineOptions()
+
+                val outlinePolyline = PolylineOptions()
                     .addAll(points)
-                    .color(android.graphics.Color.parseColor(if (isSelected) "#BA8C5E" else "#587B6C"))
-                    .width(if (isSelected) 8f else 5f)
-                mapLibreMap.addPolyline(polylineOptions)
+                    .color(android.graphics.Color.parseColor(if (isSelected) "#1D2622" else "#0A2540"))
+                    .width(if (isSelected) 16f else 12f)
+                mapLibreMap.addPolyline(outlinePolyline)
+
+                val mainPolyline = PolylineOptions()
+                    .addAll(points)
+                    .color(android.graphics.Color.parseColor(if (isSelected) "#FF5A36" else "#00C2FF"))
+                    .width(if (isSelected) 9f else 7f)
+                mapLibreMap.addPolyline(mainPolyline)
             }
         }
     }

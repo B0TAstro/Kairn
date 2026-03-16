@@ -169,6 +169,8 @@ private fun MainScreen(
     // Track current route to hide bottom nav in chat detail and hike detail screens
     val showBottomNav = currentRoute !in listOf(
         NavRoutes.HIKE_DETAIL,
+        NavRoutes.ACTIVE_RUN,
+        NavRoutes.RUN_COMPLETED,
         NavRoutes.CHAT,
         NavRoutes.FRIEND_LIST,
         NavRoutes.EDIT_PROFILE,
