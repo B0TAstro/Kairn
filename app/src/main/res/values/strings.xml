@@ -137,6 +137,13 @@
     <string name="editor_save_error">Échec de la sauvegarde : %s</string>
     <string name="editor_saving">Sauvegarde…</string>
     <string name="editor_save_gpx">Sauvegarder le GPX</string>
+    <string name="editor_search_placeholder">Rechercher un lieu ou une ville</string>
+    <string name="editor_search_cd">Rechercher un lieu</string>
+    <string name="editor_search_no_results">Aucun résultat pour « %s »</string>
+    <string name="editor_points_count_chip">Points (%d)</string>
+    <string name="editor_empty_title">Commencez votre itinéraire</string>
+    <string name="editor_empty_hint">Touchez la carte pour ajouter votre premier point.</string>
+    <string name="editor_tap_map_hint">Touchez la carte pour placer un point</string>
     <!-- %1$d = point index start, %2$d = point index end, %3$s = error message -->
     <string name="editor_route_error">Impossible de calculer l\'itinéraire entre les points %1$d et %2$d : %3$s</string>
     <string name="editor_upload_blocked">Upload bloqué par la politique Supabase. Vérifiez les règles RLS du bucket GPX.</string>

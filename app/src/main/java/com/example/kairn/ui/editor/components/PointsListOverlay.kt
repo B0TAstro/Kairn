@@ -73,11 +73,11 @@ fun PointsListOverlay(
 
     Card(
         modifier = modifier
-            .fillMaxWidth(0.72f)
-            .heightIn(max = 420.dp)
+            .fillMaxWidth()
+            .heightIn(max = 300.dp)
             .clip(RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(
-            containerColor = Background.copy(alpha = 0.95f),
+            containerColor = Background.copy(alpha = 0.94f),
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
