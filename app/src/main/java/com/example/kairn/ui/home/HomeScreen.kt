@@ -430,8 +430,7 @@ private fun buildOsmMapView(
         setTileSource(TileSourceFactory.MAPNIK)
         setMultiTouchControls(true)
         controller.setZoom(14.0)
-        // Default center until GPS kicks in (centre de la France)
-        controller.setCenter(GeoPoint(46.603354, 1.888334))
+        controller.setCenter(GeoPoint(ANNECY_AUSSEDAT_LATITUDE, ANNECY_AUSSEDAT_LONGITUDE))
 
         if (locationPermissionGranted) {
             val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), this)
