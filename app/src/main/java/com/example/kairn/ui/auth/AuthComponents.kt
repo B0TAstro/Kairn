@@ -22,7 +22,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
- * Full-screen background with a random onboarding image and a gradient overlay
+ * Full-screen background with the provided onboarding image and a gradient overlay
  * that goes from dark at top to dark at bottom (to match the onboarding style).
  */
 @Composable
