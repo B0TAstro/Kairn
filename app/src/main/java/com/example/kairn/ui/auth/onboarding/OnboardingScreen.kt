@@ -16,11 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun OnboardingScreen(
-    imageAssetPath: String?,
+    @DrawableRes imageResId: Int,
     onNavigateToSignUp: () -> Unit,
     onNavigateToSignIn: () -> Unit,
     modifier: Modifier = Modifier,
@@ -41,7 +42,7 @@ fun OnboardingScreen(
             ),
     ) {
         OnboardingBackground(
-            imageAssetPath = imageAssetPath,
+            imageResId = imageResId,
             revealProgress = state.backgroundRevealProgress,
         )
 

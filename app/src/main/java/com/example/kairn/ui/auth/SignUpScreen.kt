@@ -41,11 +41,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.annotation.DrawableRes
 import com.example.kairn.R
 
 @Composable
 fun SignUpScreen(
-    imageAssetPath: String?,
+    @DrawableRes imageResId: Int,
     onNavigateToSignIn: () -> Unit,
     onSignUpSuccess: () -> Unit,
     onBack: () -> Unit,
@@ -83,7 +84,7 @@ fun SignUpScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        AuthBackground(imageAssetPath = imageAssetPath)
+        AuthBackground(imageResId = imageResId)
 
         Column(
             modifier = Modifier

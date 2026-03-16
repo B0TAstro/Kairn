@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,9 +85,8 @@ private fun UnauthenticatedNavigation(
 ) {
     val navController = rememberNavController()
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val sharedImageAssetPath = remember {
-        com.example.kairn.ui.auth.onboarding.pickRandomOnboardingImage(context)
+    val sharedImageResId = remember {
+        com.example.kairn.ui.auth.onboarding.pickRandomOnboardingImage()
     }
     val startDestination = if (isSignOut) AuthRoute.Login.route else AuthRoute.Onboarding.route
 
@@ -105,18 +103,18 @@ private fun UnauthenticatedNavigation(
     ) {
         authGraph(
             navController = navController,
-            imageAssetPath = sharedImageAssetPath,
+            imageResId = sharedImageResId,
         )
     }
 }
 
 private fun NavGraphBuilder.authGraph(
     navController: NavHostController,
-    imageAssetPath: String?,
+    imageResId: Int,
 ) {
     composable(AuthRoute.Onboarding.route) {
         OnboardingScreen(
-            imageAssetPath = imageAssetPath,
+            imageResId = imageResId,
             onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
             onNavigateToSignIn = { navController.navigate(AuthRoute.Login.route) },
         )
@@ -124,7 +122,7 @@ private fun NavGraphBuilder.authGraph(
 
     composable(AuthRoute.Login.route) {
         LoginScreen(
-            imageAssetPath = imageAssetPath,
+            imageResId = imageResId,
             onNavigateToSignUp = { navController.navigate(AuthRoute.SignUp.route) },
             onSignInSuccess = {
                 // Session flow will switch AppNavigation to authenticated content.
@@ -137,7 +135,7 @@ private fun NavGraphBuilder.authGraph(
 
     composable(AuthRoute.SignUp.route) {
         SignUpScreen(
-            imageAssetPath = imageAssetPath,
+            imageResId = imageResId,
             onNavigateToSignIn = {
                 navController.navigate(AuthRoute.Login.route) {
                     popUpTo(AuthRoute.Onboarding.route)
