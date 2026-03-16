@@ -27,7 +27,7 @@ import org.maplibre.android.annotations.PolylineOptions
 
 private val DEFAULT_TARGET = LatLng(45.899247, 6.129384)
 private const val CAMERA_ZOOM_3D = 13.8
-private const val CAMERA_TILT_3D = 62.0
+private const val CAMERA_TILT_3D = 60.0
 private const val CAMERA_BEARING_3D = 22.0
 private const val ROUTE_CLICK_THRESHOLD = 0.0012
 
