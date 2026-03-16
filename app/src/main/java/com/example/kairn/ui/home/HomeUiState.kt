@@ -12,7 +12,7 @@ data class MapCity(
 
 data class HomeUiState(
     val username: String = "Hiker",
-    val location: String = "Localisation...",
+    val location: String = ANNECY_AUSSEDAT_LABEL,
     val searchQuery: String = "",
     val selectedDifficulty: HikeDifficulty? = null,
     val nearbyHikes: List<Hike> = emptyList(),
@@ -20,7 +20,7 @@ data class HomeUiState(
     val isBottomSheetExpanded: Boolean = false,
     val userLatitude: Double? = null,
     val userLongitude: Double? = null,
-    val selectedCity: MapCity? = null,
+    val selectedCity: MapCity? = DEFAULT_HOME_CITY,
     val citySuggestions: List<MapCity> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,

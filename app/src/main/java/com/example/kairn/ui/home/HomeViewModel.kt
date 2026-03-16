@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val supportedCities = listOf(
-        MapCity(name = "Annecy", latitude = 45.899247, longitude = 6.129384),
+        DEFAULT_HOME_CITY,
         MapCity(name = "Chamonix", latitude = 45.923697, longitude = 6.869433),
         MapCity(name = "Lyon", latitude = 45.764043, longitude = 4.835659),
     )
@@ -68,7 +68,7 @@ class HomeViewModel @Inject constructor(
             hikeRepository.getHikes()
                 .onSuccess { hikes ->
                     _uiState.update { current ->
-                        val selectedCity = current.selectedCity ?: supportedCities.first { it.name == "Chamonix" }
+                        val selectedCity = current.selectedCity ?: DEFAULT_HOME_CITY
                         current.copy(
                             nearbyHikes = hikes,
                             selectedCity = selectedCity,
