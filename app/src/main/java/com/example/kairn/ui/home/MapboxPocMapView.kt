@@ -24,6 +24,14 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.expressions.dsl.generated.get
+import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.addLayerBelow
+import com.mapbox.maps.extension.style.layers.generated.fillExtrusionLayer
+import com.mapbox.maps.extension.style.sources.addSource
+import com.mapbox.maps.extension.style.sources.generated.rasterDemSource
+import com.mapbox.maps.extension.style.terrain.generated.setTerrain
+import com.mapbox.maps.extension.style.terrain.generated.terrain
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationManager
@@ -35,6 +43,8 @@ import com.example.kairn.domain.model.GpxRoute
 import android.util.Log
 
 private const val TAG = "MapboxPocMapView"
+private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
+private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
 
 @Composable
 fun MapboxPocMapView(
@@ -186,16 +196,50 @@ private fun createMapboxMapView(
 ): MapView {
     return MapView(context).apply {
         mapboxMap.loadStyle("mapbox://styles/mapbox/outdoors-v12") {
+            configureMapbox3d(style = it)
             val manager = this@apply.annotations.createPolylineAnnotationManager()
             onStyleReady(manager)
             mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(6.9850, 45.8900))
-                    .zoom(12.8)
-                    .pitch(68.0)
-                    .bearing(28.0)
+                    .zoom(14.8)
+                    .pitch(74.0)
+                    .bearing(30.0)
                     .build(),
             )
+        }
+    }
+}
+
+private fun configureMapbox3d(style: Style) {
+    if (!style.styleSourceExists(TERRAIN_SOURCE_ID)) {
+        style.addSource(
+            rasterDemSource(TERRAIN_SOURCE_ID) {
+                url("mapbox://mapbox.mapbox-terrain-dem-v1")
+                tileSize(514L)
+            },
+        )
+    }
+
+    style.setTerrain(
+        terrain(TERRAIN_SOURCE_ID) {
+            exaggeration(1.7)
+        },
+    )
+
+    if (!style.styleLayerExists(BUILDINGS_LAYER_ID)) {
+        val buildingsLayer = fillExtrusionLayer(BUILDINGS_LAYER_ID, "composite") {
+            sourceLayer("building")
+            fillExtrusionColor("#C9B9A1")
+            fillExtrusionOpacity(0.42)
+            fillExtrusionHeight(get("height"))
+            fillExtrusionBase(get("min_height"))
+        }
+
+        if (style.styleLayerExists("road-label")) {
+            style.addLayerBelow(buildingsLayer, "road-label")
+        } else {
+            style.addLayer(buildingsLayer)
         }
     }
 }
