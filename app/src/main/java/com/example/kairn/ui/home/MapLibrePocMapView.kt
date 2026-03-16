@@ -157,11 +157,18 @@ fun MapLibrePocMapView(
             if (route.points.size >= 2) {
                 val isSelected = selectedGpxRoute?.fileName == route.fileName
                 val points = route.points.map { LatLng(it.latitude, it.longitude) }
-                val polylineOptions = PolylineOptions()
+
+                val outlinePolyline = PolylineOptions()
                     .addAll(points)
-                    .color(android.graphics.Color.parseColor(if (isSelected) "#BA8C5E" else "#587B6C"))
-                    .width(if (isSelected) 8f else 5f)
-                mapLibreMap.addPolyline(polylineOptions)
+                    .color(android.graphics.Color.parseColor(if (isSelected) "#1D2622" else "#0A2540"))
+                    .width(if (isSelected) 16f else 12f)
+                mapLibreMap.addPolyline(outlinePolyline)
+
+                val mainPolyline = PolylineOptions()
+                    .addAll(points)
+                    .color(android.graphics.Color.parseColor(if (isSelected) "#FF5A36" else "#00C2FF"))
+                    .width(if (isSelected) 9f else 7f)
+                mapLibreMap.addPolyline(mainPolyline)
             }
         }
     }

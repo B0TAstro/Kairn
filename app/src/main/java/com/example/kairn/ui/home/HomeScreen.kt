@@ -430,12 +430,18 @@ private fun updateGpxOverlays(mapView: MapView, gpxRoutes: List<GpxRoute>) {
     for (route in gpxRoutes) {
         Log.d(TAG, "updateGpxOverlays: adding route ${route.name} with ${route.points.size} points")
         if (route.points.size >= 2) {
-            val polyline = org.osmdroid.views.overlay.Polyline().apply {
+            val outline = org.osmdroid.views.overlay.Polyline().apply {
                 setPoints(route.points)
-                outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
-                outlinePaint.strokeWidth = 8f
+                outlinePaint.color = android.graphics.Color.parseColor("#0A2540")
+                outlinePaint.strokeWidth = 12f
             }
-            mapView.overlays.add(polyline)
+            val main = org.osmdroid.views.overlay.Polyline().apply {
+                setPoints(route.points)
+                outlinePaint.color = android.graphics.Color.parseColor("#00C2FF")
+                outlinePaint.strokeWidth = 7f
+            }
+            mapView.overlays.add(outline)
+            mapView.overlays.add(main)
         }
     }
 
@@ -462,12 +468,18 @@ private fun buildOsmMapView(
 
         for (route in gpxRoutes) {
             if (route.points.size >= 2) {
-                val polyline = org.osmdroid.views.overlay.Polyline().apply {
+                val outline = org.osmdroid.views.overlay.Polyline().apply {
                     setPoints(route.points)
-                    outlinePaint.color = android.graphics.Color.parseColor("#587b6c")
-                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.color = android.graphics.Color.parseColor("#0A2540")
+                    outlinePaint.strokeWidth = 12f
                 }
-                overlays.add(polyline)
+                val main = org.osmdroid.views.overlay.Polyline().apply {
+                    setPoints(route.points)
+                    outlinePaint.color = android.graphics.Color.parseColor("#00C2FF")
+                    outlinePaint.strokeWidth = 7f
+                }
+                overlays.add(outline)
+                overlays.add(main)
             }
         }
     }

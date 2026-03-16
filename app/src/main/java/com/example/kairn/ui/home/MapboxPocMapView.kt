@@ -38,7 +38,6 @@ import com.mapbox.maps.extension.style.sources.generated.rasterDemSource
 import com.mapbox.maps.extension.style.terrain.generated.setTerrain
 import com.mapbox.maps.extension.style.terrain.generated.terrain
 import com.mapbox.maps.plugin.annotation.annotations
-import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
@@ -59,6 +58,7 @@ private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
 private const val USER_MARKER_ICON_SCALE = 1.9
 private const val USER_MARKER_FOCUS_ZOOM = 17.2
 private const val USER_MARKER_CLICK_THRESHOLD = 0.0011
+private const val ROUTE_CLICK_THRESHOLD = 0.001
 
 @Composable
 fun MapboxPocMapView(
@@ -76,7 +76,7 @@ fun MapboxPocMapView(
     var mapInitError by remember { mutableStateOf<String?>(null) }
     var polylineManager by remember { mutableStateOf<PolylineAnnotationManager?>(null) }
     var userPointManager by remember { mutableStateOf<PointAnnotationManager?>(null) }
-    val polylines = remember { mutableMapOf<String, PolylineAnnotation>() }
+    val routeByKey = remember { mutableMapOf<String, GpxRoute>() }
     var userLocationPoint by remember { mutableStateOf<PointAnnotation?>(null) }
 
     if (token.isBlank()) {
@@ -155,21 +155,26 @@ fun MapboxPocMapView(
         if (polylineManager == null || mapView == null) return@LaunchedEffect
         
         Log.d(TAG, "GPX routes updated: ${gpxRoutes.size} routes, selected: ${selectedGpxRoute?.fileName}")
-        
-        polylines.values.forEach { polylineManager!!.delete(it) }
-        polylines.clear()
+        polylineManager!!.deleteAll()
+        routeByKey.clear()
         
         for ((index, route) in gpxRoutes.withIndex()) {
             if (route.points.size >= 2) {
                 val isSelected = selectedGpxRoute?.fileName == route.fileName
                 val key = route.fileName ?: "route_$index"
-                val polyline = polylineManager!!.create(
+                polylineManager!!.create(
                     PolylineAnnotationOptions()
                         .withPoints(route.points.map { Point.fromLngLat(it.longitude, it.latitude) })
-                        .withLineColor(if (isSelected) "#BA8C5E" else "#587B6C")
-                        .withLineWidth(if (isSelected) 8.0 else 5.0),
+                        .withLineColor(if (isSelected) "#1D2622" else "#0A2540")
+                        .withLineWidth(if (isSelected) 16.0 else 12.0),
                 )
-                polylines[key] = polyline
+                polylineManager!!.create(
+                    PolylineAnnotationOptions()
+                        .withPoints(route.points.map { Point.fromLngLat(it.longitude, it.latitude) })
+                        .withLineColor(if (isSelected) "#FF5A36" else "#00C2FF")
+                        .withLineWidth(if (isSelected) 9.0 else 7.0),
+                )
+                routeByKey[key] = route
                 Log.d(TAG, "Added polyline for ${route.name} with ${route.points.size} points, selected: $isSelected")
             }
         }
@@ -181,7 +186,7 @@ fun MapboxPocMapView(
         val clickListener = OnMapClickListener { point ->
             val clickLng = point.longitude()
             val clickLat = point.latitude()
-            val threshold = 0.001
+            val threshold = ROUTE_CLICK_THRESHOLD
 
             if (userLatitude != null && userLongitude != null) {
                 val clickedUserMarker =
@@ -200,18 +205,15 @@ fun MapboxPocMapView(
                 }
             }
             
-            for ((fileName, _) in polylines) {
-                val route = gpxRoutes.find { it.fileName == fileName }
-                if (route != null) {
-                    val isClose = route.points.any { p ->
+            for ((fileName, route) in routeByKey) {
+                val isClose = route.points.any { p ->
                         Math.abs(p.longitude - clickLng) < threshold && 
                         Math.abs(p.latitude - clickLat) < threshold
-                    }
-                    if (isClose) {
-                        Log.d(TAG, "Clicked on route: $fileName")
-                        onGpxRouteClick(route)
-                        return@OnMapClickListener true
-                    }
+                }
+                if (isClose) {
+                    Log.d(TAG, "Clicked on route: $fileName")
+                    onGpxRouteClick(route)
+                    return@OnMapClickListener true
                 }
             }
             
