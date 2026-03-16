@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -53,7 +54,6 @@ private const val TAG = "MapboxPocMapView"
 private const val TERRAIN_SOURCE_ID = "kairn-terrain-dem"
 private const val BUILDINGS_LAYER_ID = "kairn-3d-buildings"
 private const val USER_MARKER_IMAGE_ID = "kairn-user-location-marker"
-private const val USER_LOCATION_LABEL = "Tu es la"
 
 @Composable
 fun MapboxPocMapView(
@@ -138,11 +138,7 @@ fun MapboxPocMapView(
                     .withPoint(nextPoint)
                     .withIconImage(USER_MARKER_IMAGE_ID)
                     .withIconSize(1.0)
-                    .withTextField(USER_LOCATION_LABEL)
-                    .withTextColor("#1D2622")
-                    .withTextHaloColor("#ECE7DF")
-                    .withTextHaloWidth(1.4)
-                    .withTextOffset(listOf(0.0, 1.5)),
+                    .withIconAnchor("bottom"),
             )
         } else {
             existing.point = nextPoint
@@ -251,28 +247,47 @@ private fun createMapboxMapView(
 }
 
 private fun configureUserLocationMarkerStyle(style: Style) {
-    if (!style.styleImageExists(USER_MARKER_IMAGE_ID)) {
-        style.addImage(USER_MARKER_IMAGE_ID, createUserMarkerBitmap())
-    }
+    style.addImage(USER_MARKER_IMAGE_ID, createUserMarkerBitmap())
 }
 
 private fun createUserMarkerBitmap(): Bitmap {
-    val sizePx = 64
+    val sizePx = 88
     val center = sizePx / 2f
     val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#ECE7DF")
-        style = Paint.Style.FILL
-    }
-    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#BA8C5E")
+    val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#DB3B2B")
         style = Paint.Style.FILL
     }
 
-    canvas.drawCircle(center, center, 18f, outerPaint)
-    canvas.drawCircle(center, center, 12f, innerPaint)
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#FFFFFF")
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
+
+    val corePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#FFFFFF")
+        style = Paint.Style.FILL
+    }
+
+    val headRadius = 18f
+    val headCenterY = 30f
+    val tipX = center
+    val tipY = 78f
+
+    val pinPath = Path().apply {
+        addCircle(center, headCenterY, headRadius, Path.Direction.CW)
+        moveTo(center - 10f, headCenterY + 12f)
+        lineTo(center + 10f, headCenterY + 12f)
+        lineTo(tipX, tipY)
+        close()
+    }
+
+    canvas.drawPath(pinPath, pinPaint)
+    canvas.drawPath(pinPath, borderPaint)
+    canvas.drawCircle(center, headCenterY, 6.5f, corePaint)
     return bitmap
 }
 
